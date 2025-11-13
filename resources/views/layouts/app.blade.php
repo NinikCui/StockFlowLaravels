@@ -13,24 +13,25 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
+        <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                AOS.init({
+                    duration: 700,
+                    once: true,
+                    easing: 'ease-out-quart'
+                });
+            });
+        </script>
     </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
-            @include('layouts.navigation')
+    <body class="bg-gray-50">
+    
+        @include('components.sidebarCompany')
+    <main class="md:ml-64 min-h-screen p-6">
 
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{ $header }}
-                    </div>
-                </header>
-            @endisset
+        {{ $slot }}
+    </main>
 
-            <!-- Page Content -->
-            <main>
-                {{ $slot }}
-            </main>
-        </div>
-    </body>
+</body>
 </html>

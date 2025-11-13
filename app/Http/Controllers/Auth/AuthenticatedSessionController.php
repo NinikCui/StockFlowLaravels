@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Log;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -24,17 +25,76 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        // pakai authenticate yg sudah diubah
-        $request->authenticate();
+        Log::info("=== LOGIN REQUEST MASUK ===");
 
-        // regenerate session
+        $request->authenticate();
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = Auth::user()->load([
+            'role.company',
+            'role.cabangResto'
+        ]);
+
+        Log::info("User setelah Auth:", [
+            'id'       => $user->id,
+            'username' => $user->username,
+            'role_id'  => $user->role->id ?? null,
+            'role'     => $user->role->code ?? null,
+        ]);
+
+        // Simpan ke session
+        session([
+            'user' => [
+                'id'       => $user->id,
+                'username' => $user->username,
+                'email'    => $user->email,
+            ],
+            'role' => [
+                'id'    => $user->role->id,
+                'code'  => $user->role->code,
+                'name'  => $user->role->name,
+
+                'company' => $user->role->company ? [
+                    'id'   => $user->role->company->id,
+                    'code' => $user->role->company->code,
+                    'name' => $user->role->company->name,
+                ] : null,
+
+                'branch' => $user->role->cabangResto ? [
+                    'id'   => $user->role->cabangResto->id,
+                    'code' => $user->role->cabangResto->code,
+                    'name' => $user->role->cabangResto->name,
+                ] : null,
+            ],
+        ]);
+
+        Log::info("Session setelah login (role):", [
+            'role' => session('role'),
+        ]);
+
+        $role    = session('role');
+        $company = $role['company'];
+        $branch  = $role['branch'] ?? null;
+
+        Log::info("Redirecting user:", [
+            'has_branch'   => $branch ? true : false,
+            'company_code' => strtolower($company['code']),
+            'branch_code'  => $branch ? strtolower($branch['code']) : null,
+        ]);
+
+        if ($branch) {
+            $url = '/' . strtolower($branch['code']) . '/dashboard';
+            Log::info("Final Redirect URL:", ['redirect' => $url]);
+            return redirect($url);
+        }
+
+        $url = '/' . strtolower($company['code']) . '/dashboard';
+        Log::info("Final Redirect URL:", ['redirect' => $url]);
+
+        return redirect($url);
     }
-        /**
-     * Destroy an authenticated session.
-     */
+
+
     public function destroy(Request $request): RedirectResponse
     {
         Auth::guard('web')->logout();

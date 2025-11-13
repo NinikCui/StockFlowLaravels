@@ -1,3 +1,33 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.float-up-down {
+    animation: floatUpDown 6s ease-in-out infinite;
+}
+.float-down-up {
+    animation: floatDownUp 6s ease-in-out infinite;
+}
+
+@keyframes floatUpDown {
+    0% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-6px);
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+@keyframes floatDownUp {
+    0% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(6px);
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
