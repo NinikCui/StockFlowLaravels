@@ -266,4 +266,35 @@ class RoleController extends Controller
             ->with('status', 'Role berhasil diperbarui!');
     }
 
+
+        public function rolesJson(Request $req, $companyCode)
+    {
+        $companyId = session('role.company.id');
+
+        $branchId  = $req->query('cabangId');
+        $universal = $req->query('universal');
+
+        // UNIVERSAL ROLE (tidak punya cabang)
+        if ($universal === "true") {
+            $roles = Role::whereNull('cabang_resto_id')
+                ->where('companies_id', $companyId)
+                ->orderBy('name')
+                ->get(['id','name','code']);
+
+            return response()->json(['ok' => true, 'data' => $roles]);
+        }
+
+        // CABANG ROLE
+        if ($branchId) {
+            $roles = Role::where('cabang_resto_id', $branchId)
+                ->where('companies_id', $companyId)
+                ->orderBy('name')
+                ->get(['id','name','code']);
+
+            return response()->json(['ok' => true, 'data' => $roles]);
+        }
+
+        return response()->json(['ok' => true, 'data' => []]);
+    }
+
 }

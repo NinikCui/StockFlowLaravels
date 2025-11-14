@@ -1,61 +1,57 @@
 <x-app-layout>
-<main >
+<main class="max-w-6xl mx-auto px-6 py-10">
 
     {{-- HEADER --}}
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
         <div>
-            <h1 class="text-3xl font-bold tracking-tight text-gray-900">Roles</h1>
-            <p class="text-gray-500 mt-1">Kelola role karyawan, universal maupun khusus cabang.</p>
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Roles</h1>
+            <p class="text-gray-500 mt-1">Kelola role karyawan, baik universal maupun khusus cabang.</p>
         </div>
 
-        <div class="flex gap-2">
-            {{-- Refresh --}}
+        <div class="flex gap-3">
             <a href="{{ route('roles.index', $companyCode) }}"
-                class="inline-flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-xl text-sm hover:bg-gray-50 transition">
-                <span class="text-gray-600">🔄</span> Muat Ulang
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border bg-white text-gray-700 hover:bg-gray-50 shadow">
+                🔄 <span>Refresh</span>
             </a>
 
-            {{-- Tambah --}}
             <a href="{{ route('roles.create', $companyCode) }}"
-                class="inline-flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-emerald-700 transition shadow-sm">
-                <span>➕</span> Tambah Role
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow">
+                ➕ <span>Tambah Role</span>
             </a>
         </div>
     </div>
 
-    <hr class="border-gray-200 mb-6" />
 
     {{-- FILTER BAR --}}
-    <div class="bg-white border rounded-2xl shadow-sm p-4 mb-6 space-y-4">
-
-        <form method="GET"
-            class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+    <div class="bg-white border border-black-100 rounded-2xl shadow-sm p-5 mb-8">
+        <form method="GET" class="grid grid-cols-1 sm:grid-cols-3 gap-6">
 
             {{-- SEARCH --}}
-            <div class="relative">
-                <label class="text-sm text-gray-600 mb-1 block">Pencarian</label>
-                <input
-                    name="q"
-                    value="{{ request('q') }}"
-                    class="w-full rounded-xl border border-gray-200 pl-10 py-2 text-sm bg-gray-50 focus:bg-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition"
-                    placeholder="Cari nama role atau kode..."
-                />
-                <span class="absolute left-3 top-9 transform text-gray-400">🔍</span>
-                @if(request('q'))
+            <div>
+                <label class="text-sm text-gray-600 font-medium">Pencarian</label>
+                <div class="relative mt-1">
+                    <input
+                        name="q"
+                        value="{{ request('q') }}"
+                        placeholder="Cari nama role atau kode..."
+                        class="w-full rounded-xl pl-10 py-2.5 bg-gray-50 border border-gray-200 text-sm shadow-sm focus:bg-white focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400"
+                    />
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+
+                    @if(request('q'))
                     <a href="{{ route('roles.index', $companyCode) }}"
-                        class="absolute right-3 top-9 transform text-gray-400 text-xs">✕</a>
-                @endif
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">✕</a>
+                    @endif
+                </div>
             </div>
 
-            {{-- FILTER CABANG --}}
+            {{-- FILTER SCOPE --}}
             <div>
-                <label class="text-sm text-gray-600 mb-1 block">Filter Scope</label>
+                <label class="text-sm text-gray-600 font-medium">Filter Scope</label>
                 <select name="filterCabang"
-                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:bg-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition">
+                    class="w-full mt-1 rounded-xl py-2.5 px-3 text-sm bg-gray-50 border border-gray-200 shadow-sm focus:bg-white focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400">
                     <option value="all">Semua Scope</option>
-                    <option value="universal" {{ request('filterCabang')=='universal'?'selected':'' }}>
-                        Universal
-                    </option>
+                    <option value="universal" {{ request('filterCabang')=='universal'?'selected':'' }}>Universal</option>
 
                     @foreach($cabangList as $c)
                         <option value="{{ $c->id }}" {{ request('filterCabang')==$c->id?'selected':'' }}>
@@ -67,81 +63,66 @@
 
             {{-- SORT --}}
             <div>
-                <label class="text-sm text-gray-600 mb-1 block">Urutkan</label>
+                <label class="text-sm text-gray-600 font-medium">Urutkan</label>
                 <select name="sortKey"
-                    class="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 focus:bg-white focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition">
-                    <option value="name" {{ $sortKey=='name'?'selected':'' }}>Nama (A-Z)</option>
-                    <option value="code" {{ $sortKey=='code'?'selected':'' }}>Kode (A-Z)</option>
+                    class="w-full mt-1 rounded-xl py-2.5 px-3 text-sm bg-gray-50 border border-gray-200 shadow-sm focus:bg-white focus:ring-2 focus:ring-emerald-200 focus:border-emerald-400">
+                    <option value="name" {{ $sortKey=='name'?'selected':'' }}>Nama (A–Z)</option>
+                    <option value="code" {{ $sortKey=='code'?'selected':'' }}>Kode (A–Z)</option>
                 </select>
-
                 <input type="hidden" name="sortDir" value="{{ $sortDir }}">
             </div>
 
-            {{-- APPLY BUTTON --}}
-            <div class="sm:col-span-3 flex justify-end gap-2">
+            {{-- BUTTONS --}}
+            <div class="sm:col-span-3 flex justify-end gap-3 mt-2">
                 <a href="{{ route('roles.index', $companyCode) }}"
-                    class="px-4 py-2 rounded-xl border border-gray-300 text-sm hover:bg-gray-50">
-                    Clear Filters
+                    class="px-4 py-2 rounded-xl border border-gray-300 bg-white text-sm hover:bg-gray-50">
+                    Reset Filter
                 </a>
 
                 <button class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm hover:bg-emerald-700 shadow">
-                    Terapkan Filter
+                    Terapkan
                 </button>
             </div>
         </form>
     </div>
 
+
     {{-- COUNT --}}
-    <div class="text-xs text-gray-500 mb-3">
+    <div class="text-xs text-gray-500 mb-2">
         <span class="font-semibold">{{ $roles->count() }}</span> role ditemukan
     </div>
 
+
     {{-- TABLE --}}
-    <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
-        <table class="min-w-full text-sm text-gray-800">
-            <thead class="bg-gray-50 text-left text-xs uppercase text-gray-600">
+    <div class="overflow-hidden bg-white border border-black-100 rounded-2xl shadow-sm">
+        <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
                 <tr>
-                    <th class="px-6 py-3 cursor-pointer">
-                        <a href="?sortKey=name&sortDir={{ $sortDir=='asc'?'desc':'asc' }}" class="flex items-center gap-1">
-                            Nama
-                            @if($sortKey=='name')
-                                <span>{{ $sortDir=='asc'?'▲':'▼' }}</span>
-                            @endif
-                        </a>
-                    </th>
-
-                    <th class="px-6 py-3 cursor-pointer">
-                        <a href="?sortKey=code&sortDir={{ $sortDir=='asc'?'desc':'asc' }}" class="flex items-center gap-1">
-                            Kode
-                            @if($sortKey=='code')
-                                <span>{{ $sortDir=='asc'?'▲':'▼' }}</span>
-                            @endif
-                        </a>
-                    </th>
-
-                    <th class="px-6 py-3">Scope</th>
-                    <th class="px-6 py-3 text-right">Aksi</th>
+                    <th class="px-6 py-3 font-medium">Nama</th>
+                    <th class="px-6 py-3 font-medium">Kode</th>
+                    <th class="px-6 py-3 font-medium">Scope</th>
+                    <th class="px-6 py-3 font-medium text-right">Aksi</th>
                 </tr>
             </thead>
 
             <tbody>
-                @forelse($roles as $idx => $r)
+                @forelse ($roles as $idx => $r)
                 <tr class="{{ $idx%2==0 ? 'bg-white' : 'bg-gray-50' }} hover:bg-emerald-50/40 transition">
-                    <td class="px-6 py-3 font-medium">{{ $r->name }}</td>
+                    <td class="px-6 py-3 font-medium text-gray-800">{{ $r->name }}</td>
 
                     <td class="px-6 py-3">
-                        <span class="rounded-md bg-gray-100 px-2 py-1 text-gray-700 font-mono">
+                        <span class="px-2 py-1 rounded-md bg-gray-100 font-mono text-gray-700 text-xs">
                             {{ $r->code }}
                         </span>
                     </td>
 
                     <td class="px-6 py-3">
                         @if(!$r->cabang_resto_id)
-                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
                                 ● Universal
                             </span>
                         @else
-                            <span class="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
                                 ● {{ $r->cabangResto->name }}
                             </span>
                         @endif
@@ -149,16 +130,14 @@
 
                     <td class="px-6 py-3 text-right">
                         <a href="{{ route('roles.show', [$companyCode, $r->code]) }}"
-                            class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 hover:text-emerald-700 transition">
+                           class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-700 hover:bg-gray-100 hover:text-emerald-700">
                             👁 Detail
                         </a>
                     </td>
                 </tr>
                 @empty
-                <tr class="bg-white">
-                    <td colspan="4" class="text-center py-8 text-gray-500">
-                        Tidak ada data role ditemukan.
-                    </td>
+                <tr>
+                    <td colspan="4" class="py-8 text-center text-gray-500">Tidak ada data role ditemukan.</td>
                 </tr>
                 @endforelse
             </tbody>

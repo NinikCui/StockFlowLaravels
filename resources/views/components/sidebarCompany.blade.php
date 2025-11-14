@@ -1,7 +1,7 @@
 @php
     // ========== SESSION LOGIN ========== //
     $username    = session('user.username', 'User');
-    $companyCode = session('role.company.code');
+    $companyCode = strtolower(session('role.company.code'));
     $branchCode  = session('role.branch.code');
     $roleCode    = session('role.code', 'USER');
 
