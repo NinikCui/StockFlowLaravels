@@ -31,6 +31,7 @@ class Role extends Model
 
     public function permissions()
     {
-        return $this->hasMany(RolePermission::class, 'roles_id');
+        return $this->belongsToMany(Permission::class, 'role_permissions', 'roles_id', 'permission_id')
+            ->withPivot('effect', 'cabang_resto_id');
     }
 }

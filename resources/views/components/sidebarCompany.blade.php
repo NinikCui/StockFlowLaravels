@@ -8,37 +8,55 @@
     // Tentukan tenant prefix
     $prefix = strtolower($branchCode ?? $companyCode);
 
-    // ========== MENU ITEMS ========== //
+    // ========== MENU ITEMS (fixed href) ========== //
     $items = [
-    [
-        'label' => 'Dashboard',
-        'href'  => '/dashboard',
-        'icon'  => 'home',
-    ],
+        [
+            'label' => 'Dashboard',
+            'href'  => "/$prefix/dashboard",
+        ],
 
-    [
-        'label' => 'Cabang Restoran',
-        'href'  => '/cabang',
-        'icon'  => 'store',
-        'children' => [
-            ['label' => 'Daftar Cabang', 'href' => '/cabang'],
-            ['label' => 'Gudang',         'href' => '/cabang/gudang'],
-            ['label' => 'Supplier',       'href' => '/cabang/supplier'],
-        ]
-    ],
+        [
+            'label' => 'Cabang Restoran',
+            'href'  => "/$prefix/cabang",
+            'children' => [
+                ['label' => 'Daftar Cabang', 'href' => "/$prefix/cabang"],
+                ['label' => 'Gudang',         'href' => "/$prefix/cabang/gudang"],
+                ['label' => 'Supplier',       'href' => "/$prefix/cabang/supplier"],
+            ]
+        ],
 
-    [
-        'label' => 'Pegawai',
-        'href'  => '/pegawai',
-        'icon'  => 'users',
-        'children' => [
-            ['label' => 'Daftar Pegawai', 'href' => '/pegawai'],
-            ['label' => 'Role & Akses',   'href' => '/pegawai/roles'],
-        ]
-    ],
-];
+        [
+            'label' => 'Pegawai',
+            'href'  => "/$prefix/pegawai",
+            'children' => [
+                ['label' => 'Daftar Pegawai', 'href' => "/$prefix/pegawai"],
+                ['label' => 'Role & Akses',   'href' => "/$prefix/pegawai/roles"],
+            ]
+        ],
+    ];
 
+    // ===== ACTIVE CHECK FUNCTIONS =====
+
+    function isActiveExact($href) {
+        return trim(request()->path(), '/') === trim($href, '/');
+    }
+
+    function isActiveStartWith($href) {
+        return str_starts_with(trim(request()->path(), '/'), trim($href, '/'));
+    }
+
+    function isParentOpen($item) {
+        if (!isset($item['children'])) return false;
+
+        foreach ($item['children'] as $child) {
+            if (isActiveExact($child['href']) || isActiveStartWith($child['href'])) {
+                return true;
+            }
+        }
+        return false;
+    }
 @endphp
+
 
 {{-- MOBILE TOGGLE --}}
 <button
@@ -84,24 +102,21 @@
 
         @foreach ($items as $item)
             @php
-                $fullHref = '/' . $prefix . $item['href'];
-                $active = request()->is(trim($fullHref, '/')) || request()->is(trim($fullHref, '/') . '/*');
                 $hasChildren = isset($item['children']);
+                $isActiveItem = isActiveExact($item['href']) || isActiveStartWith($item['href']);
+                $isOpen = $isActiveItem || isParentOpen($item);
             @endphp
 
             {{-- ========== MENU TANPA CHILDREN ========== --}}
             @if (!$hasChildren)
-                <a href="{{ $fullHref }}"
+                <a href="{{ $item['href'] }}"
                     class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all
-                    {{ $active ? 'bg-black text-white shadow' : 'text-gray-700 hover:bg-gray-100 hover:text-black' }}">
+                    {{ $isActiveItem ? 'bg-black text-white shadow' : 'text-gray-700 hover:bg-gray-100 hover:text-black' }}">
                     {{ $item['label'] }}
                 </a>
-            @else
-            {{-- ========== MENU DENGAN DROPDOWN ========== --}}
-                @php
-                    $isOpen = request()->is(trim($fullHref, '/')) || request()->is(trim($fullHref, '/') . '/*');
-                @endphp
 
+            @else
+            {{-- ========== MENU DENGAN CHILDREN ========== --}}
                 <div x-data="{ open: {{ $isOpen ? 'true' : 'false' }} }">
                     <button @click="open = !open"
                             class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-medium
@@ -113,20 +128,28 @@
                         </svg>
                     </button>
 
-                    {{-- Dropdown --}}
+                    {{-- SUBMENU --}}
                     <div x-show="open" x-collapse class="ml-4 mt-1 space-y-1">
+
                         @foreach ($item['children'] as $child)
                             @php
-                                $childHref = '/' . $prefix . $child['href'];
-                                $childActive = request()->is(trim($childHref, '/')) || request()->is(trim($childHref, '/') . '/*');
+                                // ===== CHILD ACTIVE CHECK =====
+                                if ($child['href'] === "/$prefix/pegawai") {
+                                    // Child 1: exact match
+                                    $childActive = isActiveExact($child['href']);
+                                } else {
+                                    // Child lain: prefix match
+                                    $childActive = isActiveStartWith($child['href']);
+                                }
                             @endphp
 
-                            <a href="{{ $childHref }}"
-                            class="block rounded-md px-3 py-1.5 text-sm
-                            {{ $childActive ? 'bg-gray-800 text-white' : 'text-gray-600 hover:text-black hover:bg-gray-100' }}">
+                            <a href="{{ $child['href'] }}"
+                                class="block rounded-md px-3 py-1.5 text-sm
+                                {{ $childActive ? 'bg-gray-800 text-white' : 'text-gray-600 hover:text-black hover:bg-gray-100' }}">
                                 {{ $child['label'] }}
                             </a>
                         @endforeach
+
                     </div>
                 </div>
             @endif
@@ -134,7 +157,6 @@
         @endforeach
 
     </nav>
-
 
     {{-- FOOTER --}}
     <div class="border-t bg-gray-50 px-4 py-4">
