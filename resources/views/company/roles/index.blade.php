@@ -1,5 +1,5 @@
 <x-app-layout>
-<main class="mx-auto max-w-6xl p-6 min-h-screen">
+<main >
 
     {{-- HEADER --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">

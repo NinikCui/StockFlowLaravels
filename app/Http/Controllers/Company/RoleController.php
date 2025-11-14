@@ -73,7 +73,7 @@ class RoleController extends Controller
 
         $validated = $request->validate([
             'name'            => 'required|string',
-            'code'            => 'required|regex:/^[A-Z0-9_]+$/',
+            'code'            => 'required|string|max:100|alpha_dash|unique:roles,code',
             'permissions'     => 'required|array|min:1',
             'permissions.*'   => 'string',
             'cabangRestoId'   => 'nullable|integer',

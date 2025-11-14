@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantDashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Company\RoleController;
+use App\Http\Controllers\Company\CabangController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -14,9 +15,7 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
     Route::get('/{code}/dashboard', [TenantDashboardController::class, 'index'])
         ->name('dashboard');
 
-    Route::get('/{code}/cabang', function () {
-        return view('company.cabang.index');
-    })->name("cabang.index");
+    
 
     Route::get('/{code}/pegawai', function () {
         return view('company.pegawai.index');
@@ -36,6 +35,12 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::delete('/roles/{code}', [RoleController::class, 'destroy'])->name('roles.destroy');
     });
 
+    Route::prefix('{companyCode}/cabang')->group(function () {
+        Route::get('/', [CabangController::class, 'index'])
+            ->name('cabang.index');
+        Route::get('/tambah', [CabangController::class, 'create'])->name('cabang.create');
+        Route::post('/', [CabangController::class, 'store'])->name('cabang.store');
+    });
        
 });
 require __DIR__.'/auth.php';

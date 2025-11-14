@@ -29,8 +29,10 @@
     
         @include('components.sidebarCompany')
     <main class="md:ml-64 min-h-screen p-6">
-
-        {{ $slot }}
+            <div class="mx-auto max-w-6xl p-6 min-h-screen">
+{{ $slot }}
+            </div>
+        
     </main>
 
 </body>
