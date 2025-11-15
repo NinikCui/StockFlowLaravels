@@ -102,7 +102,7 @@ class RegisteredUserController extends Controller
 
             Auth::login($result['user']);
 
-            return redirect('/dashboard')
+            return redirect('/login')
                 ->with('status', 'Registrasi perusahaan berhasil!');
 
         } catch (\Exception $err) {

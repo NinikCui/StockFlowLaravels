@@ -10,9 +10,9 @@
 
     // ========== MENU ITEMS (fixed href) ========== //
     $items = [
-        [
-            'label' => 'Dashboard',
-            'href'  => "/$prefix/dashboard",
+    [
+        'label' => 'Dashboard',
+        'href'  => "/$prefix/dashboard",
         ],
 
         [
@@ -33,7 +33,14 @@
                 ['label' => 'Role & Akses',   'href' => "/$prefix/pegawai/roles"],
             ]
         ],
+
+        // 🟩 MENU BARU — COMPANY SETTINGS (HQ LEVEL)
+        [
+            'label' => 'Pengaturan Perusahaan',
+            'href'  => "/$companyCode/settings",
+        ],
     ];
+
 
     // ===== ACTIVE CHECK FUNCTIONS =====
 

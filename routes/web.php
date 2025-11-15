@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Company\CompanySettingController;
 use App\Http\Controllers\Company\PegawaiController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantDashboardController;
@@ -68,6 +69,13 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/{code}', [CabangController::class, 'detail'])->name('cabang.detail');
     });
 
+    // ================================
+    // COMPANY SETTING
+    // ================================
+    Route::prefix('{companyCode}/settings')->group(function () {
+        Route::get('/', [CompanySettingController::class, 'edit'])->name('settings.edit');
+        Route::post('/', [CompanySettingController::class, 'update'])->name('settings.update');
+    });
 });
 
 require __DIR__ . '/auth.php';
