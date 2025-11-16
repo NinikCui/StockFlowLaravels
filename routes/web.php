@@ -5,6 +5,7 @@ use App\Http\Controllers\Company\CompanySettingController;
 use App\Http\Controllers\Company\ItemController;
 use App\Http\Controllers\Company\PegawaiController;
 use App\Http\Controllers\Company\SatuanController;
+use App\Http\Controllers\Company\SupplierController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantDashboardController;
 use Illuminate\Support\Facades\Route;
@@ -133,6 +134,18 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::delete('/{id}', [ItemController::class, 'destroy'])->name('item.destroy');
     });
 
+    Route::prefix('{companyCode}/supplier')->group(function () {
+
+        Route::get('/', [SupplierController::class, 'index'])->name('supplier.index');
+
+        Route::get('/create', [SupplierController::class, 'create'])->name('supplier.create');
+        Route::post('/', [SupplierController::class, 'store'])->name('supplier.store');
+
+        Route::get('/{id}/edit', [SupplierController::class, 'edit'])->name('supplier.edit');
+        Route::put('/{id}', [SupplierController::class, 'update'])->name('supplier.update');
+
+        Route::delete('/{id}', [SupplierController::class, 'destroy'])->name('supplier.destroy');
+    });
 });
 
 require __DIR__ . '/auth.php';

@@ -292,37 +292,33 @@ return new class extends Migration
         });
 
         
-
-     
-
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
 
-            // FK ke companies
             $table->unsignedBigInteger('company_id');
 
-            $table->string('name', 45);
-            $table->string('code', 45);
-            $table->string('contact_name', 45);
-            $table->string('phone', 45);
-            $table->string('email', 45);
-            $table->string('address', 45);
+            $table->string('name', 100);         // nama supplier (wajib)
+            $table->string('contact_name', 100)->nullable(); // PIC
+            $table->string('phone', 50)->nullable();
+            $table->string('email', 100)->nullable();
+            $table->string('address', 255)->nullable();
+            $table->string('city', 100)->nullable();
 
-            // rating supplier (nullable)
-            $table->decimal('rating', 3, 2)->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->text('notes')->nullable();
 
-            // custom timestamps
-            $table->timestamp('created_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
+            $table->timestamps();
 
-            // FK
             $table->foreign('company_id')
                 ->references('id')->on('companies')
-                ->onDelete('cascade');
+                ->cascadeOnDelete();
 
-            // Index sesuai Prisma
-            $table->index('company_id', 'fk_suppliers_companies1_idx');
+            $table->index('company_id');
+            $table->index('name');
         });
+     
+
+
         Schema::create('items', function (Blueprint $table) {
             $table->id();
 
