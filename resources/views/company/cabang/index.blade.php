@@ -27,10 +27,11 @@
                         🔄 Segarkan
                     </a>
 
-                    <a href="/{{ strtolower($companyCode) }}/cabang/tambah"
-                       class="px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-sm shadow transition">
-                        + Tambah Cabang  
-                    </a>
+                    <x-add-button 
+                        href="cabang/tambah"
+                        text="+ Tambah Cabang"
+                        variant="primary"
+                    />
                 </div>
 
             </div>

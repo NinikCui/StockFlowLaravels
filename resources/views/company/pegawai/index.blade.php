@@ -15,11 +15,11 @@
                     🔄 Muat Ulang
                 </button>
 
-                {{-- Add Pegawai --}}
-                <a href="/{{ strtolower($companyCode) }}/pegawai/tambah"
-                    class="px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm">
-                    ➕ Tambah Pegawai
-                </a>
+                <x-add-button 
+                        href="/pegawai/tambah"
+                        text="+ Tambah Pegawai"
+                        variant="primary"
+                    />
             </div>
         </div>
 

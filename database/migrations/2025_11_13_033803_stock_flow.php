@@ -264,10 +264,20 @@ return new class extends Migration
             $table->string('symbol', 45);
         });
 
-        Schema::create('kategori', function (Blueprint $table) {
+        Schema::create('categories', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 45);
-            $table->string('code', 45);
+
+            // Tenant-level (company scoped)
+            $table->unsignedBigInteger('company_id');
+
+            $table->string('name');
+            $table->string('code')->unique();
+            $table->boolean('is_active')->default(true);
+
+            $table->timestamps();
+
+            // Foreign key
+            $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
         });
 
         
@@ -305,7 +315,7 @@ return new class extends Migration
         Schema::create('items', function (Blueprint $table) {
             $table->id();
 
-            $table->unsignedBigInteger('kategori_id');
+            $table->unsignedBigInteger('category_id');
             $table->unsignedBigInteger('satuan_id');
 
             $table->string('name', 45);
@@ -318,8 +328,8 @@ return new class extends Migration
             $table->unsignedBigInteger('suppliers_id')->nullable();
 
             // FK
-            $table->foreign('kategori_id')
-                ->references('id')->on('kategori')
+            $table->foreign('category_id')
+                ->references('id')->on('categories')
                 ->onDelete('cascade');
 
             $table->foreign('satuan_id')
@@ -331,7 +341,7 @@ return new class extends Migration
                 ->nullOnDelete();
 
             // Indexes
-            $table->index('kategori_id', 'fk_items_kategori1_idx');
+            $table->index('category_id', 'fk_items_category_id_idx');
             $table->index('satuan_id', 'fk_items_satuan1_idx');
             $table->index('suppliers_id', 'fk_items_suppliers1_idx');
         });
@@ -546,7 +556,7 @@ return new class extends Migration
         Schema::dropIfExists('cabang_resto');
         Schema::dropIfExists('warehouse');
         Schema::dropIfExists('satuan');
-        Schema::dropIfExists('kategori');
+        Schema::dropIfExists('categories');
         Schema::dropIfExists('items');
         Schema::dropIfExists('stocks');
         Schema::dropIfExists('suppliers');

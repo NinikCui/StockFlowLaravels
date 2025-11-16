@@ -14,10 +14,12 @@
                 🔄 <span>Refresh</span>
             </a>
 
-            <a href="{{ route('roles.create', $companyCode) }}"
-               class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow">
-                ➕ <span>Tambah Role</span>
-            </a>
+
+            <x-add-button 
+                        href="/pegawai/roles/tambah"
+                        text="+ Tambah Roles"
+                        variant="primary"
+                    />
         </div>
     </div>
 

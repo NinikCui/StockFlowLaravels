@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 
-    class CabangController extends Controller{
+class CabangController extends Controller{
     public function index(Request $request, $companyCode)
     {
         // Cari company berdasarkan code tenant

@@ -10,9 +10,9 @@
 
     // ========== MENU ITEMS (fixed href) ========== //
     $items = [
-    [
-        'label' => 'Dashboard',
-        'href'  => "/$prefix/dashboard",
+        [
+            'label' => 'Dashboard',
+            'href'  => "/$prefix/dashboard",
         ],
 
         [
@@ -33,11 +33,23 @@
                 ['label' => 'Role & Akses',   'href' => "/$prefix/pegawai/roles"],
             ]
         ],
+
+        [
+            'label' => 'Produk',
+            'href'  => "/$prefix/product",
+            'children' => [
+                ['label' => 'Kategori', 'href' => "/$prefix/product/categories"],
+                ['label' => 'Item',     'href' => "/$prefix/product/items"],
+                ['label' => 'Satuan',   'href' => "/$prefix/product/units"],
+            ]
+        ],
+
         [
             'label' => 'Pengaturan Perusahaan',
             'href'  => "/$companyCode/settings/general",
         ]
     ];
+
 
 
     // ===== ACTIVE CHECK FUNCTIONS =====

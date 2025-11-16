@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Company\CategoryController;
 use App\Http\Controllers\Company\CompanySettingController;
 use App\Http\Controllers\Company\PegawaiController;
 use App\Http\Controllers\ProfileController;
@@ -76,6 +77,27 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         
         Route::get('/general', [CompanySettingController::class, 'general'])->name('settings.general');
         Route::post('/general', [CompanySettingController::class, 'generalUpdate'])->name('settings.general.update');
+    });
+
+    Route::prefix('{companyCode}/product/categories')->group(function () {
+
+        Route::get('/', [CategoryController::class, 'index'])
+            ->name('category.index');
+
+        Route::get('/create', [CategoryController::class, 'create'])
+            ->name('category.create');
+
+        Route::post('/', [CategoryController::class, 'store'])
+            ->name('category.store');
+
+        Route::get('/{code}/edit', [CategoryController::class, 'edit'])
+            ->name('category.edit');
+
+        Route::put('/{code}', [CategoryController::class, 'update'])
+            ->name('category.update');
+
+        Route::delete('/{code}', [CategoryController::class, 'destroy'])
+            ->name('category.destroy');
     });
 });
 
