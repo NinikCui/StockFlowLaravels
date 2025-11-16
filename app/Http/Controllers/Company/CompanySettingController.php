@@ -13,46 +13,92 @@ use Illuminate\Validation\Rule;
 
 class CompanySettingController extends Controller
 {
-    public function edit($companyCode)
+    public function general($companyCode)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
 
-        // Ambil semua setting
         $settings = CompanySetting::where('companies_id', $company->id)
             ->pluck('value', 'key')
             ->toArray();
 
-        return view('company.settings.edit', [
-            'companyCode' => $companyCode,
+        return view('company.settings.general', [
+            'company' => $company,
             'settings' => $settings,
+            'companyCode' => $companyCode,
         ]);
     }
 
-    public function update(Request $request, $companyCode)
+    public function generalUpdate(Request $request, $companyCode)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
 
+        // VALIDASI TEXT
         $data = $request->validate([
-            'company_name' => 'nullable|string|max:255',
-            'primary_color' => 'nullable|string|max:20',
-            'secondary_color' => 'nullable|string|max:20',
-            'ppn_rate' => 'nullable|numeric|min:0|max:100',
-            'service_charge' => 'nullable|numeric|min:0|max:100',
-            'receipt_footer' => 'nullable|string|max:500',
+            'address' => 'nullable|string|max:255',
+            'phone'   => 'nullable|string|max:50',
+            'email'   => 'nullable|email|max:255',
+            'website' => 'nullable|string|max:255',
+            'footer_text' => 'nullable|string|max:255',
+            'established_year' => 'nullable|numeric|min:1900|max:' . date('Y'),
         ]);
 
+        // VALIDASI LOGO FILE
+        $request->validate([
+            'logo' => 'nullable|file|mimes:jpg,png,jpeg,webp|max:2048',
+        ], [
+            'logo.mimes' => 'Logo harus berupa file JPG, JPEG, PNG, atau WEBP.',
+            'logo.max'   => 'Ukuran logo maksimal 2 MB.',
+        ]);
+
+        // SIMPAN TEXT SETTING
         foreach ($data as $key => $value) {
             CompanySetting::updateOrCreate(
                 [
                     'companies_id' => $company->id,
-                    'key' => "global.$key",
+                    'key' => "general.$key",
                 ],
                 ['value' => $value]
             );
         }
 
-        return redirect()
-            ->back()
-            ->with('success', 'Pengaturan perusahaan berhasil diperbarui.');
+        // === PROSES LOGO BARU ===
+        if ($request->hasFile('logo')) {
+
+            // AMBIL LOGO LAMA
+            $old = CompanySetting::where('companies_id', $company->id)
+                ->where('key', 'general.logo')
+                ->first();
+
+            // HAPUS FILE LAMA
+            if ($old && $old->value) {
+                $oldPath = str_replace('/storage/', '', $old->value);
+
+                if (\Storage::disk('public')->exists($oldPath)) {
+                    \Storage::disk('public')->delete($oldPath);
+                }
+            }
+
+            // SIMPAN LOGO BARU
+            $path = $request->file('logo')->store(
+                "company/{$company->id}/logo",
+                'public'
+            );
+
+            // SIMPAN KE DATABASE
+            CompanySetting::updateOrCreate(
+                [
+                    'companies_id' => $company->id,
+                    'key' => "general.logo",
+                ],
+                [
+                    'value' => "/storage/" . $path,
+                ]
+            );
+        }
+
+        return back()->with('success', 'Pengaturan General berhasil disimpan.');
     }
+
+
+
 }

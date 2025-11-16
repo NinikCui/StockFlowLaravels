@@ -27,9 +27,7 @@ class RegisteredUserController extends Controller
     }
     public function store(Request $request)
     {
-        // ============================================
-        // 1️⃣ VALIDASI FORM
-        // ============================================
+        
         $data = $request->validate([
             'companyName' => 'required|string|max:255',
             'companyCode' => 'nullable|string|max:20',
@@ -40,10 +38,7 @@ class RegisteredUserController extends Controller
         ]);
 
         try {
-            // ============================================
-            // Jalankan semua langkah dalam transaksi
-            // jika gagal → rollback otomatis
-            // ============================================
+            
             $result = DB::transaction(function () use ($data) {
 
                 // =================================================

@@ -12,7 +12,7 @@ class Company extends Model
         'name', 'code', 'timezone', 'tax_id', 'created_at', 'updated_at'
     ];
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     public function roles()
     {

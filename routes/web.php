@@ -73,8 +73,9 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
     // COMPANY SETTING
     // ================================
     Route::prefix('{companyCode}/settings')->group(function () {
-        Route::get('/', [CompanySettingController::class, 'edit'])->name('settings.edit');
-        Route::post('/', [CompanySettingController::class, 'update'])->name('settings.update');
+        
+        Route::get('/general', [CompanySettingController::class, 'general'])->name('settings.general');
+        Route::post('/general', [CompanySettingController::class, 'generalUpdate'])->name('settings.general.update');
     });
 });
 
