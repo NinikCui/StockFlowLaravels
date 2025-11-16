@@ -148,6 +148,14 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
 
         Route::get('/{id}', [SupplierController::class, 'show'])->name('supplier.show');
 
+        Route::prefix('{supplier}')->group(function () {
+
+            Route::post('/items', [SupplierController::class, 'itemStore'])->name('supplier.items.store');
+
+            Route::put('/items/{item}', [SupplierController::class, 'itemUpdate'])->name('supplier.items.update');
+
+            Route::delete('/items/{item}', [SupplierController::class, 'itemDestroy'])->name('supplier.items.destroy');
+        });
     });
 });
 

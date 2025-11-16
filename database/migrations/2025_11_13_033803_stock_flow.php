@@ -396,7 +396,7 @@ return new class extends Migration
             $table->unsignedBigInteger('items_id');
 
             $table->decimal('price', 16, 4);
-            $table->decimal('min_order_tqy', 16, 4);
+            $table->decimal('min_order_qty', 16, 4);
             $table->timestamp('last_price_update');
             $table->timestamp('created_at')->nullable();
             $table->timestamp('updated_at')->nullable();

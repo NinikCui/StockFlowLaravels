@@ -37,5 +37,155 @@
         @include('company.supplier.partials.performance')
     @endif
 
+
+    <dialog id="modalAddItem" class="modal backdrop:bg-black/40">
+
+        <form method="POST"
+            action="{{ route('supplier.items.store', [$companyCode, $supplier->id]) }}"
+            class="bg-white p-6 rounded-xl w-[420px] shadow-xl space-y-5">
+            @csrf
+
+            <input type="hidden" name="modal" value="add">
+
+            <h2 class="text-lg font-bold text-gray-900">Tambah Item ke Supplier</h2>
+
+            {{-- ITEM --}}
+            <div>
+                <label class="text-sm font-medium text-gray-700">Pilih Item</label>
+                <select name="items_id"
+                        class="w-full mt-1 px-3 py-2 border rounded-lg text-sm
+                        @error('items_id') border-red-500 bg-red-50 @else border-gray-300 @enderror">
+                    <option value="">— Pilih Item —</option>
+
+                    @foreach ($allItems as $it)
+                        <option value="{{ $it->id }}" {{ old('items_id') == $it->id ? 'selected' : '' }}>
+                            {{ $it->name }}
+                        </option>
+                    @endforeach
+                </select>
+
+                @error('items_id')
+                    <p class="text-xs text-red-600 mt-1">
+                        {{ $message }}
+                    </p>
+                @enderror
+            </div>
+
+            {{-- HARGA --}}
+            <div>
+                <label class="text-sm font-medium text-gray-700">Harga Beli</label>
+                <input type="number" name="price" min="0" step="1"
+                    class="w-full mt-1 px-3 py-2 border rounded-lg text-sm
+                        @error('price') border-red-500 bg-red-50 @else border-gray-300 @enderror"
+                    value="{{ old('price') }}"
+                    placeholder="Contoh: 15000">
+
+                @error('price')
+                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- MOQ --}}
+            <div>
+                <label class="text-sm font-medium text-gray-700">Minimum Order (Qty)</label>
+                <input type="number" min="0" step="1" name="min_order_qty"
+                    class="w-full mt-1 px-3 py-2 border rounded-lg text-sm
+                        @error('min_order_qty') border-red-500 bg-red-50 @else border-gray-300 @enderror"
+                    value="{{ old('min_order_qty', 0) }}">
+
+                @error('min_order_qty')
+                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- BUTTON --}}
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="modalAddItem.close()"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300">
+                    Batal
+                </button>
+
+                <button class="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700">
+                    Simpan
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    @if ($errors->any() && session('modal') === 'add')
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                modalAddItem.showModal();
+            });
+        </script>
+    @endif
+    <dialog id="modalEditItem" class="modal backdrop:bg-black/40">
+
+        <form method="POST" id="formEditItem"
+            class="bg-white p-6 rounded-xl w-[420px] shadow-xl space-y-5">
+            @csrf
+            @method('PUT')
+
+            <input type="hidden" name="modal" value="edit">
+
+            <h2 class="text-lg font-bold text-gray-900">Edit Item Supplier</h2>
+
+            {{-- HARGA --}}
+            <div>
+                <label class="text-sm font-medium text-gray-700">Harga Beli</label>
+                <input id="editPrice" name="price" type="number" min="0"
+                    class="w-full mt-1 px-3 py-2 border rounded-lg text-sm
+                        @error('price') border-red-500 bg-red-50 @else border-gray-300 @enderror">
+
+                @error('price')
+                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            {{-- MOQ --}}
+            <div>
+                <label class="text-sm font-medium text-gray-700">Minimum Order (Qty)</label>
+                <input id="editMinOrder" name="min_order_qty" type="number" min="0"
+                    class="w-full mt-1 px-3 py-2 border rounded-lg text-sm
+                        @error('min_order_qty') border-red-500 bg-red-50 @else border-gray-300 @enderror">
+
+                @error('min_order_qty')
+                    <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="modalEditItem.close()"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300">
+                    Batal
+                </button>
+
+                <button class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
+                    Update
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    @if ($errors->any() && session('modal') === 'edit')
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                modalEditItem.showModal();
+            });
+        </script>
+    @endif
+    
+    <script>
+    function openEditItem(id, price, minOrderQty) {
+
+        document.getElementById('editPrice').value = price ?? 0;
+        document.getElementById('editMinOrder').value = minOrderQty ?? 0;
+
+        document.getElementById('formEditItem').action =
+            `/${'{{ strtolower($companyCode) }}'}/supplier/{{ $supplier->id }}/items/${id}`;
+
+        modalEditItem.showModal();
+    }
+    </script>
 </main>
 </x-app-layout>

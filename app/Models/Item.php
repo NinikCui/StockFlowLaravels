@@ -32,11 +32,12 @@ class Item extends Model
         return $this->belongsTo(Satuan::class, 'satuan_id');
     }
 
-    public function supplier()
+    public function suppliers()
     {
-        return $this->belongsTo(Supplier::class, 'suppliers_id');
+        return $this->belongsToMany(Supplier::class, 'suppliers_item', 'items_id', 'suppliers_id')
+            ->withPivot(['price', 'min_order_qty', 'last_price_update'])
+            ->withTimestamps();
     }
-
     public function demandDaily()
     {
         return $this->hasMany(DemandDaily::class, 'items_id');

@@ -32,9 +32,11 @@ class Supplier extends Model
         return $this->hasMany(PurchaseOrder::class, 'suppliers_id');
     }
 
-    public function supplierItems()
+    public function suppliedItems()
     {
-        return $this->hasMany(SuppliersItem::class, 'suppliers_id');
+        return $this->belongsToMany(Item::class, 'suppliers_item', 'suppliers_id', 'items_id')
+            ->withPivot(['price', 'min_order_qty', 'last_price_update'])
+            ->withTimestamps();
     }
 
     public function items()
