@@ -145,6 +145,9 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::put('/{id}', [SupplierController::class, 'update'])->name('supplier.update');
 
         Route::delete('/{id}', [SupplierController::class, 'destroy'])->name('supplier.destroy');
+
+        Route::get('/{id}', [SupplierController::class, 'show'])->name('supplier.show');
+
     });
 });
 

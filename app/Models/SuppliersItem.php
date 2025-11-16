@@ -14,11 +14,9 @@ class SuppliersItem extends Model
         'price',
         'min_order_tqy',
         'last_price_update',
-        'created_at',
-        'updated_at'
     ];
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     public function supplier()
     {

@@ -59,9 +59,21 @@
                           class="w-full border rounded-lg px-4 py-2"></textarea>
             </div>
 
-            <button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
-                Simpan Supplier
-            </button>
+             <div class="pt-6 border-t border-gray-200 flex justify-end gap-3">
+
+                <a href="{{ route('supplier.index', $companyCode) }}"
+                    class="px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-700 
+                         hover:bg-gray-100 text-sm shadow-sm transition">
+                        Batal
+                </a>
+
+                <button type="submit"
+                        class="px-5 py-2.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 
+                                text-sm shadow-sm transition">
+                    Simpan
+                </button>
+
+            </div>
         </form>
     </div>
 

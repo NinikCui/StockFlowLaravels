@@ -88,8 +88,7 @@ class SupplierController extends Controller
             'notes'        => $request->notes,
             'is_active'    => $request->is_active ?? false,
         ]);
-
-        return redirect()->route('supplier.index', $companyCode)
+        return redirect()->route('supplier.show',[ $companyCode,$supplier->id])
             ->with('success', 'Data supplier berhasil diperbarui.');
     }
 
@@ -101,5 +100,16 @@ class SupplierController extends Controller
 
         return redirect()->route('supplier.index', $companyCode)
             ->with('success', 'Supplier berhasil dihapus.');
+    }
+
+    //DETAIL
+    public function show($companyCode, $id)
+    {
+        $supplier = Supplier::with([
+            'items.item.satuan',
+            'scores'
+        ])->findOrFail($id);
+
+        return view('company.supplier.detail', compact('supplier', 'companyCode'));
     }
 }
