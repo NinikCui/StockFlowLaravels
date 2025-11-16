@@ -167,6 +167,7 @@ class CabangController extends Controller{
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50',
             'is_active' => 'required|boolean',
+            'address' => "required|string",
             'manager_user_id' => 'nullable|exists:users,id',
         ]);
 
@@ -177,6 +178,7 @@ class CabangController extends Controller{
         $cabang->update([
             'name' => $request->name,
             'code' => strtoupper($request->code),
+            'address' => $request->address,
             'is_active' => $request->is_active,
             'manager_user_id' => $request->manager_user_id,
         ]);

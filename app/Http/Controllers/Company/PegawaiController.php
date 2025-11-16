@@ -49,27 +49,26 @@ class PegawaiController extends Controller
         $companyId = session('role.company.id');
 
         if (!$companyId) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Session tidak valid'
-            ], 400);
+            return redirect()->back()
+                ->with('error', 'Session tidak valid.');
         }
 
-        $user = User::find($id);
+        $user = User::where('id', $id)
+                    ->first();
+        $cekRoles = Role::where("company_id",$companyId )->first();
 
-        if (!$user) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Pegawai tidak ditemukan'
-            ], 404);
+        if (!$cekRoles) {
+            return redirect()->back()
+                ->with('error', 'Pegawai tidak ditemukan atau tidak milik perusahaan ini.');
         }
 
+        // Delete user
         $user->delete();
 
-        return response()->json([
-            'ok' => true,
-            'message' => 'Pegawai berhasil dihapus'
-        ]);
+        // Redirect ke daftar pegawai
+        return redirect()
+            ->route('pegawai.index', $companyCode)
+            ->with('success', 'Pegawai berhasil dihapus.');
     }
 
     public function create(Request $req, $companyCode)

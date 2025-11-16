@@ -39,6 +39,9 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/edit/{id}', [PegawaiController::class, 'edit'])->name('pegawai.edit');
         Route::put('/{id}', [PegawaiController::class, 'update'])->name('pegawai.update');
 
+        //DELTE PEGAWAI
+        Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('pegawai.destroy');
+
         // ROLE MANAGEMENT
         Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
         Route::get('/roles/tambah', [RoleController::class, 'create'])->name('roles.create');
