@@ -18,7 +18,7 @@ class RoleController extends Controller
         $company = Company::where('code', $companyCode)->firstOrFail();
 
         $query = Role::query()
-            ->where('companies_id', $company->id);
+            ->where('company_id', $company->id);
 
         // === FILTER CABANG ===
         if ($request->filterCabang && $request->filterCabang !== 'all') {
@@ -86,7 +86,7 @@ class RoleController extends Controller
             : ($validated['cabangRestoId'] ?? null);
 
 
-        $exists = Role::where('companies_id', $company->id)
+        $exists = Role::where('company_id', $company->id)
             ->where('code', $validated['code'])
             ->exists();
 
@@ -95,7 +95,7 @@ class RoleController extends Controller
         }
 
         $role = Role::create([
-            'companies_id'    => $company->id,
+            'company_id'    => $company->id,
             'name'            => $validated['name'],
             'code'            => $validated['code'],
             'cabang_resto_id' => $cabangRestoId,
@@ -110,7 +110,7 @@ class RoleController extends Controller
 
             $perm = Permission::updateOrCreate(
                 [
-                    'companies_id' => $company->id,
+                    'company_id' => $company->id,
                     'code' => $permCode
                 ],
                 [
@@ -141,7 +141,7 @@ class RoleController extends Controller
         $company = Company::where('code', $companyCode)->firstOrFail();
 
         $role = Role::with(['permissions', 'cabangResto'])
-            ->where('companies_id', $company->id)
+            ->where('company_id', $company->id)
             ->where('code', $code)
             ->firstOrFail();
 
@@ -171,7 +171,7 @@ class RoleController extends Controller
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
 
-        $role = Role::where('companies_id', $company->id)
+        $role = Role::where('company_id', $company->id)
             ->where('code', $code)
             ->firstOrFail();
 
@@ -196,7 +196,7 @@ class RoleController extends Controller
         $company = Company::where('code', $companyCode)->firstOrFail();
 
         $role = Role::with(['permissions', 'cabangResto'])
-            ->where('companies_id', $company->id)
+            ->where('company_id', $company->id)
             ->where('code', $code)
             ->firstOrFail();
 
@@ -214,7 +214,7 @@ class RoleController extends Controller
             ];
         });
 
-        $cabangList = CabangResto::where('companies_id', $company->id)->get();
+        $cabangList = CabangResto::where('company_id', $company->id)->get();
 
         return view('company.roles.edit', [
             'role'        => $role,
@@ -228,7 +228,7 @@ class RoleController extends Controller
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
 
-        $role = Role::where('companies_id', $company->id)
+        $role = Role::where('company_id', $company->id)
             ->where('code', $oldCode)
             ->firstOrFail();
 
@@ -277,7 +277,7 @@ class RoleController extends Controller
         // UNIVERSAL ROLE (tidak punya cabang)
         if ($universal === "true") {
             $roles = Role::whereNull('cabang_resto_id')
-                ->where('companies_id', $companyId)
+                ->where('company_id', $companyId)
                 ->orderBy('name')
                 ->get(['id','name','code']);
 
@@ -287,7 +287,7 @@ class RoleController extends Controller
         // CABANG ROLE
         if ($branchId) {
             $roles = Role::where('cabang_resto_id', $branchId)
-                ->where('companies_id', $companyId)
+                ->where('company_id', $companyId)
                 ->orderBy('name')
                 ->get(['id','name','code']);
 

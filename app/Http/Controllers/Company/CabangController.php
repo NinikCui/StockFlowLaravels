@@ -19,7 +19,7 @@ class CabangController extends Controller{
         // Query dasar
         $query = CabangResto::with([
             'manager:id,username,email',   // load manager
-        ])->where('companies_id', $company->id);
+        ])->where('company_id', $company->id);
 
         /** ------------------------------
          * 🔍 FILTER STATUS
@@ -87,7 +87,7 @@ class CabangController extends Controller{
                 'required',
                 'max:100',
                 Rule::unique('cabang_resto', 'code')
-                    ->where('companies_id', $company->id), // 🔥 unique per company
+                    ->where('company_id', $company->id), // 🔥 unique per company
             ],
             'city' => 'required',
             'address' => 'nullable',
@@ -95,7 +95,7 @@ class CabangController extends Controller{
         ]);
 
         CabangResto::create([
-            'companies_id' => $company->id,
+            'company_id' => $company->id,
             ...$validated,
         ]);
 
@@ -113,7 +113,7 @@ class CabangController extends Controller{
         }
 
         // Ambil cabang berdasarkan CODE (bukan ID)
-        $cabang = CabangResto::where('companies_id', $companyId)
+        $cabang = CabangResto::where('company_id', $companyId)
             ->where('code', $code)
             ->firstOrFail();
 
@@ -143,7 +143,7 @@ class CabangController extends Controller{
         $companyId = session('role.company.id');
 
         // Ambil data cabang berdasarkan kode
-        $cabang = CabangResto::where('companies_id', $companyId)
+        $cabang = CabangResto::where('company_id', $companyId)
                     ->where('code', $code)
                     ->firstOrFail();
 
@@ -170,7 +170,7 @@ class CabangController extends Controller{
             'manager_user_id' => 'nullable|exists:users,id',
         ]);
 
-        $cabang = CabangResto::where('companies_id', $companyId)
+        $cabang = CabangResto::where('company_id', $companyId)
                     ->where('code', $code)
                     ->firstOrFail();
 

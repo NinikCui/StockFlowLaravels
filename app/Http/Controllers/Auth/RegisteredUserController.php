@@ -69,7 +69,7 @@ class RegisteredUserController extends Controller
                 // 5️⃣ INSERT ROLE OWNER
                 // =================================================
                 $role = Role::create([
-                    'companies_id' => $company->id,
+                    'company_id' => $company->id,
                     'code' => 'OWNER',
                     'name' => 'Owner',
                     'is_universal' => false,
@@ -85,7 +85,7 @@ class RegisteredUserController extends Controller
                     'password' => Hash::make($data['password']),
                     'roles_id' => $role->id,
                     'is_active' => true,
-                    'companies_id' => $company->id,
+                    'company_id' => $company->id,
                 ]);
 
                 return [

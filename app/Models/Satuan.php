@@ -8,9 +8,14 @@ class Satuan extends Model
 {
     protected $table = 'satuan';
 
-    protected $fillable = ['name', 'symbol'];
+    protected $fillable = [
+        'company_id',
+        'name',
+        'code',
+        'is_active',
+    ];
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     public function items()
     {
@@ -25,5 +30,10 @@ class Satuan extends Model
     public function conversionsTo()
     {
         return $this->hasMany(UnitConversion::class, 'to_satuan_id');
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

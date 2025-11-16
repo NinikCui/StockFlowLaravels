@@ -17,7 +17,7 @@ class CompanySettingController extends Controller
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
 
-        $settings = CompanySetting::where('companies_id', $company->id)
+        $settings = CompanySetting::where('company_id', $company->id)
             ->pluck('value', 'key')
             ->toArray();
 
@@ -54,7 +54,7 @@ class CompanySettingController extends Controller
         foreach ($data as $key => $value) {
             CompanySetting::updateOrCreate(
                 [
-                    'companies_id' => $company->id,
+                    'company_id' => $company->id,
                     'key' => "general.$key",
                 ],
                 ['value' => $value]
@@ -65,7 +65,7 @@ class CompanySettingController extends Controller
         if ($request->hasFile('logo')) {
 
             // AMBIL LOGO LAMA
-            $old = CompanySetting::where('companies_id', $company->id)
+            $old = CompanySetting::where('company_id', $company->id)
                 ->where('key', 'general.logo')
                 ->first();
 
@@ -87,7 +87,7 @@ class CompanySettingController extends Controller
             // SIMPAN KE DATABASE
             CompanySetting::updateOrCreate(
                 [
-                    'companies_id' => $company->id,
+                    'company_id' => $company->id,
                     'key' => "general.logo",
                 ],
                 [

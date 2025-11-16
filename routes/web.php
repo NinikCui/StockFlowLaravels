@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Company\CategoryController;
 use App\Http\Controllers\Company\CompanySettingController;
+use App\Http\Controllers\Company\ItemController;
 use App\Http\Controllers\Company\PegawaiController;
+use App\Http\Controllers\Company\SatuanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantDashboardController;
 use Illuminate\Support\Facades\Route;
@@ -99,6 +101,35 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::delete('/{code}', [CategoryController::class, 'destroy'])
             ->name('category.destroy');
     });
+    Route::prefix('{companyCode}/product/satuan')->group(function () {
+
+        Route::get('/', [SatuanController::class, 'index'])->name('satuan.index');
+
+        Route::get('/create', [SatuanController::class, 'create'])->name('satuan.create');
+
+        Route::post('/', [SatuanController::class, 'store'])->name('satuan.store');
+
+        Route::get('/{code}/edit', [SatuanController::class, 'edit'])->name('satuan.edit');
+
+        Route::put('/{code}', [SatuanController::class, 'update'])->name('satuan.update');
+
+        Route::delete('/{code}', [SatuanController::class, 'destroy'])->name('satuan.destroy');
+    });
+        Route::prefix('{companyCode}/product/items')->group(function () {
+
+        Route::get('/', [ItemController::class, 'index'])->name('item.index');
+
+        Route::get('/create', [ItemController::class, 'create'])->name('item.create');
+
+        Route::post('/', [ItemController::class, 'store'])->name('item.store');
+
+        Route::get('/{id}/edit', [ItemController::class, 'edit'])->name('item.edit');
+
+        Route::put('/{id}', [ItemController::class, 'update'])->name('item.update');
+
+        Route::delete('/{id}', [ItemController::class, 'destroy'])->name('item.destroy');
+    });
+
 });
 
 require __DIR__ . '/auth.php';

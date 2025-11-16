@@ -8,22 +8,23 @@ class Item extends Model
 {
     protected $table = 'items';
 
-    protected $fillable = [
-        'kategori_id',
+      protected $fillable = [
+        'company_id',
+        'category_id',
         'satuan_id',
         'name',
         'mudah_rusak',
         'min_stock',
         'max_stock',
         'forecast_enabled',
-        'suppliers_id'
+        'suppliers_id',
     ];
 
     public $timestamps = false;
 
     public function kategori()
     {
-        return $this->belongsTo(Kategori::class, 'kategori_id');
+        return $this->belongsTo(Category::class, 'category_id');
     }
 
     public function satuan()

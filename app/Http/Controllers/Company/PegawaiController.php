@@ -20,7 +20,7 @@ class PegawaiController extends Controller
             abort(403, "Session perusahaan tidak valid");
         }
 
-        $roleIds = Role::where('companies_id', $companyId)->pluck('id');
+        $roleIds = Role::where('company_id', $companyId)->pluck('id');
 
         $pegawai = User::with([
                 'role',
@@ -77,7 +77,7 @@ class PegawaiController extends Controller
         $companyId = session('role.company.id');
 
         // Ambil semua cabang perusahaan
-        $branches = CabangResto::where('companies_id', $companyId)
+        $branches = CabangResto::where('company_id', $companyId)
             ->orderBy('name')
             ->get(['id','name','code']);
 
@@ -117,12 +117,12 @@ class PegawaiController extends Controller
             ->firstOrFail();
 
         // Cabang yang dimiliki company ini
-        $branches = CabangResto::where('companies_id', $companyId)->get();
+        $branches = CabangResto::where('company_id', $companyId)->get();
 
         // Role universal OR role cabang pegawai (untuk default tampilan)
         $isUniversal = $pegawai->role->cabang_resto_id == null;
 
-        $roles = Role::where('companies_id', $companyId)
+        $roles = Role::where('company_id', $companyId)
             ->when($isUniversal, function ($q) {
                 $q->whereNull('cabang_resto_id');
             })

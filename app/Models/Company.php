@@ -16,21 +16,21 @@ class Company extends Model
 
     public function roles()
     {
-        return $this->hasMany(Role::class, 'companies_id');
+        return $this->hasMany(Role::class, 'company_id');
     }
 
     public function permissions()
     {
-        return $this->hasMany(Permission::class, 'companies_id');
+        return $this->hasMany(Permission::class, 'company_id');
     }
 
     public function cabang()
     {
-        return $this->hasMany(CabangResto::class, 'companies_id');
+        return $this->hasMany(CabangResto::class, 'company_id');
     }
 
     public function suppliers()
     {
-        return $this->hasMany(Supplier::class, 'companies_id');
+        return $this->hasMany(Supplier::class, 'company_id');
     }
 }

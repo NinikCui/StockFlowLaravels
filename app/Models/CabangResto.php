@@ -9,7 +9,7 @@ class CabangResto extends Model
     protected $table = 'cabang_resto';
 
     protected $fillable = [
-        'companies_id','name','code','address','city','phone',
+        'company_id','name','code','address','city','phone',
         'is_active','latitude','longitude','manager_user_id',
         'created_at','updated_at'
     ];
@@ -18,7 +18,7 @@ class CabangResto extends Model
 
     public function company()
     {
-        return $this->belongsTo(Company::class, 'companies_id');
+        return $this->belongsTo(Company::class, 'company_id');
     }
 
     public function manager()

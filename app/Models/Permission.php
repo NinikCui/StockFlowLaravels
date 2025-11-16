@@ -9,7 +9,7 @@ class Permission extends Model
     protected $table = 'permissions';
 
     protected $fillable = [
-        'companies_id','code','resource','action','description',
+        'company_id','code','resource','action','description',
         'scope','created_at','updated_at'
     ];
 
@@ -17,7 +17,7 @@ class Permission extends Model
 
     public function company()
     {
-        return $this->belongsTo(Company::class, 'companies_id');
+        return $this->belongsTo(Company::class, 'company_id');
     }
 
     public function rolePermissions()

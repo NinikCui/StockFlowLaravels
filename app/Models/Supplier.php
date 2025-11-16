@@ -9,7 +9,7 @@ class Supplier extends Model
     protected $table = 'suppliers';
 
     protected $fillable = [
-        'companies_id',
+        'company_id',
         'name',
         'code',
         'contact_name',
@@ -25,7 +25,7 @@ class Supplier extends Model
 
     public function company()
     {
-        return $this->belongsTo(Company::class, 'companies_id');
+        return $this->belongsTo(Company::class, 'company_id');
     }
 
     public function purchaseOrders()

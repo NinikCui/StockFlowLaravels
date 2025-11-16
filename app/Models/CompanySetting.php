@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class CompanySetting extends Model
 {
     protected $fillable = [
-        'companies_id',
+        'company_id',
         'key',
         'value',
     ];
@@ -18,6 +18,6 @@ class CompanySetting extends Model
 
     public function company()
     {
-        return $this->belongsTo(Company::class, 'companies_id');
+        return $this->belongsTo(Company::class, 'company_id');
     }
 }

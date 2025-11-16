@@ -40,8 +40,7 @@
             'children' => [
                 ['label' => 'Kategori', 'href' => "/$prefix/product/categories"],
                 ['label' => 'Item',     'href' => "/$prefix/product/items"],
-                ['label' => 'Satuan',   'href' => "/$prefix/product/units"],
-            ]
+                ['label' => 'Satuan',   'href' => "/$prefix/product/satuan"],            ]
         ],
 
         [

@@ -9,14 +9,14 @@ class Role extends Model
     protected $table = 'roles';
 
     protected $fillable = [
-        'companies_id', 'name', 'code', 'cabang_resto_id'
+        'company_id', 'name', 'code', 'cabang_resto_id'
     ];
 
     public $timestamps = false;
 
     public function company()
     {
-        return $this->belongsTo(Company::class, 'companies_id');
+        return $this->belongsTo(Company::class, 'company_id');
     }
 
     public function cabangResto()

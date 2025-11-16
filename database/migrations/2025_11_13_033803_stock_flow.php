@@ -34,7 +34,7 @@ return new class extends Migration
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
 
-            $table->unsignedBigInteger('companies_id');  // FK to companies
+            $table->unsignedBigInteger('company_id');  // FK to companies
             $table->string('name', 45);
             $table->string('code', 45);
 
@@ -42,7 +42,7 @@ return new class extends Migration
             $table->unsignedBigInteger('cabang_resto_id')->nullable();
 
             // FK companies
-            $table->foreign('companies_id')
+            $table->foreign('company_id')
                 ->references('id')->on('companies')
                 ->onDelete('cascade');
 
@@ -50,12 +50,12 @@ return new class extends Migration
 
             // Unique per perusahaan + cabang + kode
             $table->unique(
-                ['companies_id', 'cabang_resto_id', 'code'],
+                ['company_id', 'cabang_resto_id', 'code'],
                 'uq_roles_company_branch_code'
             );
 
             // Indexing (biar query cepat)
-            $table->index('companies_id', 'fk_roles_companies1_idx');
+            $table->index('company_id', 'fk_roles_companies1_idx');
             $table->index('cabang_resto_id', 'fk_roles_cabang_resto1_idx');
         });
 
@@ -100,7 +100,7 @@ return new class extends Migration
             $table->id();
 
             // FK ke companies
-            $table->unsignedBigInteger('companies_id');
+            $table->unsignedBigInteger('company_id');
 
             $table->string('name', 45);
             $table->string('code', 45);
@@ -122,13 +122,13 @@ return new class extends Migration
             $table->timestamp('updated_at')->nullable();
 
             // FK: company
-            $table->foreign('companies_id')
+            $table->foreign('company_id')
                 ->references('id')->on('companies')
                 ->onDelete('cascade');
 
 
             // index
-            $table->index('companies_id', 'fk_cabang_resto_companies_idx');
+            $table->index('company_id', 'fk_cabang_resto_company_idx');
         });
 
         Schema::table('roles', function (Blueprint $table) {
@@ -147,7 +147,7 @@ return new class extends Migration
         Schema::create('permissions', function (Blueprint $table) {
             $table->id();
 
-            $table->integer('companies_id')->nullable();
+            $table->integer('company_id')->nullable();
             $table->string('code', 80);
             $table->string('resource', 80);
             $table->string('action', 40);
@@ -161,8 +161,8 @@ return new class extends Migration
             $table->timestamp('updated_at')->useCurrent();
 
             // Unique & Index
-            $table->unique(['companies_id', 'code'], 'uq_permissions_company_code');
-            $table->index('companies_id', 'fk_permissions_companies1_idx');
+            $table->unique(['company_id', 'code'], 'uq_permissions_company_code');
+            $table->index('company_id', 'fk_permissions_companies1_idx');
         });
 
         
@@ -260,8 +260,19 @@ return new class extends Migration
 
         Schema::create('satuan', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 45);
-            $table->string('symbol', 45);
+
+            $table->unsignedBigInteger('company_id');
+
+            $table->string('name');
+            $table->string('code')->unique(); // KG, GR, PCS
+            $table->boolean('is_active')->default(true);
+
+            $table->timestamps();
+
+            $table->foreign('company_id')
+                  ->references('id')
+                  ->on('companies')
+                  ->cascadeOnDelete();
         });
 
         Schema::create('categories', function (Blueprint $table) {
@@ -288,7 +299,7 @@ return new class extends Migration
             $table->id();
 
             // FK ke companies
-            $table->unsignedBigInteger('companies_id');
+            $table->unsignedBigInteger('company_id');
 
             $table->string('name', 45);
             $table->string('code', 45);
@@ -305,46 +316,59 @@ return new class extends Migration
             $table->timestamp('updated_at')->nullable();
 
             // FK
-            $table->foreign('companies_id')
+            $table->foreign('company_id')
                 ->references('id')->on('companies')
                 ->onDelete('cascade');
 
             // Index sesuai Prisma
-            $table->index('companies_id', 'fk_suppliers_companies1_idx');
+            $table->index('company_id', 'fk_suppliers_companies1_idx');
         });
         Schema::create('items', function (Blueprint $table) {
             $table->id();
 
+            // Tenant scope
+            $table->unsignedBigInteger('company_id');
+
+            // Relasi utama
             $table->unsignedBigInteger('category_id');
             $table->unsignedBigInteger('satuan_id');
 
+            // Field item
             $table->string('name', 45);
-            $table->boolean('mudah_rusak');
-            $table->integer('min_stock');
-            $table->integer('max_stock');
-            $table->boolean('forecast_enabled');
+            $table->boolean('mudah_rusak')->default(false);      
+            $table->integer('min_stock')->default(0);
+            $table->integer('max_stock')->default(0);
+            $table->boolean('forecast_enabled')->default(false);
 
-            // supplier optional
+            // Supplier (opsional)
             $table->unsignedBigInteger('suppliers_id')->nullable();
 
+            $table->timestamps();
+
             // FK
+            $table->foreign('company_id')
+                ->references('id')->on('companies')
+                ->cascadeOnDelete();
+
             $table->foreign('category_id')
                 ->references('id')->on('categories')
-                ->onDelete('cascade');
+                ->cascadeOnDelete();
 
             $table->foreign('satuan_id')
                 ->references('id')->on('satuan')
-                ->onDelete('cascade');
+                ->cascadeOnDelete();
 
             $table->foreign('suppliers_id')
                 ->references('id')->on('suppliers')
                 ->nullOnDelete();
 
-            // Indexes
-            $table->index('category_id', 'fk_items_category_id_idx');
-            $table->index('satuan_id', 'fk_items_satuan1_idx');
-            $table->index('suppliers_id', 'fk_items_suppliers1_idx');
+            // Indexes untuk optimasi
+            $table->index('company_id');
+            $table->index('category_id');
+            $table->index('satuan_id');
+            $table->index('suppliers_id');
         });
+
            Schema::create('stocks', function (Blueprint $table) {
             $table->id();
 
