@@ -56,4 +56,8 @@ class Warehouse extends Model
     {
         return $this->hasMany(RestockRecommendation::class, 'warehouse_id');
     }
+    public function type()
+    {
+        return $this->belongsTo(WarehouseType::class, 'warehouse_type_id');
+    }
 }

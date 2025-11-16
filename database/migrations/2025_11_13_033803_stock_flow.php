@@ -237,27 +237,37 @@ return new class extends Migration
             $table->index('permission_id', 'fk_user_overrides_permissions1_idx');
             $table->index('cabang_resto_id', 'fk_user_overrides_cabang1_idx');
         });
-        Schema::create('warehouse', function (Blueprint $table) {
+        Schema::create('warehouse_types', function (Blueprint $table) {
             $table->id();
 
-            // FK ke cabang_resto
-            $table->unsignedBigInteger('cabang_resto_id');
+            $table->unsignedBigInteger('company_id');
 
+            $table->string('name', 50); 
+
+            $table->timestamps();
+
+            $table->foreign('company_id')
+                ->references('id')->on('companies')
+                ->onDelete('cascade');
+        });
+        Schema::create('warehouse', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('cabang_resto_id');
             $table->string('name', 45);
             $table->string('code', 45);
+            $table->unsignedBigInteger('warehouse_type_id')->nullable();
 
-            // ENUM column
-            $table->enum('type', ['MAIN', 'KITCHEN', 'BACKUP']);
-
-            // FK
+            
+            $table->foreign('warehouse_type_id')
+                ->references('id')->on('warehouse_types')
+                ->onDelete('set null');
             $table->foreign('cabang_resto_id')
                 ->references('id')->on('cabang_resto')
                 ->onDelete('cascade');
-
-            // Index
+                
             $table->index('cabang_resto_id', 'fk_werehouse_cabang_resto1_idx');
         });
-
+        
         Schema::create('satuan', function (Blueprint $table) {
             $table->id();
 
@@ -575,6 +585,7 @@ return new class extends Migration
         Schema::dropIfExists('roles');
         Schema::dropIfExists('cabang_resto');
         Schema::dropIfExists('warehouse');
+        Schema::dropIfExists('warehouse_type_id');
         Schema::dropIfExists('satuan');
         Schema::dropIfExists('categories');
         Schema::dropIfExists('items');

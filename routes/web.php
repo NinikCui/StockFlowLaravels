@@ -6,6 +6,7 @@ use App\Http\Controllers\Company\ItemController;
 use App\Http\Controllers\Company\PegawaiController;
 use App\Http\Controllers\Company\SatuanController;
 use App\Http\Controllers\Company\SupplierController;
+use App\Http\Controllers\Company\WarehouseTypeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TenantDashboardController;
 use Illuminate\Support\Facades\Route;
@@ -156,6 +157,11 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
 
             Route::delete('/items/{item}', [SupplierController::class, 'itemDestroy'])->name('supplier.items.destroy');
         });
+    });
+
+    Route::prefix('{companyCode}/warehouse-types')->group(function () {
+        Route::get('/', [WarehouseTypeController::class, 'index'])->name('warehouse-types.index');
+        Route::post('/', [WarehouseTypeController::class, 'store'])->name('warehouse-types.store');
     });
 });
 
