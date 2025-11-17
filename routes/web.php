@@ -170,6 +170,10 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/types',           [WarehouseController::class, 'typesIndex'])->name('warehouse.types.index');
         Route::post('/types',          [WarehouseController::class, 'typesStore'])->name('warehouse.types.store');
         Route::delete('/types/{id}',   [WarehouseController::class, 'typesDestroy'])->name('warehouse.types.destroy');
+
+
+        Route::get('/{id}', [WarehouseController::class, 'show'])->name('warehouse.show');
+
     });
 });
 

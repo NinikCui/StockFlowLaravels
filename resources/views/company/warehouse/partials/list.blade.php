@@ -24,9 +24,16 @@
                 <td class="px-4 py-2">{{ $w->name }}</td>
                 <td class="px-4 py-2">{{ $w->code }}</td>
                 <td class="px-4 py-2">{{ $w->type->name ?? '-' }}</td>
-                <td class="px-4 py-2 text-right">
+                <td class="px-4 py-2 text-right flex justify-end gap-3">
+                    <a href="{{ route('warehouse.show', [$companyCode, $w->id]) }}"
+                    class="text-blue-600 hover:underline text-sm">
+                        Detail
+                    </a>
+
                     <a href="{{ route('warehouse.edit', [$companyCode, $w->id]) }}"
-                        class="text-blue-600 hover:underline">Edit</a>
+                    class="text-emerald-600 hover:underline text-sm">
+                        Edit
+                    </a>
                 </td>
             </tr>
             @empty

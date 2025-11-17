@@ -219,4 +219,24 @@ class WarehouseController extends Controller
             'tab' => 'types'
         ]);
     }
+
+    public function show($companyCode, $id)
+{
+    $company = Company::where('code', $companyCode)->firstOrFail();
+
+    $warehouse = Warehouse::with('cabangResto', 'type')
+        ->findOrFail($id);
+
+    // Tenant validation
+    $isValid = CabangResto::where('id', $warehouse->cabang_resto_id)
+        ->where('company_id', $company->id)
+        ->exists();
+
+    if (!$isValid) abort(403, 'Warehouse tidak valid untuk perusahaan ini.');
+
+    return view('company.warehouse.show', [
+        'companyCode' => $companyCode,
+        'warehouse'   => $warehouse,
+    ]);
+}
 }
