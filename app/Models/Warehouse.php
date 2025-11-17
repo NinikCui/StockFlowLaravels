@@ -12,7 +12,7 @@ class Warehouse extends Model
         'cabang_resto_id',
         'name',
         'code',
-        'type'
+        'warehouse_type_id'
     ];
 
     public $timestamps = false;

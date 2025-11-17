@@ -6,8 +6,7 @@ use App\Http\Controllers\Company\ItemController;
 use App\Http\Controllers\Company\PegawaiController;
 use App\Http\Controllers\Company\SatuanController;
 use App\Http\Controllers\Company\SupplierController;
-use App\Http\Controllers\Company\WarehouseTypeController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Company\WarehouseController;
 use App\Http\Controllers\TenantDashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Company\RoleController;
@@ -159,9 +158,18 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         });
     });
 
-    Route::prefix('{companyCode}/warehouse-types')->group(function () {
-        Route::get('/', [WarehouseTypeController::class, 'index'])->name('warehouse-types.index');
-        Route::post('/', [WarehouseTypeController::class, 'store'])->name('warehouse-types.store');
+    Route::prefix('{companyCode}/gudang')->group(function () {
+
+        Route::get('/',             [WarehouseController::class, 'index'])->name('warehouse.index');
+        Route::get('/create',       [WarehouseController::class, 'create'])->name('warehouse.create');
+        Route::post('/',            [WarehouseController::class, 'store'])->name('warehouse.store');
+        Route::get('/{id}/edit',    [WarehouseController::class, 'edit'])->name('warehouse.edit');
+        Route::put('/{id}',         [WarehouseController::class, 'update'])->name('warehouse.update');
+        Route::delete('/{id}',      [WarehouseController::class, 'destroy'])->name('warehouse.destroy');
+
+        Route::get('/types',           [WarehouseController::class, 'typesIndex'])->name('warehouse.types.index');
+        Route::post('/types',          [WarehouseController::class, 'typesStore'])->name('warehouse.types.store');
+        Route::delete('/types/{id}',   [WarehouseController::class, 'typesDestroy'])->name('warehouse.types.destroy');
     });
 });
 

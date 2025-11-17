@@ -20,7 +20,7 @@
             'href'  => "/$prefix/cabang",
             'children' => [
                 ['label' => 'Daftar Cabang', 'href' => "/$prefix/cabang"],
-                ['label' => 'Gudang',         'href' => "/$prefix/cabang/gudang"],
+                ['label' => 'Gudang',         'href' => "/$prefix/gudang"],
                 ['label' => 'Supplier',       'href' => "/$prefix/supplier"],
             ]
         ],
