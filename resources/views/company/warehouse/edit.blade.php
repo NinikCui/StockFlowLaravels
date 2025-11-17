@@ -5,7 +5,7 @@
     <div class="flex justify-between mb-6">
         <h1 class="text-xl font-bold text-gray-900">Edit Warehouse</h1>
 
-        <a href="{{ route('warehouse.index', $companyCode) }}"
+        <a href="{{ route('warehouse.show', [$companyCode, $warehouse->id]) }}"
            class="text-gray-500 text-sm hover:text-gray-700">← Kembali</a>
     </div>
 

@@ -9,19 +9,21 @@ class Stock extends Model
     protected $table = 'stocks';
 
     protected $fillable = [
-        'items_id',
+        'company_id',
         'warehouse_id',
+        'item_id',
         'qty',
-        'exp_date',
-        'received_at',
-        'updated_at'
     ];
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     public function item()
     {
-        return $this->belongsTo(Item::class, 'items_id');
+        return $this->belongsTo(Item::class, 'item_id');
+    }
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 
     public function warehouse()
@@ -42,5 +44,21 @@ class Stock extends Model
     public function stocksAdjustmentDetail()
     {
         return $this->hasMany(StocksAdjustmentDetail::class, 'stocks_id');
+    }
+
+        public function scopeCompany($query, $companyId)
+    {
+        return $query->where('company_id', $companyId);
+    }
+
+     public function scopeWarehouse($query, $warehouseId)
+    {
+        return $query->where('warehouse_id', $warehouseId);
+    }
+
+    // scope by item
+    public function scopeItem($query, $itemId)
+    {
+        return $query->where('item_id', $itemId);
     }
 }

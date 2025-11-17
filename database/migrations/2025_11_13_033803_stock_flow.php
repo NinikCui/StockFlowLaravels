@@ -375,30 +375,60 @@ return new class extends Migration
             $table->index('suppliers_id');
         });
 
-           Schema::create('stocks', function (Blueprint $table) {
-            $table->id();
+            Schema::create('stocks', function (Blueprint $table) {
+                $table->id();
 
-            $table->unsignedBigInteger('items_id');
-            $table->unsignedBigInteger('warehouse_id');
+                $table->unsignedBigInteger('company_id');
+                $table->unsignedBigInteger('warehouse_id');
+                $table->unsignedBigInteger('item_id');
 
-            $table->decimal('qty', 16, 4);
-            $table->date('exp_date');
-            $table->timestamp('received_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
+                $table->decimal('qty', 14, 2)->default(0);
 
-            // FK
-            $table->foreign('items_id')
-                ->references('id')->on('items')
-                ->onDelete('cascade');
+                $table->timestamps();
 
-            $table->foreign('warehouse_id')
-                ->references('id')->on('warehouse')
-                ->onDelete('cascade');
+                // Relasi
+                $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
+                $table->foreign('warehouse_id')->references('id')->on('warehouse')->onDelete('cascade');
+                $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
 
-            // Index
-            $table->index('items_id', 'fk_stocks_items1_idx');
-            $table->index('warehouse_id', 'fk_stocks_warehouse1_idx');
-        });
+                // Unique per item per gudang
+                $table->unique(['warehouse_id', 'item_id']);
+            });
+            Schema::create('stock_movements', function (Blueprint $table) {
+                $table->id();
+
+                $table->unsignedBigInteger('company_id');
+                $table->unsignedBigInteger('warehouse_id');
+                $table->unsignedBigInteger('item_id');
+
+                // Movement type: IN / OUT / TRANSFER_IN / TRANSFER_OUT / ADJUSTMENT
+                $table->enum('type', [
+                    'IN', 
+                    'OUT', 
+                    'TRANSFER_IN', 
+                    'TRANSFER_OUT', 
+                    'ADJUSTMENT'
+                ]);
+
+                // Qty bisa plus / minus → tapi secara UI tetap dikontrol
+                $table->decimal('qty', 14, 2);
+
+                // Optional reference (PO number, Transfer code, dll)
+                $table->string('reference')->nullable();
+
+                // Catatan tambahan
+                $table->string('notes')->nullable();
+
+                $table->timestamps();
+
+                // Relasi
+                $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
+                $table->foreign('warehouse_id')->references('id')->on('warehouse')->onDelete('cascade');
+                $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
+
+                // Index untuk kecepatan filter
+                $table->index(['warehouse_id', 'item_id', 'type']);
+            });
         Schema::create('suppliers_item', function (Blueprint $table) {
             $table->id();
 
@@ -590,6 +620,7 @@ return new class extends Migration
         Schema::dropIfExists('categories');
         Schema::dropIfExists('items');
         Schema::dropIfExists('stocks');
+        Schema::dropIfExists('stock_movements');
         Schema::dropIfExists('suppliers');
         Schema::dropIfExists('suppliers_item');
         Schema::dropIfExists('supplier_scores');

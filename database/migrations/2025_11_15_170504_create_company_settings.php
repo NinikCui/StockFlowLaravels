@@ -10,14 +10,14 @@ return new class extends Migration
     {
         Schema::create('company_settings', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('companies_id');
+            $table->unsignedBigInteger('company_id');
             $table->string('key');     
             $table->text('value')->nullable(); 
             $table->timestamps();
 
-            $table->unique(['companies_id', 'key']);
+            $table->unique(['company_id', 'key']);
 
-            $table->foreign('companies_id')
+            $table->foreign('company_id')
                 ->references('id')
                 ->on('companies')
                 ->onDelete('cascade');

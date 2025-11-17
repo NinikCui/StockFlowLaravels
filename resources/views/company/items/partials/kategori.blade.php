@@ -1,80 +1,81 @@
-<div class="bg-white border rounded-xl p-6 shadow-sm">
+<div class="max-w-5xl mx-auto mt-6">
 
     {{-- HEADER --}}
-    <div class="flex justify-between items-center mb-5">
-        <h2 class="text-xl font-bold text-gray-800">Daftar Kategori</h2>
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-semibold text-gray-900">Daftar Kategori</h2>
 
         <x-add-button 
-                        href="/items/category/create"
-                        text="+ Tambah Kategori"
-                        variant="primary"
-                    />
+            href="/items/category/create"
+            text="+ Tambah Kategori"
+            variant="primary"
+        />
     </div>
 
-    {{-- TABLE WRAPPER --}}
-    <div class="overflow-hidden border border-gray-200 rounded-lg">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 text-gray-700">
-                <tr>
-                    <th class="p-3 border-b font-semibold">Kode</th>
-                    <th class="p-3 border-b font-semibold">Nama</th>
-                    <th class="p-3 border-b text-center font-semibold w-32">Aksi</th>
-                </tr>
-            </thead>
+    {{-- CARD WRAPPER --}}
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
 
-            <tbody>
-                @forelse ($kategori as $kat)
-                    <tr class="hover:bg-gray-50 transition">
-
-                        {{-- KODE --}}
-                        <td class="p-3 border-b">
-                            <span class="px-2 py-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md">
-                                {{ $kat->code }}
-                            </span>
-                        </td>
-
-                        {{-- NAMA --}}
-                        <td class="p-3 border-b font-medium text-gray-800">
-                            {{ $kat->name }}
-                        </td>
-
-                        {{-- ACTION --}}
-                        <td class="p-3 border-b">
-                            <div class="flex justify-center items-center gap-2">
-
-                                {{-- EDIT --}}
-                                <a href="{{ route('items.category.edit', [$companyCode, $kat->code]) }}"
-                                   class="px-3 py-1 text-xs rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200 transition">
-                                    Edit
-                                </a>
-
-                                {{-- DELETE --}}
-                                <form method="POST"
-                                      action="{{ route('items.category.delete', [$companyCode, $kat->code]) }}">
-                                    @csrf
-                                    @method('DELETE')
-
-                                    <button
-                                        onclick="return confirm('Yakin ingin menghapus kategori {{ $kat->name }}?');"
-                                        class="px-3 py-1 text-xs rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition">
-                                        Hapus
-                                    </button>
-                                </form>
-
-                            </div>
-                        </td>
-
-                    </tr>
-
-                @empty
+        <div class="overflow-hidden rounded-lg border border-gray-200">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-700">
                     <tr>
-                        <td colspan="3" class="p-3 text-center text-gray-500 py-8">
-                            Belum ada kategori.
-                        </td>
+                        <th class="p-3 font-semibold text-left w-40">Kode</th>
+                        <th class="p-3 font-semibold text-left">Nama</th>
+                        <th class="p-3 font-semibold text-center w-40">Aksi</th>
                     </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+                </thead>
 
+                <tbody>
+                    @forelse ($kategori as $kat)
+                        <tr class="hover:bg-gray-50 transition">
+
+                            {{-- KODE --}}
+                            <td class="p-3 border-t">
+                                <span class="px-3 py-1 text-xs rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    {{ $kat->code }}
+                                </span>
+                            </td>
+
+                            {{-- NAMA --}}
+                            <td class="p-3 border-t text-gray-900 font-medium">
+                                {{ $kat->name }}
+                            </td>
+
+                            {{-- ACTION --}}
+                            <td class="p-3 border-t">
+                                <div class="flex items-center justify-center gap-2">
+
+                                    {{-- EDIT --}}
+                                    <a href="{{ route('items.category.edit', [$companyCode, $kat->code]) }}"
+                                        class="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition">
+                                        Edit
+                                    </a>
+
+                                    {{-- DELETE --}}
+                                    <form method="POST"
+                                        action="{{ route('items.category.delete', [$companyCode, $kat->code]) }}">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button
+                                            onclick="return confirm('Yakin ingin menghapus kategori {{ $kat->name }}?');"
+                                            class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition">
+                                            Hapus
+                                        </button>
+                                    </form>
+
+                                </div>
+                            </td>
+                        </tr>
+
+                    @empty
+                        <tr>
+                            <td colspan="3" class="p-6 text-center text-gray-500">
+                                Belum ada kategori.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+    </div>
 </div>

@@ -5,6 +5,7 @@ use App\Http\Controllers\Company\CompanySettingController;
 use App\Http\Controllers\Company\ItemsController;
 use App\Http\Controllers\Company\PegawaiController;
 use App\Http\Controllers\Company\SatuanController;
+use App\Http\Controllers\Company\StockController;
 use App\Http\Controllers\Company\SupplierController;
 use App\Http\Controllers\Company\WarehouseController;
 use App\Http\Controllers\TenantDashboardController;
@@ -141,7 +142,35 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::delete('/types/{id}',   [WarehouseController::class, 'typesDestroy'])->name('warehouse.types.destroy');
 
 
-        Route::get('/{id}', [WarehouseController::class, 'show'])->name('warehouse.show');
+        // ============================
+        // DETAIL GUDANG
+        // ============================
+        Route::get('/{warehouseId}', [WarehouseController::class, 'show'])->name('warehouse.show');
+
+
+        Route::prefix('{warehouseId}/stock')->group(function () {
+
+            // --- STOCK IN ---
+            Route::get('/create', 
+                [StockController::class, 'createIn'])->name('stock.in.create');
+
+            Route::post('/in', 
+                [StockController::class, 'storeIn'])->name('stock.in.store');
+
+
+            // --- STOCK OUT ---
+            Route::get('/out/create/{itemId}', 
+                [StockController::class, 'createOut'])->name('stock.out.create');
+
+            Route::post('/out', 
+                [StockController::class, 'storeOut'])->name('stock.out.store');
+
+
+            // --- MOVEMENTS (History) ---
+            Route::get('/movements', 
+                [StockController::class, 'movements'])->name('stock.movements');
+
+        });
 
     });
 });

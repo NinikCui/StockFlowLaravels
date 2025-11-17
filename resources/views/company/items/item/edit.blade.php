@@ -36,15 +36,18 @@
         </div>
 
         <div class="flex gap-2">
-            <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg">
+            <button class="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 
+                           shadow-sm transition font-medium">
                 Update
             </button>
 
             <a href="{{ route('items.index', $companyCode) }}"
-               class="px-5 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">
+               class="px-5 py-2 bg-gray-100 text-gray-700 rounded-lg 
+                           hover:bg-gray-200 shadow-sm transition font-medium">
                 Batal
             </a>
         </div>
+
 
     </form>
 </main>

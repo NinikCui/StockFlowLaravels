@@ -5,6 +5,8 @@ use App\Http\Controllers\Controller;
 use App\Models\CabangResto;
 use App\Models\Company;
 use App\Models\Role;
+use App\Models\Stock;
+use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WarehouseType;
@@ -155,7 +157,7 @@ class WarehouseController extends Controller
             'warehouse_type_id'  => $data['warehouse_type_id'] ?? null,
         ]);
 
-        return redirect()->route('warehouse.index', $companyCode)
+        return redirect()->route('warehouse.show', [$companyCode,$warehouse->id])
             ->with('success', 'Warehouse berhasil diperbarui');
     }
 
@@ -220,23 +222,49 @@ class WarehouseController extends Controller
         ]);
     }
 
-    public function show($companyCode, $id)
-{
-    $company = Company::where('code', $companyCode)->firstOrFail();
+    public function show($companyCode, $warehouseId)
+    {
+        $company = Company::where('code', $companyCode)->firstOrFail();
 
-    $warehouse = Warehouse::with('cabangResto', 'type')
-        ->findOrFail($id);
+        $warehouse = Warehouse::with(['cabangResto', 'type'])
+            ->where('id', $warehouseId)
+            ->firstOrFail();
 
-    // Tenant validation
-    $isValid = CabangResto::where('id', $warehouse->cabang_resto_id)
-        ->where('company_id', $company->id)
-        ->exists();
+        $validWarehouse = CabangResto::where('id', $warehouse->cabang_resto_id)
+            ->where('company_id', $company->id)
+            ->exists();
 
-    if (!$isValid) abort(403, 'Warehouse tidak valid untuk perusahaan ini.');
+        if (!$validWarehouse) {
+            abort(403, 'Warehouse tidak valid untuk perusahaan ini.');
+        }
 
-    return view('company.warehouse.show', [
-        'companyCode' => $companyCode,
-        'warehouse'   => $warehouse,
-    ]);
-}
+        // ============================
+        // LOAD STOCK ON HAND
+        // ============================
+        $stocks = Stock::with([
+                'item.kategori',
+                'item.satuan'
+            ])
+            ->where('warehouse_id', $warehouse->id)
+            ->orderBy('item_id')
+            ->get();
+
+        // ============================
+        // LOAD STOCK MOVEMENTS
+        // ============================
+        $movements = StockMovement::with(['item'])
+            ->where('warehouse_id', $warehouse->id)
+            ->latest()
+            ->get();
+
+        // ============================
+        // RETURN VIEW
+        // ============================
+        return view('company.warehouse.detail.show', [
+            'companyCode' => $companyCode,
+            'warehouse'   => $warehouse,
+            'stocks'      => $stocks,
+            'movements'   => $movements,
+        ]);
+    }
 }
