@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Company\CategoryController;
 use App\Http\Controllers\Company\CompanySettingController;
-use App\Http\Controllers\Company\ItemController;
+use App\Http\Controllers\Company\ItemsController;
 use App\Http\Controllers\Company\PegawaiController;
 use App\Http\Controllers\Company\SatuanController;
 use App\Http\Controllers\Company\SupplierController;
@@ -23,9 +23,6 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         ->name('dashboard');
 
 
-    // ================================
-    // PEGAWAI
-    // ================================
     Route::prefix('{companyCode}/pegawai')->group(function () {
 
         Route::get('/', [PegawaiController::class, 'index'])->name('pegawai.index');
@@ -57,10 +54,6 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/roles/{code}', [RoleController::class, 'show'])->name('roles.show');
     });
 
-
-    // ================================
-    // CABANG RESTO
-    // ================================
     Route::prefix('{companyCode}/cabang')->group(function () {
 
         Route::get('/', [CabangController::class, 'index'])->name('cabang.index');
@@ -76,63 +69,39 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/{code}', [CabangController::class, 'detail'])->name('cabang.detail');
     });
 
-    // ================================
-    // COMPANY SETTING
-    // ================================
     Route::prefix('{companyCode}/settings')->group(function () {
         
         Route::get('/general', [CompanySettingController::class, 'general'])->name('settings.general');
         Route::post('/general', [CompanySettingController::class, 'generalUpdate'])->name('settings.general.update');
     });
 
-    Route::prefix('{companyCode}/product/categories')->group(function () {
+    Route::prefix('{companyCode}/items')->group(function () {
 
-        Route::get('/', [CategoryController::class, 'index'])
-            ->name('category.index');
+        Route::get('/', [ItemsController::class, 'index'])
+            ->name('items.index');
 
-        Route::get('/create', [CategoryController::class, 'create'])
-            ->name('category.create');
+        // Item 
+        Route::get('/create', [ItemsController::class, 'createItem'])->name('items.item.create');
+        Route::post('/store', [ItemsController::class, 'storeItem'])->name('items.item.store');
+        Route::get('/{id}/edit', [ItemsController::class, 'editItem'])->name('items.item.edit');
+        Route::put('/{id}', [ItemsController::class, 'updateItem'])->name('items.item.update');
+        Route::delete('/{id}', [ItemsController::class, 'deleteItem'])->name('items.item.delete');
 
-        Route::post('/', [CategoryController::class, 'store'])
-            ->name('category.store');
+        // Category 
+        Route::get('/category/create', [ItemsController::class, 'createCategory'])->name('items.category.create');
+        Route::post('/category', [ItemsController::class, 'storeCategory'])->name('items.category.store');
+        Route::get('/category/{code}/edit', [ItemsController::class, 'editCategory'])->name('items.category.edit');
+        Route::put('/category/{code}', [ItemsController::class, 'updateCategory'])->name('items.category.update');
+        Route::delete('/category/{code}', [ItemsController::class, 'deleteCategory'])->name('items.category.delete');
 
-        Route::get('/{code}/edit', [CategoryController::class, 'edit'])
-            ->name('category.edit');
-
-        Route::put('/{code}', [CategoryController::class, 'update'])
-            ->name('category.update');
-
-        Route::delete('/{code}', [CategoryController::class, 'destroy'])
-            ->name('category.destroy');
+        // Satuan 
+        Route::get('/satuan/create', [ItemsController::class, 'createSatuan'])->name('items.satuan.create');
+        Route::post('/satuan', [ItemsController::class, 'storeSatuan'])->name('items.satuan.store');
+        Route::get('/satuan/{code}/edit', [ItemsController::class, 'editSatuan'])->name('items.satuan.edit');
+        Route::put('/satuan/{code}', [ItemsController::class, 'updateSatuan'])->name('items.satuan.update');
+        Route::delete('/satuan/{code}', [ItemsController::class, 'deleteSatuan'])->name('items.satuan.delete');
     });
-    Route::prefix('{companyCode}/product/satuan')->group(function () {
 
-        Route::get('/', [SatuanController::class, 'index'])->name('satuan.index');
-
-        Route::get('/create', [SatuanController::class, 'create'])->name('satuan.create');
-
-        Route::post('/', [SatuanController::class, 'store'])->name('satuan.store');
-
-        Route::get('/{code}/edit', [SatuanController::class, 'edit'])->name('satuan.edit');
-
-        Route::put('/{code}', [SatuanController::class, 'update'])->name('satuan.update');
-
-        Route::delete('/{code}', [SatuanController::class, 'destroy'])->name('satuan.destroy');
-    });
-        Route::prefix('{companyCode}/product/items')->group(function () {
-
-        Route::get('/', [ItemController::class, 'index'])->name('item.index');
-
-        Route::get('/create', [ItemController::class, 'create'])->name('item.create');
-
-        Route::post('/', [ItemController::class, 'store'])->name('item.store');
-
-        Route::get('/{id}/edit', [ItemController::class, 'edit'])->name('item.edit');
-
-        Route::put('/{id}', [ItemController::class, 'update'])->name('item.update');
-
-        Route::delete('/{id}', [ItemController::class, 'destroy'])->name('item.destroy');
-    });
 
     Route::prefix('{companyCode}/supplier')->group(function () {
 
