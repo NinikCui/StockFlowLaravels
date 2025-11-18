@@ -40,10 +40,13 @@
             'children' => [ 
                 ['label' => 'Barang Baku',   'href' => "/$prefix/items"],           ]
         ],
-
         [
             'label' => 'Pengaturan Perusahaan',
             'href'  => "/$companyCode/settings/general",
+            'children' => [ 
+                ['label' => 'Umum',   'href' => "/$prefix/settings/general"],    
+                ['label' => 'Masalah',   'href' => "/$prefix/settings/masalah"],         
+            ]
         ]
     ];
 

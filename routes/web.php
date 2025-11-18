@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Company\CategoriesIssuesController;
 use App\Http\Controllers\Company\CategoryController;
 use App\Http\Controllers\Company\CompanySettingController;
 use App\Http\Controllers\Company\ItemsController;
@@ -74,6 +75,15 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         
         Route::get('/general', [CompanySettingController::class, 'general'])->name('settings.general');
         Route::post('/general', [CompanySettingController::class, 'generalUpdate'])->name('settings.general.update');
+        Route::prefix('masalah')->group(function () {
+            Route::get('/', [CategoriesIssuesController::class, 'index'])->name('issues.index');
+
+            Route::post('/', [CategoriesIssuesController::class, 'store'])->name('issues.store');
+
+            Route::put('/{id}', [CategoriesIssuesController::class, 'update'])->name('issues.update');
+
+            Route::delete('/{id}', [CategoriesIssuesController::class, 'destroy'])->name('issues.destroy');
+        });
     });
 
     Route::prefix('{companyCode}/items')->group(function () {
