@@ -22,14 +22,13 @@
             Stok
         </button>
 
-        <button @click="tab='mutasi'"
+     {{--   <button @click="tab='mutasi'"
             :class="tab==='mutasi' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-500'"
             class="pb-2">
             Mutasi Stok
-        </button>
+        </button>--}}
     </div>
 
-    {{-- PARTIALS --}}
     <div x-show="tab === 'info'" x-transition>
         @include('company.warehouse.detail.partials.warehouse-info')
     </div>
@@ -38,9 +37,9 @@
         @include('company.warehouse.detail.partials.warehouse-stock')
     </div>
 
-    <div x-show="tab === 'mutasi'" x-transition>
+   {{-- <div x-show="tab === 'mutasi'" x-transition>
         @include('company.warehouse.detail.partials.warehouse-movements')
-    </div>
+    </div> --}}
 
 </main>
 </x-app-layout>

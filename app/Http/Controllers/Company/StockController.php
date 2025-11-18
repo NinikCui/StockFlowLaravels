@@ -11,6 +11,8 @@ use App\Models\Role;
 use App\Models\Satuan;
 use App\Models\Stock;
 use App\Models\StockMovement;
+use App\Models\StocksAdjustment;
+use App\Models\StocksAdjustmentDetail;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -92,6 +94,51 @@ class StockController extends Controller
 
         return redirect()->route('warehouse.show', [$companyCode, $warehouse->id])
             ->with('success', 'Stok berhasil ditambahkan.');
+    }
+
+    public function storeAdjustment(Request $request, $companyCode, $warehouseId)
+    {
+        $company = Company::where('code', $companyCode)->firstOrFail();
+        $warehouse = Warehouse::findOrFail($warehouseId);
+
+        if ($warehouse->cabangResto->company_id !== $company->id) {
+            abort(403, 'Gudang tidak valid.');
+        }
+
+        $data = $request->validate([
+            'stock_id'              => 'required|exists:stocks,id',
+            'prev_qty'              => 'required|numeric',
+            'after_qty'             => 'required|numeric',
+            'categories_issues_id'  => 'required|exists:categories_issues,id',
+            'note'                  => 'nullable|string|max:200',
+        ]);
+
+        $stock = Stock::findOrFail($data['stock_id']);
+
+        // 1️⃣ Buat header adjustment
+        $adj = StocksAdjustment::create([
+            'warehouse_id'         => $warehouseId,
+            'categories_issues_id' => $data['categories_issues_id'],
+            'adjustment_date'      => now(),
+            'status'               => 'DRAFT',
+            'note'                 => $data['note'],
+            'created_by'           => auth()->id(),
+            'stockId'              => $stock->id,
+        ]);
+
+        // 2️⃣ Buat detail adjustment
+        StocksAdjustmentDetail::create([
+            'stocks_adjustmens_id' => $adj->id,
+            'stocks_id'            => $stock->id,
+            'prev_qty'             => $data['prev_qty'],
+            'after_qty'            => $data['after_qty'],
+        ]);
+
+        // 3️⃣ Update stok utama
+        $stock->qty = $data['after_qty'];
+        $stock->save();
+
+        return back()->with('success', 'Penyesuaian stok berhasil disimpan.');
     }
 
 

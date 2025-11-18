@@ -158,12 +158,7 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
                 [StockController::class, 'storeIn'])->name('stock.in.store');
 
 
-            // --- STOCK OUT ---
-            Route::get('/out/create/{itemId}', 
-                [StockController::class, 'createOut'])->name('stock.out.create');
-
-            Route::post('/out', 
-                [StockController::class, 'storeOut'])->name('stock.out.store');
+            Route::post('/stock/adjust', [StockController::class, 'storeAdjustment']) ->name('stock.adjust.store');
 
 
             // --- MOVEMENTS (History) ---

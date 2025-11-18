@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Company;
 use App\Http\Controllers\Controller;
 use App\Models\CabangResto;
+use App\Models\CategoriesIssues;
 use App\Models\Company;
 use App\Models\Role;
 use App\Models\Stock;
@@ -238,9 +239,6 @@ class WarehouseController extends Controller
             abort(403, 'Warehouse tidak valid untuk perusahaan ini.');
         }
 
-        // ============================
-        // LOAD STOCK ON HAND
-        // ============================
         $stocks = Stock::with([
                 'item.kategori',
                 'item.satuan'
@@ -249,22 +247,13 @@ class WarehouseController extends Controller
             ->orderBy('item_id')
             ->get();
 
-        // ============================
-        // LOAD STOCK MOVEMENTS
-        // ============================
-        $movements = StockMovement::with(['item'])
-            ->where('warehouse_id', $warehouse->id)
-            ->latest()
-            ->get();
+        $categoriesIssues = CategoriesIssues::orderBy('name')->get();
 
-        // ============================
-        // RETURN VIEW
-        // ============================
         return view('company.warehouse.detail.show', [
             'companyCode' => $companyCode,
             'warehouse'   => $warehouse,
             'stocks'      => $stocks,
-            'movements'   => $movements,
+            'categoriesIssues'   => $categoriesIssues,
         ]);
     }
 }

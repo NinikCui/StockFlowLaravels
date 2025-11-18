@@ -46,11 +46,7 @@
             </p>
         </div>
 
-        {{-- Alamat --}}
-        <div class="md:col-span-2 flex flex-col gap-1">
-            <p class="text-gray-500">Alamat</p>
-            <p class="font-semibold text-gray-800">{{ $warehouse->address }}</p>
-        </div>
+        
 
     </div>
 
