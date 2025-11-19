@@ -400,6 +400,7 @@ return new class extends Migration
                 $table->unsignedBigInteger('company_id');
                 $table->unsignedBigInteger('warehouse_id');
                 $table->unsignedBigInteger('item_id');
+                $table->unsignedBigInteger('created_by');
 
                 // Movement type: IN / OUT / TRANSFER_IN / TRANSFER_OUT / ADJUSTMENT
                 $table->enum('type', [
@@ -422,6 +423,7 @@ return new class extends Migration
                 $table->timestamps();
 
                 // Relasi
+                $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
                 $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
                 $table->foreign('warehouse_id')->references('id')->on('warehouse')->onDelete('cascade');
                 $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');

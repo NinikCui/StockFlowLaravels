@@ -66,7 +66,7 @@
                                 
 
                                 {{-- HISTORY --}}
-                                <a href="#"
+                                <a href="{{ route('stock.item.history', [$companyCode, $warehouse->id, $s->item->id]) }}"
                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg 
                                           bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 
                                           transition font-medium">
@@ -115,11 +115,22 @@
 
             <input type="hidden" name="stock_id" id="adj_stock_id">
             <input type="hidden" name="prev_qty" id="adj_prev_qty">
+            @if ($errors->has('after_qty'))
+                <div class="mb-3 text-red-600 text-sm">
+                    {{ $errors->first('after_qty') }}
+                </div>
 
+                <script>
+                    // otomatis buka modal jika ada error
+                    document.addEventListener("DOMContentLoaded", () => {
+                        document.getElementById("adjustModal").classList.remove("hidden");
+                    });
+                </script>
+            @endif
             {{-- AFTER QTY --}}
             <div class="mb-4">
                 <label class="font-semibold text-gray-700 mb-1">Setelah Penyesuaian</label>
-                <input type="number" step="0.01" name="after_qty" id="adj_after_qty"
+                <input type="number"  min="0" step="0.1" name="after_qty" id="adj_after_qty"
                        class="w-full border-gray-300 rounded-lg px-4 py-2
                               focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                        required>
@@ -178,6 +189,17 @@
     window.closeAdjustModal = function() {
         document.getElementById("adjustModal").classList.add("hidden");
     };
+
+    document.getElementById("adjustForm").addEventListener("submit", function(e) {
+        const prev = parseFloat(document.getElementById("adj_prev_qty").value);
+        const after = parseFloat(document.getElementById("adj_after_qty").value);
+
+        if (prev === after) {
+            e.preventDefault();
+            alert("Qty penyesuaian tidak berubah.");
+            return false;
+        }
+    });
 </script>
 
 </div>

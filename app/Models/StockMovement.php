@@ -16,6 +16,7 @@ class StockMovement extends Model
         'qty',
         'reference',
         'notes',
+        'created_by',
     ];
 
     /*
