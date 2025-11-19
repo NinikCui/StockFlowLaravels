@@ -162,46 +162,57 @@ class StockController extends Controller
             ->firstOrFail();
 
         $item = Item::findOrFail($itemId);
+
         $issueFilter = request('issue');
 
-        // ============================================================
-        // 1️⃣ QUERY PENYESUAIAN
-        // ============================================================
+        // ================================
+        // PENYESUAIAN
+        // ================================
         $adjustments = StocksAdjustmentDetail::query()
             ->selectRaw("
                 stocks_adjustmens.adjustment_date AS date,
+                items.name AS item_name,
                 categories_issues.name AS issue_name,
-                stocks_adjustmens_detail.prev_qty,
-                stocks_adjustmens_detail.after_qty,
-                (stocks_adjustmens_detail.after_qty - stocks_adjustmens_detail.prev_qty) AS diff,
-                stocks_adjustmens.note,
+                prev_qty,
+                after_qty,
+                (after_qty - prev_qty) AS diff,
+                stocks_adjustmens.note AS note,
                 users.username AS created_by_name
             ")
             ->join('stocks_adjustmens', 'stocks_adjustmens.id', '=', 'stocks_adjustmens_detail.stocks_adjustmens_id')
+            ->join('stocks', 'stocks.id', '=', 'stocks_adjustmens_detail.stocks_id')
+            ->join('items', 'items.id', '=', 'stocks.item_id')
             ->join('categories_issues', 'categories_issues.id', '=', 'stocks_adjustmens.categories_issues_id')
             ->leftJoin('users', 'users.id', '=', 'stocks_adjustmens.created_by')
             ->where('stocks_adjustmens_detail.stocks_id', $stock->id);
 
-        // FILTER tanggal & user untuk penyesuaian
         if (request('from')) {
             $adjustments->whereDate('stocks_adjustmens.adjustment_date', '>=', request('from'));
         }
+
         if (request('to')) {
             $adjustments->whereDate('stocks_adjustmens.adjustment_date', '<=', request('to'));
         }
+
         if (request('user')) {
             $adjustments->where('stocks_adjustmens.created_by', request('user'));
         }
 
-        // ============================================================
-        // 2️⃣ QUERY STOCK MOVEMENTS (IN / OUT)
-        // ============================================================
+        if ($issueFilter && !in_array($issueFilter, ['Stok Masuk', 'Stok Keluar'])) {
+            $adjustments->where('categories_issues.name', $issueFilter);
+        }
+
+
+        // ================================
+        // MOVEMENT
+        // ================================
         $movements = StockMovement::query()
             ->selectRaw("
                 stock_movements.created_at AS date,
+                items.name AS item_name,
                 CASE 
-                    WHEN stock_movements.type = 'IN' THEN 'Stok Masuk'
-                    WHEN stock_movements.type = 'OUT' THEN 'Stok Keluar'
+                    WHEN stock_movements.type='IN' THEN 'Stok Masuk'
+                    WHEN stock_movements.type='OUT' THEN 'Stok Keluar'
                     ELSE stock_movements.type
                 END AS issue_name,
 
@@ -209,91 +220,79 @@ class StockController extends Controller
                 NULL AS after_qty,
 
                 CASE
-                    WHEN stock_movements.type = 'IN' THEN stock_movements.qty
-                    WHEN stock_movements.type = 'OUT' THEN -stock_movements.qty
-                    ELSE stock_movements.qty
+                    WHEN stock_movements.type='IN' THEN qty
+                    WHEN stock_movements.type='OUT' THEN -qty
+                    ELSE qty
                 END AS diff,
 
                 stock_movements.notes AS note,
                 users.username AS created_by_name
             ")
+            ->join('items', 'items.id', '=', 'stock_movements.item_id')
             ->leftJoin('users', 'users.id', '=', 'stock_movements.created_by')
             ->where('stock_movements.item_id', $itemId)
             ->where('stock_movements.warehouse_id', $warehouseId);
 
-        // FILTER tanggal & user untuk movement
         if (request('from')) {
             $movements->whereDate('stock_movements.created_at', '>=', request('from'));
         }
+
         if (request('to')) {
             $movements->whereDate('stock_movements.created_at', '<=', request('to'));
         }
+
         if (request('user')) {
             $movements->where('stock_movements.created_by', request('user'));
         }
 
-        // FILTER khusus kategori movement
         if ($issueFilter === 'Stok Masuk') {
             $movements->where('stock_movements.type', 'IN');
-        }
-        if ($issueFilter === 'Stok Keluar') {
+        } elseif ($issueFilter === 'Stok Keluar') {
             $movements->where('stock_movements.type', 'OUT');
         }
 
-        // ============================================================
-        // 3️⃣ GABUNGKAN / PILIH SUMBER BERDASARKAN FILTER
-        // ============================================================
+
+        // ================================
+        // GABUNGKAN
+        // ================================
         if ($issueFilter === 'Stok Masuk' || $issueFilter === 'Stok Keluar') {
-
-            // Hanya stok movement
-            $history = $movements->get()
-                ->sortByDesc('date')
-                ->values();
-
-        } elseif ($issueFilter === 'Penyesuaian') {
-
-            // Hanya penyesuaian stok
-            $history = $adjustments->get()
-                ->sortByDesc('date')
-                ->values();
-
+            $history = $movements->get();
+        } elseif ($issueFilter) {
+            $history = $adjustments->get();
         } else {
-            // Semua jenis mutasi
             $history = collect()
-                ->merge($adjustments->get())
                 ->merge($movements->get())
-                ->sortByDesc('date')
-                ->values();
+                ->merge($adjustments->get());
         }
 
-        // ============================================================
-        // 4️⃣ LIST USER YANG PERNAH MUTASI ITEM INI
-        // ============================================================
-        $users = User::whereIn('id', function ($q) use ($warehouseId, $itemId) {
+        $history = $history->sortByDesc('date')->values();
+
+
+        // USERS
+        $users = User::whereIn('id', function ($q) use ($itemId, $warehouseId) {
                 $q->select('created_by')
-                ->from('stock_movements')
-                ->where('item_id', $itemId)
-                ->where('warehouse_id', $warehouseId);
+                    ->from('stock_movements')
+                    ->where('item_id', $itemId)
+                    ->where('warehouse_id', $warehouseId);
             })
             ->orWhereIn('id', function ($q) use ($stock) {
                 $q->select('created_by')
-                ->from('stocks_adjustmens')
-                ->join('stocks_adjustmens_detail', 'stocks_adjustmens.id', '=', 'stocks_adjustmens_detail.stocks_adjustmens_id')
-                ->where('stocks_adjustmens_detail.stocks_id', $stock->id);
+                    ->from('stocks_adjustmens')
+                    ->join('stocks_adjustmens_detail', 'stocks_adjustmens.id', '=', 'stocks_adjustmens_detail.stocks_adjustmens_id')
+                    ->where('stocks_adjustmens_detail.stocks_id', $stock->id);
             })
             ->get();
 
         $categoriesIssues = CategoriesIssues::all();
 
         return view('company.warehouse.detail.item-history', compact(
-            'companyCode',
-            'warehouse',
-            'item',
-            'history',
-            'users',
-            'categoriesIssues'
+            'companyCode', 'warehouse', 'item',
+            'history', 'users', 'categoriesIssues'
         ));
     }
+
+
+    
 
 
 

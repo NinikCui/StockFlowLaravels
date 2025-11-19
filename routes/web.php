@@ -174,7 +174,7 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             // --- MOVEMENTS (History) ---
             Route::get('/{itemId}/history', [StockController::class, 'itemHistory'])->name('stock.item.history');
 
-
+            
         });
 
     });

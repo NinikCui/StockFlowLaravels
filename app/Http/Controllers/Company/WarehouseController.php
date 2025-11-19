@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\Role;
 use App\Models\Stock;
 use App\Models\StockMovement;
+use App\Models\StocksAdjustmentDetail;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WarehouseType;
@@ -239,21 +240,145 @@ class WarehouseController extends Controller
             abort(403, 'Warehouse tidak valid untuk perusahaan ini.');
         }
 
-        $stocks = Stock::with([
-                'item.kategori',
-                'item.satuan'
-            ])
+        // ============================================
+        // STOCK LIST
+        // ============================================
+        $stocks = Stock::with(['item.kategori', 'item.satuan'])
             ->where('warehouse_id', $warehouse->id)
             ->orderBy('item_id')
             ->get();
 
-        $categoriesIssues = CategoriesIssues::orderBy('name')->get();
+        // ============================================================
+        //  FILTER STATE
+        // ============================================================
+        $filterFrom  = request('from');
+        $filterTo    = request('to');
+        $filterIssue = request('issue');
 
+
+        // ============================================================
+        // 1️⃣ MOVEMENTS (IN / OUT / TRANSFER)
+        // ============================================================
+
+        $movements = StockMovement::query()
+            ->selectRaw("
+                stock_movements.created_at AS date,
+                items.name AS item_name,
+                CASE 
+                    WHEN stock_movements.type='IN' THEN 'Stok Masuk'
+                    WHEN stock_movements.type='OUT' THEN 'Stok Keluar'
+                    WHEN stock_movements.type='TRANSFER_IN' THEN 'Transfer Masuk'
+                    WHEN stock_movements.type='TRANSFER_OUT' THEN 'Transfer Keluar'
+                    ELSE stock_movements.type
+                END AS issue_name,
+                NULL AS prev_qty,
+                NULL AS after_qty,
+                CASE
+                    WHEN stock_movements.type='IN' THEN stock_movements.qty
+                    WHEN stock_movements.type='OUT' THEN -stock_movements.qty
+                    ELSE stock_movements.qty
+                END AS diff,
+                stock_movements.notes AS note,
+                users.username AS created_by_name
+            ")
+            ->leftJoin('items', 'items.id', '=', 'stock_movements.item_id')
+            ->leftJoin('users', 'users.id', '=', 'stock_movements.created_by')
+            ->where('stock_movements.warehouse_id', $warehouseId);
+
+
+        // --- FILTER TANGGAL ---
+        if ($filterFrom) {
+            $movements->whereDate('stock_movements.created_at', '>=', $filterFrom);
+        }
+
+        if ($filterTo) {
+            $movements->whereDate('stock_movements.created_at', '<=', $filterTo);
+        }
+
+        // --- FILTER KATEGORI MOVEMENT ---
+        if ($filterIssue) {
+
+            // Jika issue movement yang valid
+            $issueMap = [
+                'Stok Masuk'     => 'IN',
+                'Stok Keluar'    => 'OUT',
+                'Transfer Masuk' => 'TRANSFER_IN',
+                'Transfer Keluar'=> 'TRANSFER_OUT',
+            ];
+
+            if (isset($issueMap[$filterIssue])) {
+                $movements->where('stock_movements.type', $issueMap[$filterIssue]);
+            } else {
+                // Issue bukan movement → hasil movement = kosong
+                $movements->whereRaw('1=0');
+            }
+        }
+
+
+        // ============================================================
+        // 2️⃣ ADJUSTMENTS (Penyesuaian dari categories_issues)
+        // ============================================================
+
+        $adjustments = StocksAdjustmentDetail::query()
+            ->selectRaw("
+                stocks_adjustmens.adjustment_date AS date,
+                items.name AS item_name,
+                categories_issues.name AS issue_name,
+                prev_qty,
+                after_qty,
+                (after_qty - prev_qty) AS diff,
+                stocks_adjustmens.note AS note,
+                users.username AS created_by_name
+            ")
+            ->join('stocks_adjustmens', 'stocks_adjustmens.id', '=', 'stocks_adjustmens_detail.stocks_adjustmens_id')
+            ->join('stocks', 'stocks.id', '=', 'stocks_adjustmens_detail.stocks_id')
+            ->join('items', 'items.id', '=', 'stocks.item_id')
+            ->join('categories_issues', 'categories_issues.id', '=', 'stocks_adjustmens.categories_issues_id')
+            ->leftJoin('users', 'users.id', '=', 'stocks_adjustmens.created_by')
+            ->where('stocks_adjustmens.warehouse_id', $warehouseId);
+
+
+        // --- FILTER TANGGAL ---
+        if ($filterFrom) {
+            $adjustments->whereDate('stocks_adjustmens.adjustment_date', '>=', $filterFrom);
+        }
+
+        if ($filterTo) {
+            $adjustments->whereDate('stocks_adjustmens.adjustment_date', '<=', $filterTo);
+        }
+
+        // --- FILTER KATEGORI ADJUSTMENT ---
+        if ($filterIssue) {
+            // Jika issue BUKAN movement → filter sebagai kategori penyesuaian
+            if (!in_array($filterIssue, ['Stok Masuk', 'Stok Keluar', 'Transfer Masuk', 'Transfer Keluar'])) {
+                $adjustments->where('categories_issues.name', $filterIssue);
+            } else {
+                // Jika issue movement → adjustment kosong
+                $adjustments->whereRaw('1=0');
+            }
+        }
+
+
+        // ============================================================
+        // 3️⃣ GABUNGKAN SEMUA MUTASI
+        // ============================================================
+        $warehouseMutations = collect()
+            ->merge($movements->get())
+            ->merge($adjustments->get())
+            ->sortByDesc('date')
+            ->values();
+
+
+        // ============================================================
+        // PASS KE FE
+        // ============================================================
         return view('company.warehouse.detail.show', [
-            'companyCode' => $companyCode,
-            'warehouse'   => $warehouse,
-            'stocks'      => $stocks,
-            'categoriesIssues'   => $categoriesIssues,
+            'companyCode'        => $companyCode,
+            'warehouse'          => $warehouse,
+            'stocks'             => $stocks,
+            'categoriesIssues'   => CategoriesIssues::orderBy('name')->get(),
+            'warehouseMutations' => $warehouseMutations,
         ]);
     }
+
 }
