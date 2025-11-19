@@ -5,6 +5,7 @@ use App\Http\Controllers\Company\CategoryController;
 use App\Http\Controllers\Company\CompanySettingController;
 use App\Http\Controllers\Company\ItemsController;
 use App\Http\Controllers\Company\PegawaiController;
+use App\Http\Controllers\Company\PurchaseOrderController;
 use App\Http\Controllers\Company\SatuanController;
 use App\Http\Controllers\Company\StockController;
 use App\Http\Controllers\Company\SupplierController;
@@ -177,6 +178,49 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             
         });
 
+    });
+
+    Route::prefix('{companyCode}/purchase-order')->group(function () {
+
+        // LIST PO
+        Route::get('/', [PurchaseOrderController::class, 'index'])
+            ->name('po.index');
+
+        // FORM CREATE
+        Route::get('/create', [PurchaseOrderController::class, 'create'])
+            ->name('po.create');
+
+        // STORE
+        Route::post('/', [PurchaseOrderController::class, 'store'])
+            ->name('po.store');
+
+        // SHOW DETAIL
+        Route::get('/{id}', [PurchaseOrderController::class, 'show'])
+            ->name('po.show');
+
+        // EDIT PO (hanya untuk DRAFT)
+        Route::get('/{id}/edit', [PurchaseOrderController::class, 'edit'])
+            ->name('po.edit');
+
+        // UPDATE PO
+        Route::put('/{id}', [PurchaseOrderController::class, 'update'])
+            ->name('po.update');
+
+        // UBAH STATUS → APPROVED
+        Route::post('/{id}/approve', [PurchaseOrderController::class, 'approve'])
+            ->name('po.approve');
+
+        // UBAH STATUS → CANCELLED
+        Route::post('/{id}/cancel', [PurchaseOrderController::class, 'cancel'])
+            ->name('po.cancel');
+
+        // RECEIVE / TERIMA BARANG
+        Route::post('/{id}/receive', [PurchaseOrderController::class, 'receive'])
+            ->name('po.receive');
+
+        // HAPUS PO (hanya jika masih draft)
+        Route::delete('/{id}', [PurchaseOrderController::class, 'destroy'])
+            ->name('po.destroy');
     });
 });
 
