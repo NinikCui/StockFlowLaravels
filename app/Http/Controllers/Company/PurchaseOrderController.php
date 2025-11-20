@@ -27,7 +27,7 @@ class PurchaseOrderController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('purchase_order.index', compact('po', 'companyCode'));
+        return view('company.purchase_order.index', compact('po', 'companyCode'));
     }
 
     /**
@@ -35,23 +35,42 @@ class PurchaseOrderController extends Controller
      */
     public function create($companyCode)
     {
-        $suppliers = Supplier::all();
-        $cabangs   = CabangResto::all();
+        // Ambil supplier + items lewat tabel pivot
+        $suppliers = Supplier::with(['supplierItems.item'])->get();
+        $cabangs = CabangResto::all();
 
-        return view('purchase_order.create', compact('suppliers', 'cabangs', 'companyCode'));
+        $supplierItems = [];
+
+        foreach ($suppliers as $s) {
+            $supplierItems[$s->id] = $s->supplierItems->map(function($si) {
+                return [
+                    'id' => $si->items_id,
+                    'name' => $si->item->name,
+                ];
+            });
+        }
+
+        return view('company.purchase_order.create', [
+            'suppliers' => $suppliers,
+            'cabangs' => $cabangs,
+            'companyCode' => $companyCode,
+            'supplierItems' => $supplierItems,
+        ]);
     }
 
-    /**
-     * Store PO + details
-     */
+
     public function store(Request $request, $companyCode)
     {
         $data = $request->validate([
             'cabang_resto_id' => 'required|exists:cabang_resto,id',
             'suppliers_id' => 'required|exists:suppliers,id',
-            'po_date' => 'required|date',
+
+            // ⬇ PERBAIKAN PENTING
+            'po_date' => 'required|date|before_or_equal:today',
+            'expected_delivery_date' => 'nullable|date|after:today',
+
             'note' => 'nullable|string|max:200',
-            'expected_delivery_date' => 'nullable|date',
+
             'items' => 'required|array',
             'items.*.item_id' => 'required|exists:items,id',
             'items.*.qty_ordered' => 'required|numeric|min:0.01',
@@ -99,7 +118,7 @@ class PurchaseOrderController extends Controller
     {
         $po = PurchaseOrder::with(['details.item', 'supplier'])->findOrFail($id);
 
-        return view('purchase_order.show', compact('po', 'companyCode'));
+        return view('company.purchase_order.show', compact('po', 'companyCode'));
     }
 
     /**
@@ -117,7 +136,7 @@ class PurchaseOrderController extends Controller
         $cabangs = CabangResto::all();
         $items = Item::all();
 
-        return view('purchase_order.edit', compact('po', 'cabangs', 'suppliers', 'items', 'companyCode'));
+        return view('company.purchase_order.edit', compact('po', 'cabangs', 'suppliers', 'items', 'companyCode'));
     }
 
     /**

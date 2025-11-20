@@ -346,8 +346,6 @@ return new class extends Migration
             $table->integer('max_stock')->default(0);
             $table->boolean('forecast_enabled')->default(false);
 
-            // Supplier (opsional)
-            $table->unsignedBigInteger('suppliers_id')->nullable();
 
             $table->timestamps();
 
@@ -363,10 +361,6 @@ return new class extends Migration
             $table->foreign('satuan_id')
                 ->references('id')->on('satuan')
                 ->cascadeOnDelete();
-
-            $table->foreign('suppliers_id')
-                ->references('id')->on('suppliers')
-                ->nullOnDelete();
 
             // Indexes untuk optimasi
             $table->index('company_id');

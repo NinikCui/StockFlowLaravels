@@ -32,6 +32,10 @@ class Supplier extends Model
         return $this->hasMany(PurchaseOrder::class, 'suppliers_id');
     }
 
+    public function supplierItems()
+{
+    return $this->hasMany(SuppliersItem::class, 'suppliers_id');
+}
     public function suppliedItems()
     {
         return $this->belongsToMany(Item::class, 'suppliers_item', 'suppliers_id', 'items_id')
@@ -41,9 +45,13 @@ class Supplier extends Model
 
     public function items()
     {
-        return $this->hasMany(Item::class, 'suppliers_id');
+        return $this->hasManyThrough(
+            Item::class,          
+            SuppliersItem::class, 
+            'id',                
+            'id',                
+        );
     }
-
     public function scores()
     {
         return $this->hasMany(SupplierScore::class, 'suppliers_id');
