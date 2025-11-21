@@ -9,9 +9,11 @@ class Stock extends Model
     protected $table = 'stocks';
 
     protected $fillable = [
+        'code',
         'company_id',
         'warehouse_id',
         'item_id',
+        
         'qty',
     ];
 

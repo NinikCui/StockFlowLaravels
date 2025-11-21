@@ -10,21 +10,6 @@
 
     <div class="bg-white border rounded-xl p-6 shadow-sm">
 
-        {{-- FLASH SUCCESS --}}
-        @if(session('success'))
-            <div class="mb-4 p-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        {{-- FLASH ERROR --}}
-        @if(session('error'))
-            <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-700 border border-red-200">
-                {{ session('error') }}
-            </div>
-        @endif
-
-        {{-- VALIDATION ERROR GLOBAL --}}
         @if ($errors->any())
             <div class="mb-4 p-3 rounded-lg bg-red-50 text-red-700 border border-red-200">
                 <ul class="list-disc ml-4 text-sm">
@@ -39,6 +24,20 @@
               action="{{ route('stock.in.store', [$companyCode, $warehouse->id]) }}" 
               class="space-y-6">
             @csrf
+
+            {{-- KODE STOK --}}
+            <div>
+                <label class="block font-semibold text-gray-700 mb-1">Kode Stok</label>
+                <input type="text" name="code"
+                    value="{{ old('code', $generatedCode) }}"
+                    class="w-full border-gray-300 rounded-lg px-4 py-2 
+                           focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    required>
+
+                @error('code')
+                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                @enderror
+            </div>
 
             {{-- ITEM --}}
             <div>
@@ -56,31 +55,28 @@
                         </option>
                     @endforeach
                 </select>
-
-                @error('item_id')
-                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
-                @enderror
             </div>
 
-            {{-- QTY --}}
+            {{-- JUMLAH --}}
             <div>
                 <label class="block font-semibold text-gray-700 mb-1">Jumlah</label>
                 <input type="number" step="0.1" min="0" name="qty"
-                    value="0"
+                    value="{{ old('qty', '0') }}"
                     class="w-full border-gray-300 rounded-lg px-4 py-2 
-                        focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" >
+                           focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
 
                 @error('qty')
                     <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
                 @enderror
             </div>
 
-            {{-- NOTES --}}
+            {{-- CATATAN --}}
             <div>
                 <label class="block font-semibold text-gray-700 mb-1">Catatan (Opsional)</label>
                 <textarea name="notes" rows="3"
                     class="w-full border-gray-300 rounded-lg px-4 py-2 
-                           focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">{{ old('notes') }}</textarea>
+                           focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    placeholder="Contoh: kiriman supplier hari ini">{{ old('notes') }}</textarea>
             </div>
 
             {{-- BUTTON --}}

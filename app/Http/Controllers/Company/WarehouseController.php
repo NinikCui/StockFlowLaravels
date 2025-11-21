@@ -227,49 +227,37 @@ class WarehouseController extends Controller
     public function show($companyCode, $warehouseId)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
+        $warehouse = Warehouse::findOrFail($warehouseId);
 
-        $warehouse = Warehouse::with(['cabangResto', 'type'])
-            ->where('id', $warehouseId)
-            ->firstOrFail();
-
-        $validWarehouse = CabangResto::where('id', $warehouse->cabang_resto_id)
-            ->where('company_id', $company->id)
-            ->exists();
-
-        if (!$validWarehouse) {
-            abort(403, 'Warehouse tidak valid untuk perusahaan ini.');
+        if ($warehouse->cabangResto->company_id !== $company->id) {
+            abort(403, 'Gudang tidak valid.');
         }
 
-        // ============================================
-        // STOCK LIST
-        // ============================================
         $stocks = Stock::with(['item.kategori', 'item.satuan'])
-            ->where('warehouse_id', $warehouse->id)
+            ->where('warehouse_id', $warehouseId)
             ->orderBy('item_id')
             ->get();
 
-        // ============================================================
-        //  FILTER STATE
-        // ============================================================
+        // =============================
+        // FILTER
+        // =============================
         $filterFrom  = request('from');
         $filterTo    = request('to');
         $filterIssue = request('issue');
 
-
-        // ============================================================
-        // 1️⃣ MOVEMENTS (IN / OUT / TRANSFER)
-        // ============================================================
-
+        // =============================
+        // MOVEMENTS (IN / OUT / TRANSFER)
+        // =============================
         $movements = StockMovement::query()
             ->selectRaw("
                 stock_movements.created_at AS date,
                 items.name AS item_name,
+                stocks.code AS stock_code,
                 CASE 
                     WHEN stock_movements.type='IN' THEN 'Stok Masuk'
                     WHEN stock_movements.type='OUT' THEN 'Stok Keluar'
                     WHEN stock_movements.type='TRANSFER_IN' THEN 'Transfer Masuk'
                     WHEN stock_movements.type='TRANSFER_OUT' THEN 'Transfer Keluar'
-                    ELSE stock_movements.type
                 END AS issue_name,
                 NULL AS prev_qty,
                 NULL AS after_qty,
@@ -281,48 +269,44 @@ class WarehouseController extends Controller
                 stock_movements.notes AS note,
                 users.username AS created_by_name
             ")
-            ->leftJoin('items', 'items.id', '=', 'stock_movements.item_id')
+            ->join('items', 'items.id', '=', 'stock_movements.item_id')
+            ->join('stocks', function ($j) use ($warehouseId) {
+                $j->on('stocks.item_id', '=', 'stock_movements.item_id')
+                ->where('stocks.warehouse_id', '=', $warehouseId);
+            })
             ->leftJoin('users', 'users.id', '=', 'stock_movements.created_by')
             ->where('stock_movements.warehouse_id', $warehouseId);
 
 
-        // --- FILTER TANGGAL ---
-        if ($filterFrom) {
-            $movements->whereDate('stock_movements.created_at', '>=', $filterFrom);
+        // Filter tanggal movement
+        if ($filterFrom)  $movements->whereDate('stock_movements.created_at', '>=', $filterFrom);
+        if ($filterTo)    $movements->whereDate('stock_movements.created_at', '<=', $filterTo);
+
+        // Filter berdasarkan issue (khusus movement)
+        $movementMap = [
+            'Stok Masuk'      => 'IN',
+            'Stok Keluar'     => 'OUT',
+            'Transfer Masuk'  => 'TRANSFER_IN',
+            'Transfer Keluar' => 'TRANSFER_OUT',
+        ];
+
+        if ($filterIssue && isset($movementMap[$filterIssue])) {
+            $movements->where('stock_movements.type', $movementMap[$filterIssue]);
         }
 
-        if ($filterTo) {
-            $movements->whereDate('stock_movements.created_at', '<=', $filterTo);
+        // Jika filter issue adalah kategori adjustment → movement kosong
+        if ($filterIssue && !isset($movementMap[$filterIssue])) {
+            $movements->whereRaw('1=0');
         }
 
-        // --- FILTER KATEGORI MOVEMENT ---
-        if ($filterIssue) {
-
-            // Jika issue movement yang valid
-            $issueMap = [
-                'Stok Masuk'     => 'IN',
-                'Stok Keluar'    => 'OUT',
-                'Transfer Masuk' => 'TRANSFER_IN',
-                'Transfer Keluar'=> 'TRANSFER_OUT',
-            ];
-
-            if (isset($issueMap[$filterIssue])) {
-                $movements->where('stock_movements.type', $issueMap[$filterIssue]);
-            } else {
-                // Issue bukan movement → hasil movement = kosong
-                $movements->whereRaw('1=0');
-            }
-        }
-
-
-        // ============================================================
-        // 2️⃣ ADJUSTMENTS (Penyesuaian dari categories_issues)
-        // ============================================================
-
+        // =============================
+        // ADJUSTMENTS
+        // =============================
         $adjustments = StocksAdjustmentDetail::query()
             ->selectRaw("
                 stocks_adjustmens.adjustment_date AS date,
                 items.name AS item_name,
+                stocks.code AS stock_code,
                 categories_issues.name AS issue_name,
                 prev_qty,
                 after_qty,
@@ -337,41 +321,29 @@ class WarehouseController extends Controller
             ->leftJoin('users', 'users.id', '=', 'stocks_adjustmens.created_by')
             ->where('stocks_adjustmens.warehouse_id', $warehouseId);
 
+        // Filter tanggal adjustment
+        if ($filterFrom)  $adjustments->whereDate('stocks_adjustmens.adjustment_date', '>=', $filterFrom);
+        if ($filterTo)    $adjustments->whereDate('stocks_adjustmens.adjustment_date', '<=', $filterTo);
 
-        // --- FILTER TANGGAL ---
-        if ($filterFrom) {
-            $adjustments->whereDate('stocks_adjustmens.adjustment_date', '>=', $filterFrom);
+        // Filter kategori penyesuaian
+        if ($filterIssue && !isset($movementMap[$filterIssue])) {
+            $adjustments->where('categories_issues.name', $filterIssue);
         }
 
-        if ($filterTo) {
-            $adjustments->whereDate('stocks_adjustmens.adjustment_date', '<=', $filterTo);
+        // Jika filter issue movement → kosongkan adjustment
+        if ($filterIssue && isset($movementMap[$filterIssue])) {
+            $adjustments->whereRaw('1=0');
         }
 
-        // --- FILTER KATEGORI ADJUSTMENT ---
-        if ($filterIssue) {
-            // Jika issue BUKAN movement → filter sebagai kategori penyesuaian
-            if (!in_array($filterIssue, ['Stok Masuk', 'Stok Keluar', 'Transfer Masuk', 'Transfer Keluar'])) {
-                $adjustments->where('categories_issues.name', $filterIssue);
-            } else {
-                // Jika issue movement → adjustment kosong
-                $adjustments->whereRaw('1=0');
-            }
-        }
-
-
-        // ============================================================
-        // 3️⃣ GABUNGKAN SEMUA MUTASI
-        // ============================================================
+        // =============================
+        // MERGE MOVEMENT + ADJUSTMENT
+        // =============================
         $warehouseMutations = collect()
             ->merge($movements->get())
             ->merge($adjustments->get())
             ->sortByDesc('date')
             ->values();
 
-
-        // ============================================================
-        // PASS KE FE
-        // ============================================================
         return view('company.warehouse.detail.show', [
             'companyCode'        => $companyCode,
             'warehouse'          => $warehouse,
@@ -380,5 +352,6 @@ class WarehouseController extends Controller
             'warehouseMutations' => $warehouseMutations,
         ]);
     }
+
 
 }

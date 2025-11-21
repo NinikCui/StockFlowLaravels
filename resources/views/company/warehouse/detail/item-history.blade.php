@@ -6,6 +6,7 @@
         <h1 class="text-3xl font-bold text-gray-900">Riwayat Mutasi Item</h1>
         <p class="text-gray-600 text-sm mt-1">
             Gudang: <strong>{{ $warehouse->name }}</strong> <br>
+            Kode Stok: <strong>{{ $stock->code }}</strong> <br>
             Item: <strong>{{ $item->name }}</strong>
         </p>
     </div>
@@ -44,9 +45,6 @@
                 <select name="issue" class="w-full px-3 py-2 border rounded-lg">
                     <option value="">Semua</option>
 
-                    <option value="Stok Masuk" @selected(request('issue') == 'Stok Masuk')>Stok Masuk</option>
-                    <option value="Stok Keluar" @selected(request('issue') == 'Stok Keluar')>Stok Keluar</option>
-
                     <optgroup label="Penyesuaian">
                         @foreach($categoriesIssues as $ci)
                             <option value="{{ $ci->name }}" @selected(request('issue') == $ci->name)>
@@ -55,6 +53,7 @@
                         @endforeach
                     </optgroup>
                 </select>
+
             </div>
 
             {{-- USER --}}
@@ -76,7 +75,7 @@
                     Terapkan Filter
                 </button>
 
-                <a href="{{ route('stock.item.history', [$companyCode, $warehouse->id, $item->id]) }}"
+                <a href="{{ route('stock.item.history', [$companyCode, $warehouse->id, $stock->id]) }}"
                    class="px-5 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300">
                     Reset
                 </a>

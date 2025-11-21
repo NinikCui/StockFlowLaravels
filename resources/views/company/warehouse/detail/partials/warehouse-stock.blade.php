@@ -16,6 +16,7 @@
         <table class="w-full text-sm">
             <thead>
                 <tr class="bg-gray-50 text-gray-700 border-b">
+                    <th class="p-3 font-semibold text-left">Kode Stok</th>
                     <th class="p-3 font-semibold text-left">Item</th>
                     <th class="p-3 font-semibold text-left">Kategori</th>
                     <th class="p-3 font-semibold text-left">Qty</th>
@@ -26,6 +27,11 @@
             <tbody>
                 @forelse ($stocks as $s)
                     <tr class="hover:bg-gray-50 transition">
+
+                        {{-- KODE STOK --}}
+                        <td class="p-3 border-b text-gray-800 font-mono">
+                            {{ $s->code }}
+                        </td>
 
                         {{-- ITEM --}}
                         <td class="p-3 border-b text-gray-900 font-medium">
@@ -60,20 +66,17 @@
                         {{-- ACTIONS --}}
                         <td class="p-3 border-b">
                             <div class="flex justify-center">
-
-                                {{-- HISTORY --}}
-                                <a href="{{ route('stock.item.history', [$companyCode, $warehouse->id, $s->item->id]) }}"
+                                <a href="{{ route('stock.item.history', [$companyCode, $warehouse->id, $s->id]) }}"
                                     class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
-                                          bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200
-                                          transition font-medium">
+                                        bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200
+                                        transition font-medium">
                                     <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     History
                                 </a>
-
                             </div>
                         </td>
 
@@ -81,7 +84,7 @@
 
                 @empty
                     <tr>
-                        <td colspan="4" class="p-4 text-center text-gray-500 text-sm">
+                        <td colspan="5" class="p-4 text-center text-gray-500 text-sm">
                             Belum ada stok item di gudang ini.
                         </td>
                     </tr>
@@ -89,6 +92,7 @@
             </tbody>
         </table>
     </div>
+
 
 
     <div id="adjustModal"

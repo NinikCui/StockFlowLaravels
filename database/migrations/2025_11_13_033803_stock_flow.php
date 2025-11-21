@@ -366,12 +366,11 @@ return new class extends Migration
             $table->index('company_id');
             $table->index('category_id');
             $table->index('satuan_id');
-            $table->index('suppliers_id');
         });
 
             Schema::create('stocks', function (Blueprint $table) {
                 $table->id();
-
+                $table->string('code')->unique();
                 $table->unsignedBigInteger('company_id');
                 $table->unsignedBigInteger('warehouse_id');
                 $table->unsignedBigInteger('item_id');
@@ -386,45 +385,52 @@ return new class extends Migration
                 $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
 
                 // Unique per item per gudang
-                $table->unique(['warehouse_id', 'item_id']);
+                $table->unique(['warehouse_id', 'code']);
             });
-            Schema::create('stock_movements', function (Blueprint $table) {
-                $table->id();
 
-                $table->unsignedBigInteger('company_id');
-                $table->unsignedBigInteger('warehouse_id');
-                $table->unsignedBigInteger('item_id');
-                $table->unsignedBigInteger('created_by');
+        Schema::create('stock_movements', function (Blueprint $table) {
+            $table->id();
 
-                // Movement type: IN / OUT / TRANSFER_IN / TRANSFER_OUT / ADJUSTMENT
-                $table->enum('type', [
-                    'IN', 
-                    'OUT', 
-                    'TRANSFER_IN', 
-                    'TRANSFER_OUT', 
-                    'ADJUSTMENT'
-                ]);
+            $table->unsignedBigInteger('company_id');
+            $table->unsignedBigInteger('warehouse_id');
+            $table->unsignedBigInteger('stock_id');   // ⭐ BARU → wajib untuk multi-stok
+            $table->unsignedBigInteger('item_id');    // tetap ada untuk filter cepat
+            $table->unsignedBigInteger('created_by');
 
-                // Qty bisa plus / minus → tapi secara UI tetap dikontrol
-                $table->decimal('qty', 14, 2);
+            // Movement type
+            $table->enum('type', [
+                'IN', 
+                'OUT', 
+                'TRANSFER_IN', 
+                'TRANSFER_OUT', 
+                'ADJUSTMENT'
+            ]);
 
-                // Optional reference (PO number, Transfer code, dll)
-                $table->string('reference')->nullable();
+            // Qty bisa plus / minus
+            $table->decimal('qty', 14, 2);
 
-                // Catatan tambahan
-                $table->string('notes')->nullable();
+            // Optional reference (PO, Transfer, Adjustment ID)
+            $table->string('reference')->nullable();
 
-                $table->timestamps();
+            // Catatan opsional
+            $table->string('notes')->nullable();
 
-                // Relasi
-                $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
-                $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-                $table->foreign('warehouse_id')->references('id')->on('warehouse')->onDelete('cascade');
-                $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
+            $table->timestamps();
 
-                // Index untuk kecepatan filter
-                $table->index(['warehouse_id', 'item_id', 'type']);
-            });
+            // FOREIGN KEYS
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
+            $table->foreign('warehouse_id')->references('id')->on('warehouse')->onDelete('cascade');
+
+            // ⭐ FK baru untuk menghubungkan movement ke stok tertentu
+            $table->foreign('stock_id')->references('id')->on('stocks')->onDelete('cascade');
+
+            // items FK tidak dihapus, karena penting untuk filter cepat
+            $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
+
+            // Index untuk optimasi
+            $table->index(['warehouse_id', 'stock_id', 'item_id', 'type']);
+        });
         Schema::create('suppliers_item', function (Blueprint $table) {
             $table->id();
 
