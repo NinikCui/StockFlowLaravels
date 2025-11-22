@@ -1,33 +1,60 @@
 <?php
 
 namespace App\Http\Controllers\Company;
+
 use App\Http\Controllers\Controller;
 use App\Models\CabangResto;
-use App\Models\Category;
 use App\Models\Company;
-use App\Models\Item;
 use App\Models\PoDetail;
 use App\Models\PurchaseOrder;
-use App\Models\Role;
-use App\Models\Satuan;
 use App\Models\Supplier;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 
 class PurchaseOrderController extends Controller
 {
     /**
      * List PO
      */
-    public function index($companyCode)
+    public function index(Request $request, $companyCode)
     {
-        $po = PurchaseOrder::with('supplier')
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $company = Company::where('code', $companyCode)->firstOrFail();
 
-        return view('company.purchase_order.index', compact('po', 'companyCode'));
+        $suppliers = Supplier::where('company_id', $company->id)->get();
+
+        $query = PurchaseOrder::with('supplier', 'cabangResto')
+            ->whereHas('cabangResto', function ($q) use ($company) {
+                $q->where('company_id', $company->id);
+            });
+
+        if ($request->filled('po_number')) {
+            $query->where('po_number', 'LIKE', '%'.$request->po_number.'%');
+        }
+
+        if ($request->filled('supplier_id')) {
+            $query->where('suppliers_id', $request->supplier_id);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('po_date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('po_date', '<=', $request->date_to);
+        }
+
+        $po = $query->orderBy('po_date', 'desc')
+            ->paginate(10)
+            ->appends($request->query());
+
+        return view('company.purchase_order.index', compact(
+            'po',
+            'suppliers',
+            'companyCode'
+        ));
     }
 
     /**
@@ -42,7 +69,7 @@ class PurchaseOrderController extends Controller
         $supplierItems = [];
 
         foreach ($suppliers as $s) {
-            $supplierItems[$s->id] = $s->supplierItems->map(function($si) {
+            $supplierItems[$s->id] = $s->supplierItems->map(function ($si) {
                 return [
                     'id' => $si->items_id,
                     'name' => $si->item->name,
@@ -57,7 +84,6 @@ class PurchaseOrderController extends Controller
             'supplierItems' => $supplierItems,
         ]);
     }
-
 
     public function store(Request $request, $companyCode)
     {
@@ -80,7 +106,7 @@ class PurchaseOrderController extends Controller
         ]);
 
         // Generate PO number (simple)
-        $poNumber = "PO-" . strtoupper($companyCode) . "-" . now()->format('YmdHis');
+        $poNumber = 'PO-'.strtoupper($companyCode).'-'.now()->format('YmdHis');
 
         // Create PO
         $po = PurchaseOrder::create([
@@ -116,27 +142,63 @@ class PurchaseOrderController extends Controller
      */
     public function show($companyCode, $id)
     {
-        $po = PurchaseOrder::with(['details.item', 'supplier'])->findOrFail($id);
+        $po = PurchaseOrder::with([
+            'details.item',
+            'supplier',
+            'cabangResto',
+        ])->findOrFail($id);
 
         return view('company.purchase_order.show', compact('po', 'companyCode'));
     }
 
-    /**
-     * Edit PO (only draft)
-     */
     public function edit($companyCode, $id)
     {
-        $po = PurchaseOrder::with('details')->findOrFail($id);
+        $po = PurchaseOrder::with([
+            'details.item',
+            'supplier.supplierItems.item',
+            'cabangResto',
+        ])->findOrFail($id);
 
         if ($po->status !== 'DRAFT') {
-            return back()->with('error', 'PO tidak bisa diedit setelah approve.');
+            return back()->with('error', 'PO tidak bisa diedit karena status bukan DRAFT.');
         }
 
-        $suppliers = Supplier::all();
-        $cabangs = CabangResto::all();
-        $items = Item::all();
+        // SUPPLIER LIST
+        $suppliers = Supplier::with(['supplierItems.item'])
+            ->orderBy('name')
+            ->get();
 
-        return view('company.purchase_order.edit', compact('po', 'cabangs', 'suppliers', 'items', 'companyCode'));
+        // CABANG LIST
+        $cabangs = CabangResto::orderBy('name')->get();
+
+        // BUILD supplierItems EXACTLY seperti halaman CREATE
+        $supplierItems = [];
+
+        foreach ($suppliers as $s) {
+            $supplierItems[$s->id] = $s->supplierItems->map(function ($si) {
+                return [
+                    'id' => $si->items_id,
+                    'name' => $si->item->name,
+                ];
+            })->toArray();
+        }
+
+        // Tambahkan LEGACY ITEM agar tetap muncul
+        $supplierId = $po->suppliers_id;
+
+        foreach ($po->details as $d) {
+            $exists = collect($supplierItems[$supplierId])
+                ->contains(fn ($i) => $i['id'] == $d->item_id);
+
+        }
+
+        return view('company.purchase_order.edit', compact(
+            'po',
+            'cabangs',
+            'suppliers',
+            'supplierItems',
+            'companyCode'
+        ));
     }
 
     /**
@@ -144,21 +206,44 @@ class PurchaseOrderController extends Controller
      */
     public function update(Request $request, $companyCode, $id)
     {
-        $po = PurchaseOrder::findOrFail($id);
+        $po = PurchaseOrder::with('details')->findOrFail($id);
 
         if ($po->status !== 'DRAFT') {
-            return back()->with('error', 'PO tidak bisa diupdate setelah approve.');
+            return back()->with('error', 'PO tidak bisa diupdate karena status bukan DRAFT.');
         }
 
+        // VALIDATE
         $data = $request->validate([
             'note' => 'nullable|string|max:200',
+
+            'items' => 'required|array|min:1',
+            'items.*.item_id' => 'required|exists:items,id',
+            'items.*.qty_ordered' => 'required|numeric|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.discount_pct' => 'nullable|numeric|min:0|max:100',
         ]);
 
+        // UPDATE NOTE
         $po->update([
             'note' => $data['note'],
         ]);
 
-        return back()->with('success', 'PO berhasil diperbarui.');
+        // HAPUS DETAIL LAMA
+        $po->details()->delete();
+
+        // INSERT ULANG DETAIL
+        foreach ($data['items'] as $item) {
+            $po->details()->create([
+                'items_id' => $item['item_id'],       // ← FIX WAJIB
+                'qty_ordered' => $item['qty_ordered'],
+                'unit_price' => $item['unit_price'],
+                'discount_pct' => $item['discount_pct'] ?? 0,
+                'quality' => $i['quality'] ?? 0,
+            ]);
+        }
+
+        return redirect()->route('po.show', [$companyCode, $po->id])
+            ->with('success', 'PO berhasil diperbarui.');
     }
 
     /**
@@ -201,7 +286,7 @@ class PurchaseOrderController extends Controller
     {
         $po = PurchaseOrder::with('details')->findOrFail($id);
 
-        if (!in_array($po->status, ['APPROVED', 'PARTIAL'])) {
+        if (! in_array($po->status, ['APPROVED', 'PARTIAL'])) {
             return back()->with('error', 'PO belum di-approve.');
         }
 

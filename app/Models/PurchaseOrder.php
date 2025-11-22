@@ -19,7 +19,7 @@ class PurchaseOrder extends Model
         'expected_delivery_date',
         'created_by',
         'created_at',
-        'updated_at'
+        'updated_at',
     ];
 
     public $timestamps = false;
