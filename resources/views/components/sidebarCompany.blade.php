@@ -45,7 +45,6 @@
             'href'  => "/$prefix/pembelian",
             'children' => [ 
                 ['label' => 'Purchase Order',       'href' => "/$prefix/purchase-order"],     
-                ['label' => 'Retur Pembelian',       'href' => "/$prefix/retur-pembelian"],     
                 ['label' => 'Supplier',       'href' => "/$prefix/supplier"],         
             ]
         ],

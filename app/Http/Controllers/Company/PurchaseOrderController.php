@@ -313,6 +313,17 @@ class PurchaseOrderController extends Controller
         $request->validate([
             'status' => 'required|in:DRAFT,APPROVED,PARTIAL,RECEIVED,CANCELLED',
         ]);
+        $status = $request->status;
+        $allowed = ['DRAFT', 'APPROVED', 'RECEIVED', 'CANCELLED', 'PARTIAL'];
+
+        if (! in_array($status, $allowed)) {
+            return back()->with('error', 'Status tidak valid.');
+        }
+
+        // Jangan ubah received atau cancelled
+        if (in_array($id->status, ['RECEIVED', 'CANCELLED'])) {
+            return back()->with('error', 'Status tidak bisa diubah.');
+        }
 
         if ($request->status == 'RECEIVED') {
             return redirect()->route('po.receive.show', [$companyCode, $id->id]);
@@ -325,8 +336,14 @@ class PurchaseOrderController extends Controller
 
     public function showReceiveForm($companyCode, PurchaseOrder $po)
     {
-        // Load item detail + satuan
-        $po->load(['details.item.satuan']);
+        // Load item + satuan + receive detail sebelumnya
+        $po->load(['details.item.satuan', 'details.receives']);
+
+        // Hitung remaining
+        foreach ($po->details as $detail) {
+            $detail->total_received_before = $detail->receives->sum('qty_received');
+            $detail->remaining = $detail->qty_ordered - $detail->total_received_before;
+        }
 
         return view('company.purchase_order.receive', [
             'po' => $po,
@@ -336,43 +353,34 @@ class PurchaseOrderController extends Controller
 
     public function processReceive(Request $request, $companyCode, PurchaseOrder $po)
     {
-        // Load detail PO + item
-        $po->load(['details.item']);
-
+        $po->load(['details.item', 'details.receives']);
         $receiveQty = $request->input('receive_qty', []);
         $returnQty = $request->input('return_qty', []);
 
         $warehouse = Warehouse::find($po->warehouse_id);
-
-        if (! $warehouse) {
-            return back()->withErrors(['Gudang tidak valid atau tidak ditemukan.']);
-        }
 
         /* =====================================================
          | VALIDASI KUANTITAS TIAP ITEM
          ===================================================== */
         foreach ($po->details as $detail) {
 
+            $alreadyReceived = $detail->receives->sum('qty_received');
+            $remaining = $detail->qty_ordered - $alreadyReceived;
+
             $recv = floatval($receiveQty[$detail->id] ?? 0);
             $ret = floatval($returnQty[$detail->id] ?? 0);
-            $total = $recv + $ret;
 
             if ($recv < 0 || $ret < 0) {
-                return back()->withErrors([
-                    "Item {$detail->item->name}: nilai tidak boleh negatif.",
-                ]);
+                return back()->withErrors(["{$detail->item->name}: nilai tidak boleh negatif"]);
             }
 
-            if ($total != $detail->qty_ordered) {
+            if ($recv + $ret != $remaining) {
                 return back()->withErrors([
-                    "Item {$detail->item->name}: (received + returned) harus = {$detail->qty_ordered}.",
+                    "{$detail->item->name}: total (received + return) harus = {$remaining}",
                 ]);
             }
         }
 
-        /* =====================================================
-         | CREATE RECEIVE HEADER
-         ===================================================== */
         $receiveHeader = PoReceive::create([
             'purchase_order_id' => $po->id,
             'warehouse_id' => $warehouse->id,
@@ -380,64 +388,47 @@ class PurchaseOrderController extends Controller
             'received_at' => now(),
         ]);
 
-        /* =====================================================
-         | PROCESS EACH ITEM: INSERT DETAIL & UPDATE STOCK
-         ===================================================== */
         foreach ($po->details as $detail) {
+
+            $alreadyReceived = $detail->receives->sum('qty_received');
+            $remaining = $detail->qty_ordered - $alreadyReceived;
 
             $recv = floatval($receiveQty[$detail->id] ?? 0);
             $ret = floatval($returnQty[$detail->id] ?? 0);
 
-            $itemId = $detail->item->id;
-
-            // Insert receive detail
+            // save receive detail
             PoReceiveDetail::create([
                 'po_receive_id' => $receiveHeader->id,
                 'po_detail_id' => $detail->id,
-                'item_id' => $itemId,
+                'item_id' => $detail->items_id,
                 'qty_received' => $recv,
                 'qty_returned' => $ret,
-                'note' => null,
             ]);
 
-            // Update stock hanya jika ada yang diterima
             if ($recv > 0) {
 
-                // ======================
-                // GENERATE KODE STOK
-                // Format: STK-{WAREHOUSECODE}-{0001}
-                // ======================
+                // generate code
                 $prefix = 'STK-'.strtoupper($warehouse->code).'-';
+                $last = Stock::where('warehouse_id', $warehouse->id)->orderBy('id', 'DESC')->first();
+                $next = $last ? intval(substr($last->code, -4)) + 1 : 1;
+                $code = $prefix.str_pad($next, 4, '0', STR_PAD_LEFT);
 
-                $last = Stock::where('warehouse_id', $warehouse->id)
-                    ->orderBy('id', 'DESC')
-                    ->first();
-
-                $nextNumber = $last
-                    ? intval(substr($last->code, -4)) + 1
-                    : 1;
-
-                $generatedCode = $prefix.str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-
-                // BUAT BARU
                 $stock = Stock::create([
                     'company_id' => $po->cabangResto->company_id,
                     'warehouse_id' => $warehouse->id,
-                    'item_id' => $itemId,
-                    'code' => $generatedCode,
+                    'item_id' => $detail->items_id,
                     'qty' => 0,
+                    'code' => $code,
                 ]);
             }
 
-            // TAMBAH STOK
             $stock->increment('qty', $recv);
 
-            // CATAT MOVEMENT
             StockMovement::create([
                 'company_id' => $po->cabangResto->company_id,
                 'warehouse_id' => $warehouse->id,
                 'stock_id' => $stock->id,
-                'item_id' => $itemId,
+                'item_id' => $detail->items_id,
                 'created_by' => auth()->id(),
                 'type' => 'IN',
                 'qty' => $recv,
@@ -447,39 +438,23 @@ class PurchaseOrderController extends Controller
         }
 
         /* =====================================================
-         | UPDATE STATUS PO
+         | UPDATE STATUS
          ===================================================== */
-
-        $isAllReceived = true;
-        $isAllReturned = true;
+        $allRemaining = true;
 
         foreach ($po->details as $detail) {
+            $receivedTotal = $detail->receives->sum('qty_received') + ($receiveQty[$detail->id] ?? 0);
 
-            $recv = floatval($receiveQty[$detail->id] ?? 0);
-            $ret = floatval($returnQty[$detail->id] ?? 0);
-
-            if ($recv != $detail->qty_ordered) {
-                $isAllReceived = false;
-            }
-
-            if ($ret != $detail->qty_ordered) {
-                $isAllReturned = false;
+            if ($receivedTotal < $detail->qty_ordered) {
+                $allRemaining = false;
             }
         }
 
-        if ($isAllReceived) {
-            $po->status = 'RECEIVED';
-        } elseif ($isAllReturned) {
-            $po->status = 'CANCELLED';
-        } else {
-            // MIXED VALUES → PARTIAL RECEIVE
-            $po->status = 'PARTIAL';
-        }
-
+        $po->status = 'RECEIVED';
         $po->save();
 
         return redirect()
             ->route('po.show', [$companyCode, $po->id])
-            ->with('success', 'Penerimaan PO berhasil disimpan. Stok telah diperbarui.');
+            ->with('success', 'Penerimaan PO berhasil disimpan.');
     }
 }

@@ -6,38 +6,72 @@
         <div class="max-w-7xl mx-auto">
             {{-- Top Bar --}}
             <div class="flex items-center justify-between mb-6">
+
                 <a href="{{ route('po.index', $companyCode) }}"
-       class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition">
-        ← Kembali
-    </a>
+                class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition">
+                    ← Kembali
+                </a>
 
-    {{-- Show RECEIVE button ONLY for APPROVED --}}
-    @if ($po->status == 'APPROVED')
-        <a href="{{ route('po.receive.show', [$companyCode, $po->id]) }}"
-           class="inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 text-sm font-medium">
-            Terima Barang
-        </a>
-    @endif
+                <div class="flex items-center gap-3">
 
-    {{-- Hanya DRAFT bisa edit/hapus --}}
-    @if ($po->status == 'DRAFT')
-        <a href="{{ route('po.edit', [$companyCode, $po->id]) }}"
-           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-medium">
-            Edit PO
-        </a>
+                   
+                    @if ($po->status == 'DRAFT')
 
-        <form action="{{ route('po.destroy', [$companyCode, $po->id]) }}"
-              method="POST"
-              onsubmit="return confirm('Hapus PO ini?')">
-            @csrf @method('DELETE')
-            <button class="inline-flex items-center px-4 py-2 bg-rose-600 text-white hover:bg-rose-700 rounded-lg text-sm font-medium">
-                Hapus
-            </button>
-        </form>
-    @endif
+                        <a href="{{ route('po.edit', [$companyCode, $po->id]) }}"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+                            Edit PO
+                        </a>
+
+                        <form action="{{ route('po.destroy', [$companyCode, $po->id]) }}" method="POST"
+                            onsubmit="return confirm('Hapus PO ini?')">
+                            @csrf @method('DELETE')
+                            <button class="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 text-sm font-medium">
+                                Hapus
+                            </button>
+                        </form>
+
+                        <form action="{{ route('po.updateStatus', [$companyCode, $po->id]) }}" method="POST">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="status" value="APPROVED">
+                            <button class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
+                                Accept PO
+                            </button>
+                        </form>
+
+                    @endif
+
+
+                    @if ($po->status == 'APPROVED')
+
+                        <form action="{{ route('po.updateStatus', [$companyCode, $po->id]) }}" method="POST"
+                            onsubmit="return confirm('Batalkan PO ini?')">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="status" value="CANCELLED">
+                            <button class="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 text-sm font-medium">
+                                Cancel PO
+                            </button>
+                        </form>
+
+                        <a href="{{ route('po.receive.show', [$companyCode, $po->id]) }}"
+                        class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">
+                            Receive Items
+                        </a>
+
+                    @endif
+
+
+                    @if ($po->status == 'PARTIAL')
+
+                        <a href="{{ route('po.receive.show', [$companyCode, $po->id]) }}"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium">
+                            Continue Receive
+                        </a>
+
+                    @endif
+
+                </div>
             </div>
 
-            {{-- Header Card --}}
             <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 mb-6">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div>
@@ -70,11 +104,6 @@
                             {{ $status }}
                         </span>
                         
-                        <button onclick="document.getElementById('statusModal').classList.remove('hidden')" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                            <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-                            </svg>
-                        </button>
                     </div>
                 </div>
             </div>
@@ -236,44 +265,7 @@
         </div>
     </div>
 
-    {{-- Status Update Modal --}}
-    <div id="statusModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-slate-900">Update Status PO</h3>
-                <button onclick="document.getElementById('statusModal').classList.add('hidden')" class="p-1 hover:bg-slate-100 rounded-lg transition-colors">
-                    <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-            
-            <form action="{{ route('po.updateStatus', [$companyCode, $po->id]) }}" method="POST">
-                @csrf
-                @method('PATCH')
-                
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">Pilih Status Baru</label>
-                    <select name="status" class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                        <option value="DRAFT" {{ $po->status == 'DRAFT' ? 'selected' : '' }}>Draft</option>
-                        <option value="APPROVED" {{ $po->status == 'APPROVED' ? 'selected' : '' }}>Approved</option>
-                        <option value="PARTIAL" {{ $po->status == 'PARTIAL' ? 'selected' : '' }}>Partial</option>
-                        <option value="RECEIVED" {{ $po->status == 'RECEIVED' ? 'selected' : '' }}>Received</option>
-                        <option value="CANCELLED" {{ $po->status == 'CANCELLED' ? 'selected' : '' }}>Cancelled</option>
-                    </select>
-                </div>
-                
-                <div class="flex gap-3">
-                    <button type="button" onclick="document.getElementById('statusModal').classList.add('hidden')" class="flex-1 px-4 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-semibold transition-colors">
-                        Batal
-                    </button>
-                    <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors">
-                        Update Status
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    
 
 
     
