@@ -359,9 +359,6 @@ class PurchaseOrderController extends Controller
 
         $warehouse = Warehouse::find($po->warehouse_id);
 
-        /* =====================================================
-         | VALIDASI KUANTITAS TIAP ITEM
-         ===================================================== */
         foreach ($po->details as $detail) {
 
             $alreadyReceived = $detail->receives->sum('qty_received');
@@ -451,6 +448,7 @@ class PurchaseOrderController extends Controller
         }
 
         $po->status = 'RECEIVED';
+        $po->delivered_date = now();
         $po->save();
 
         return redirect()

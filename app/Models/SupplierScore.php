@@ -18,6 +18,8 @@ class SupplierScore extends Model
         'calculated_at',
     ];
 
+    public $timestamps = false;
+
     public function supplier()
     {
         return $this->belongsTo(Supplier::class, 'suppliers_id');

@@ -17,13 +17,14 @@ class PurchaseOrder extends Model
         'note',
         'ontime',
         'po_number',
+        'delivered_date',
         'expected_delivery_date',
         'created_by',
         'created_at',
         'updated_at',
     ];
 
-    public $timestamps = false;
+    public $timestamps = true;
 
     public function cabangResto()
     {

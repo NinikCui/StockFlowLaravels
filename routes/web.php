@@ -133,6 +133,14 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
 
             Route::delete('/items/{item}', [SupplierController::class, 'itemDestroy'])->name('supplier.items.destroy');
         });
+
+        Route::post('/{id}/generate-score',
+            [SupplierController::class, 'generateScore']
+        )->name('supplier.generateScore');
+        Route::post('/{id}/generate-score-period',
+            [SupplierController::class, 'generateScoreWithPeriod']
+        )->name('supplier.generateScorePeriod');
+
     });
 
     Route::prefix('{companyCode}/gudang')->group(function () {

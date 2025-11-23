@@ -448,6 +448,8 @@ return new class extends Migration
             $table->decimal('price_variance', 6, 3)->nullable();
             $table->string('notes', 245)->nullable();
             $table->timestamp('calculated_at')->useCurrent();
+            $table->integer('period_month')->nullable();
+            $table->integer('period_year')->nullable();
 
             $table->foreign('suppliers_id')
                 ->references('id')->on('suppliers')
@@ -472,6 +474,7 @@ return new class extends Migration
             $table->boolean('ontime');
 
             $table->string('po_number', 45)->nullable();
+            $table->date('delivered_date')->nullable();
             $table->date('expected_delivery_date')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
 
