@@ -11,14 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        
-
-
-        
 
         Schema::create('companies', function (Blueprint $table) {
             $table->id();
-            
+
             $table->string('name', 145);
             $table->string('code', 45)->unique();
             $table->string('timezone', 64)->nullable();
@@ -28,8 +24,6 @@ return new class extends Migration
             $table->timestamp('updated_at')->nullable();
 
         });
-
-        
 
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
@@ -45,8 +39,6 @@ return new class extends Migration
             $table->foreign('company_id')
                 ->references('id')->on('companies')
                 ->onDelete('cascade');
-
-            
 
             // Unique per perusahaan + cabang + kode
             $table->unique(
@@ -64,7 +56,7 @@ return new class extends Migration
             $table->string('username')->unique();
             $table->string('email')->unique();
             $table->string('phone');
-            $table->boolean("is_active")->default(1);
+            $table->boolean('is_active')->default(1);
 
             $table->unsignedBigInteger('roles_id');
 
@@ -79,7 +71,6 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
         });
-
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
@@ -126,7 +117,6 @@ return new class extends Migration
                 ->references('id')->on('companies')
                 ->onDelete('cascade');
 
-
             // index
             $table->index('company_id', 'fk_cabang_resto_company_idx');
         });
@@ -142,7 +132,6 @@ return new class extends Migration
                 ->references('id')->on('users')
                 ->nullOnDelete();
         });
-    
 
         Schema::create('permissions', function (Blueprint $table) {
             $table->id();
@@ -154,7 +143,7 @@ return new class extends Migration
             $table->string('description', 200)->nullable();
 
             // ENUM
-            $table->enum('scope', ['GLOBAL','COMPANY','BRANCH'])
+            $table->enum('scope', ['GLOBAL', 'COMPANY', 'BRANCH'])
                 ->default('COMPANY');
 
             $table->timestamp('created_at')->useCurrent();
@@ -165,8 +154,6 @@ return new class extends Migration
             $table->index('company_id', 'fk_permissions_companies1_idx');
         });
 
-        
-
         Schema::create('role_permissions', function (Blueprint $table) {
             $table->id();
 
@@ -174,7 +161,7 @@ return new class extends Migration
             $table->unsignedBigInteger('permission_id');
             $table->unsignedBigInteger('cabang_resto_id')->nullable();
 
-            $table->enum('effect', ['ALLOW','DENY'])
+            $table->enum('effect', ['ALLOW', 'DENY'])
                 ->default('ALLOW');
 
             // FK
@@ -192,7 +179,7 @@ return new class extends Migration
 
             // Unique constraint
             $table->unique(
-                ['roles_id','permission_id','cabang_resto_id'],
+                ['roles_id', 'permission_id', 'cabang_resto_id'],
                 'uq_role_perm_role_perm_branch'
             );
 
@@ -209,7 +196,7 @@ return new class extends Migration
             $table->unsignedBigInteger('permission_id');
             $table->unsignedBigInteger('cabang_resto_id')->nullable();
 
-            $table->enum('effect', ['ALLOW','DENY'])
+            $table->enum('effect', ['ALLOW', 'DENY'])
                 ->default('ALLOW')
                 ->using('effect::permission_effect');
 
@@ -228,7 +215,7 @@ return new class extends Migration
 
             // Unique
             $table->unique(
-                ['users_id','permission_id','cabang_resto_id'],
+                ['users_id', 'permission_id', 'cabang_resto_id'],
                 'uq_user_override_user_perm_branch'
             );
 
@@ -242,7 +229,7 @@ return new class extends Migration
 
             $table->unsignedBigInteger('company_id');
 
-            $table->string('name', 50); 
+            $table->string('name', 50);
 
             $table->timestamps();
 
@@ -257,17 +244,16 @@ return new class extends Migration
             $table->string('code', 45);
             $table->unsignedBigInteger('warehouse_type_id')->nullable();
 
-            
             $table->foreign('warehouse_type_id')
                 ->references('id')->on('warehouse_types')
                 ->onDelete('set null');
             $table->foreign('cabang_resto_id')
                 ->references('id')->on('cabang_resto')
                 ->onDelete('cascade');
-                
+
             $table->index('cabang_resto_id', 'fk_werehouse_cabang_resto1_idx');
         });
-        
+
         Schema::create('satuan', function (Blueprint $table) {
             $table->id();
 
@@ -280,9 +266,9 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('company_id')
-                  ->references('id')
-                  ->on('companies')
-                  ->cascadeOnDelete();
+                ->references('id')
+                ->on('companies')
+                ->cascadeOnDelete();
         });
 
         Schema::create('categories', function (Blueprint $table) {
@@ -301,7 +287,6 @@ return new class extends Migration
             $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
         });
 
-        
         Schema::create('suppliers', function (Blueprint $table) {
             $table->id();
 
@@ -326,8 +311,6 @@ return new class extends Migration
             $table->index('company_id');
             $table->index('name');
         });
-     
-
 
         Schema::create('items', function (Blueprint $table) {
             $table->id();
@@ -341,11 +324,10 @@ return new class extends Migration
 
             // Field item
             $table->string('name', 45);
-            $table->boolean('mudah_rusak')->default(false);      
+            $table->boolean('mudah_rusak')->default(false);
             $table->integer('min_stock')->default(0);
             $table->integer('max_stock')->default(0);
             $table->boolean('forecast_enabled')->default(false);
-
 
             $table->timestamps();
 
@@ -368,25 +350,25 @@ return new class extends Migration
             $table->index('satuan_id');
         });
 
-            Schema::create('stocks', function (Blueprint $table) {
-                $table->id();
-                $table->string('code')->unique();
-                $table->unsignedBigInteger('company_id');
-                $table->unsignedBigInteger('warehouse_id');
-                $table->unsignedBigInteger('item_id');
+        Schema::create('stocks', function (Blueprint $table) {
+            $table->id();
+            $table->string('code')->unique();
+            $table->unsignedBigInteger('company_id');
+            $table->unsignedBigInteger('warehouse_id');
+            $table->unsignedBigInteger('item_id');
 
-                $table->decimal('qty', 14, 2)->default(0);
+            $table->decimal('qty', 14, 2)->default(0);
 
-                $table->timestamps();
+            $table->timestamps();
 
-                // Relasi
-                $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
-                $table->foreign('warehouse_id')->references('id')->on('warehouse')->onDelete('cascade');
-                $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
+            // Relasi
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
+            $table->foreign('warehouse_id')->references('id')->on('warehouse')->onDelete('cascade');
+            $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
 
-                // Unique per item per gudang
-                $table->unique(['warehouse_id', 'code']);
-            });
+            // Unique per item per gudang
+            $table->unique(['warehouse_id', 'code']);
+        });
 
         Schema::create('stock_movements', function (Blueprint $table) {
             $table->id();
@@ -399,11 +381,11 @@ return new class extends Migration
 
             // Movement type
             $table->enum('type', [
-                'IN', 
-                'OUT', 
-                'TRANSFER_IN', 
-                'TRANSFER_OUT', 
-                'ADJUSTMENT'
+                'IN',
+                'OUT',
+                'TRANSFER_IN',
+                'TRANSFER_OUT',
+                'ADJUSTMENT',
             ]);
 
             // Qty bisa plus / minus
@@ -474,8 +456,6 @@ return new class extends Migration
             $table->index('suppliers_id', 'fk_supplier_scores_suppliers1_idx');
         });
 
-        
-
         Schema::create('purchase_order', function (Blueprint $table) {
             $table->id();
 
@@ -484,7 +464,7 @@ return new class extends Migration
 
             $table->date('po_date');
             $table->enum('status', [
-                'DRAFT','APPROVED','PARTIAL','RECEIVED','CANCELLED'
+                'DRAFT', 'APPROVED', 'PARTIAL', 'RECEIVED', 'CANCELLED',
             ]);
 
             $table->string('note', 200);
@@ -543,30 +523,6 @@ return new class extends Migration
             $table->index('items_id', 'fk_po_detail_items1_idx');
         });
 
-        Schema::create('purchase_returns', function (Blueprint $table) {
-            $table->id();
-
-            $table->unsignedBigInteger('po_detail_id');
-            $table->timestamp('purchase_returns');
-            $table->string('reason', 200);
-            $table->unsignedBigInteger('created_by');
-            $table->decimal('qty_returned', 16, 4);
-            $table->timestamp('posted_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
-
-            // FK
-            $table->foreign('po_detail_id')
-                ->references('id')->on('po_detail')
-                ->onDelete('cascade');
-
-            $table->foreign('created_by')
-                ->references('id')->on('users')
-                ->onDelete('cascade');
-
-            // Index
-            $table->index('po_detail_id', 'fk_purchase_returns_po_detail1_idx');
-        });
-
         Schema::create('products', function (Blueprint $table) {
             $table->id();
 
@@ -600,6 +556,66 @@ return new class extends Migration
             $table->index('products_id', 'fk_boms_products1_idx');
             $table->index('items_id', 'fk_boms_items1_idx');
         });
+        Schema::create('po_receive', function (Blueprint $table) {
+            $table->id();
+
+            $table->unsignedBigInteger('purchase_order_id');
+            $table->unsignedBigInteger('warehouse_id');
+            $table->unsignedBigInteger('received_by');   // users.id
+
+            $table->timestamp('received_at')->useCurrent();
+            $table->timestamps();
+
+            // FK
+            $table->foreign('purchase_order_id')
+                ->references('id')->on('purchase_order')
+                ->cascadeOnDelete();
+
+            $table->foreign('warehouse_id')
+                ->references('id')->on('warehouse')
+                ->cascadeOnDelete();
+
+            $table->foreign('received_by')
+                ->references('id')->on('users')
+                ->cascadeOnDelete();
+
+            // Index
+            $table->index('purchase_order_id');
+            $table->index('warehouse_id');
+        });
+
+        Schema::create('po_receive_detail', function (Blueprint $table) {
+            $table->id();
+
+            $table->unsignedBigInteger('po_receive_id');
+            $table->unsignedBigInteger('po_detail_id');
+            $table->unsignedBigInteger('item_id');
+
+            $table->decimal('qty_received', 16, 4)->default(0);
+            $table->decimal('qty_returned', 16, 4)->default(0);
+
+            $table->string('note', 200)->nullable();
+
+            $table->timestamps();
+
+            // FK
+            $table->foreign('po_receive_id')
+                ->references('id')->on('po_receive')
+                ->cascadeOnDelete();
+
+            $table->foreign('po_detail_id')
+                ->references('id')->on('po_detail')
+                ->cascadeOnDelete();
+
+            $table->foreign('item_id')
+                ->references('id')->on('items')
+                ->cascadeOnDelete();
+
+            // Index
+            $table->index('po_receive_id');
+            $table->index('po_detail_id');
+            $table->index('item_id');
+        });
     }
 
     /**
@@ -628,8 +644,9 @@ return new class extends Migration
         Schema::dropIfExists('supplier_scores');
         Schema::dropIfExists('purchase_order');
         Schema::dropIfExists('po_detail');
-        Schema::dropIfExists('purchase_returns');
         Schema::dropIfExists('products');
         Schema::dropIfExists('boms');
+        Schema::dropIfExists('po_receive');
+        Schema::dropIfExists('po_receive');
     }
 };

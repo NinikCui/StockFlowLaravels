@@ -8,7 +8,7 @@ class Item extends Model
 {
     protected $table = 'items';
 
-      protected $fillable = [
+    protected $fillable = [
         'company_id',
         'category_id',
         'satuan_id',
@@ -38,6 +38,7 @@ class Item extends Model
             ->withPivot(['price', 'min_order_qty', 'last_price_update'])
             ->withTimestamps();
     }
+
     public function demandDaily()
     {
         return $this->hasMany(DemandDaily::class, 'items_id');
@@ -66,5 +67,10 @@ class Item extends Model
     public function restockRecommendations()
     {
         return $this->hasMany(RestockRecommendation::class, 'items_id');
+    }
+
+    public function receiveDetails()
+    {
+        return $this->hasMany(PoReceiveDetail::class, 'item_id');
     }
 }

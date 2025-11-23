@@ -1,19 +1,17 @@
 <?php
 
+use App\Http\Controllers\Company\CabangController;
 use App\Http\Controllers\Company\CategoriesIssuesController;
-use App\Http\Controllers\Company\CategoryController;
 use App\Http\Controllers\Company\CompanySettingController;
 use App\Http\Controllers\Company\ItemsController;
 use App\Http\Controllers\Company\PegawaiController;
 use App\Http\Controllers\Company\PurchaseOrderController;
-use App\Http\Controllers\Company\SatuanController;
+use App\Http\Controllers\Company\RoleController;
 use App\Http\Controllers\Company\StockController;
 use App\Http\Controllers\Company\SupplierController;
 use App\Http\Controllers\Company\WarehouseController;
 use App\Http\Controllers\TenantDashboardController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Company\RoleController;
-use App\Http\Controllers\Company\CabangController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -24,7 +22,6 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
     // DASHBOARD
     Route::get('/{code}/dashboard', [TenantDashboardController::class, 'index'])
         ->name('dashboard');
-
 
     Route::prefix('{companyCode}/pegawai')->group(function () {
 
@@ -40,7 +37,7 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/edit/{id}', [PegawaiController::class, 'edit'])->name('pegawai.edit');
         Route::put('/{id}', [PegawaiController::class, 'update'])->name('pegawai.update');
 
-        //DELTE PEGAWAI
+        // DELTE PEGAWAI
         Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('pegawai.destroy');
 
         // ROLE MANAGEMENT
@@ -73,7 +70,7 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
     });
 
     Route::prefix('{companyCode}/settings')->group(function () {
-        
+
         Route::get('/general', [CompanySettingController::class, 'general'])->name('settings.general');
         Route::post('/general', [CompanySettingController::class, 'generalUpdate'])->name('settings.general.update');
         Route::prefix('masalah')->group(function () {
@@ -92,28 +89,27 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/', [ItemsController::class, 'index'])
             ->name('items.index');
 
-        // Item 
+        // Item
         Route::get('/create', [ItemsController::class, 'createItem'])->name('items.item.create');
         Route::post('/store', [ItemsController::class, 'storeItem'])->name('items.item.store');
         Route::get('/{id}/edit', [ItemsController::class, 'editItem'])->name('items.item.edit');
         Route::put('/{id}', [ItemsController::class, 'updateItem'])->name('items.item.update');
         Route::delete('/{id}', [ItemsController::class, 'deleteItem'])->name('items.item.delete');
 
-        // Category 
+        // Category
         Route::get('/category/create', [ItemsController::class, 'createCategory'])->name('items.category.create');
         Route::post('/category', [ItemsController::class, 'storeCategory'])->name('items.category.store');
         Route::get('/category/{code}/edit', [ItemsController::class, 'editCategory'])->name('items.category.edit');
         Route::put('/category/{code}', [ItemsController::class, 'updateCategory'])->name('items.category.update');
         Route::delete('/category/{code}', [ItemsController::class, 'deleteCategory'])->name('items.category.delete');
 
-        // Satuan 
+        // Satuan
         Route::get('/satuan/create', [ItemsController::class, 'createSatuan'])->name('items.satuan.create');
         Route::post('/satuan', [ItemsController::class, 'storeSatuan'])->name('items.satuan.store');
         Route::get('/satuan/{code}/edit', [ItemsController::class, 'editSatuan'])->name('items.satuan.edit');
         Route::put('/satuan/{code}', [ItemsController::class, 'updateSatuan'])->name('items.satuan.update');
         Route::delete('/satuan/{code}', [ItemsController::class, 'deleteSatuan'])->name('items.satuan.delete');
     });
-
 
     Route::prefix('{companyCode}/supplier')->group(function () {
 
@@ -141,41 +137,36 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
 
     Route::prefix('{companyCode}/gudang')->group(function () {
 
-        Route::get('/',             [WarehouseController::class, 'index'])->name('warehouse.index');
-        Route::get('/create',       [WarehouseController::class, 'create'])->name('warehouse.create');
-        Route::post('/',            [WarehouseController::class, 'store'])->name('warehouse.store');
-        Route::get('/{id}/edit',    [WarehouseController::class, 'edit'])->name('warehouse.edit');
-        Route::put('/{id}',         [WarehouseController::class, 'update'])->name('warehouse.update');
-        Route::delete('/{id}',      [WarehouseController::class, 'destroy'])->name('warehouse.destroy');
+        Route::get('/', [WarehouseController::class, 'index'])->name('warehouse.index');
+        Route::get('/create', [WarehouseController::class, 'create'])->name('warehouse.create');
+        Route::post('/', [WarehouseController::class, 'store'])->name('warehouse.store');
+        Route::get('/{id}/edit', [WarehouseController::class, 'edit'])->name('warehouse.edit');
+        Route::put('/{id}', [WarehouseController::class, 'update'])->name('warehouse.update');
+        Route::delete('/{id}', [WarehouseController::class, 'destroy'])->name('warehouse.destroy');
 
-        Route::get('/types',           [WarehouseController::class, 'typesIndex'])->name('warehouse.types.index');
-        Route::post('/types',          [WarehouseController::class, 'typesStore'])->name('warehouse.types.store');
-        Route::delete('/types/{id}',   [WarehouseController::class, 'typesDestroy'])->name('warehouse.types.destroy');
-
+        Route::get('/types', [WarehouseController::class, 'typesIndex'])->name('warehouse.types.index');
+        Route::post('/types', [WarehouseController::class, 'typesStore'])->name('warehouse.types.store');
+        Route::delete('/types/{id}', [WarehouseController::class, 'typesDestroy'])->name('warehouse.types.destroy');
 
         // ============================
         // DETAIL GUDANG
         // ============================
         Route::get('/{warehouseId}', [WarehouseController::class, 'show'])->name('warehouse.show');
 
-
         Route::prefix('{warehouseId}/stock')->group(function () {
 
             // --- STOCK IN ---
-            Route::get('/create', 
+            Route::get('/create',
                 [StockController::class, 'createIn'])->name('stock.in.create');
 
-            Route::post('/in', 
+            Route::post('/in',
                 [StockController::class, 'storeIn'])->name('stock.in.store');
 
-
-            Route::post('/stock/adjust', [StockController::class, 'storeAdjustment']) ->name('stock.adjust.store');
-
+            Route::post('/stock/adjust', [StockController::class, 'storeAdjustment'])->name('stock.adjust.store');
 
             // --- MOVEMENTS (History) ---
             Route::get('/{itemId}/history', [StockController::class, 'itemHistory'])->name('stock.item.history');
 
-            
         });
 
     });
@@ -214,14 +205,16 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::post('/{id}/cancel', [PurchaseOrderController::class, 'cancel'])
             ->name('po.cancel');
 
-        // RECEIVE / TERIMA BARANG
-        Route::post('/{id}/receive', [PurchaseOrderController::class, 'receive'])
-            ->name('po.receive');
+        // Route Receive Baru
+        Route::get('/{po}/receive', [PurchaseOrderController::class, 'showReceiveForm'])
+            ->name('po.receive.show');
 
-        // HAPUS PO (hanya jika masih draft)
-        Route::delete('/{id}', [PurchaseOrderController::class, 'destroy'])
-            ->name('po.destroy');
+        Route::post('/{po}/receive', [PurchaseOrderController::class, 'processReceive'])
+            ->name('po.receive.process');
+
+        Route::delete('/{id}', [PurchaseOrderController::class, 'destroy'])->name('po.destroy');
+        Route::patch('/{id}/status', [PurchaseOrderController::class, 'updateStatus'])->name('po.updateStatus');
     });
 });
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

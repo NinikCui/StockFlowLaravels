@@ -16,7 +16,7 @@ class PoDetail extends Model
         'quality',
         'conversion_to_stock',
         'discount_pct',
-        'note_line'
+        'note_line',
     ];
 
     public $timestamps = false;
@@ -34,5 +34,10 @@ class PoDetail extends Model
     public function purchaseReturns()
     {
         return $this->hasMany(PurchaseReturn::class, 'po_detail_id');
+    }
+
+    public function receives()
+    {
+        return $this->hasMany(PoReceiveDetail::class, 'po_detail_id');
     }
 }

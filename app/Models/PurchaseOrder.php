@@ -43,4 +43,9 @@ class PurchaseOrder extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function receives()
+    {
+        return $this->hasMany(PoReceive::class, 'purchase_order_id');
+    }
 }

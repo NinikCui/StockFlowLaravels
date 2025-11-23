@@ -6,9 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\CabangResto;
 use App\Models\Company;
 use App\Models\PoDetail;
+use App\Models\PoReceive;
+use App\Models\PoReceiveDetail;
 use App\Models\PurchaseOrder;
+use App\Models\Stock;
+use App\Models\StockMovement;
 use App\Models\Supplier;
+use App\Models\Warehouse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class PurchaseOrderController extends Controller
 {
@@ -279,43 +285,6 @@ class PurchaseOrderController extends Controller
     }
 
     /**
-     * Receive (barang diterima)
-     * Nanti integrasi stok masuk
-     */
-    public function receive(Request $request, $companyCode, $id)
-    {
-        $po = PurchaseOrder::with('details')->findOrFail($id);
-
-        if (! in_array($po->status, ['APPROVED', 'PARTIAL'])) {
-            return back()->with('error', 'PO belum di-approve.');
-        }
-
-        $data = $request->validate([
-            'details' => 'required|array',
-            'details.*.id' => 'required|exists:po_detail,id',
-            'details.*.qty_received' => 'required|numeric|min:0',
-        ]);
-
-        // Loop all items
-        foreach ($data['details'] as $row) {
-            $detail = PoDetail::find($row['id']);
-            $received = $row['qty_received'];
-
-            // Update quality if needed
-            $detail->update([
-                'quality' => $detail->quality,
-            ]);
-        }
-
-        $po->update([
-            'status' => 'RECEIVED',
-            'ontime' => now()->toDateString() <= $po->expected_delivery_date,
-        ]);
-
-        return back()->with('success', 'Barang berhasil diterima.');
-    }
-
-    /**
      * Delete draft PO
      */
     public function destroy($companyCode, $id)
@@ -330,5 +299,169 @@ class PurchaseOrderController extends Controller
 
         return redirect()->route('po.index', $companyCode)
             ->with('success', 'PO berhasil dihapus.');
+    }
+
+    public function updateStatus(Request $request, $companyCode, PurchaseOrder $id)
+    {
+        $request->validate([
+            'status' => 'required|in:DRAFT,APPROVED,PARTIAL,RECEIVED,CANCELLED',
+        ]);
+
+        if ($request->status == 'RECEIVED') {
+            return redirect()->route('po.receive.show', [$companyCode, $id->id]);
+        }
+
+        $id->update(['status' => $request->status]);
+
+        return back()->with('success', 'Status PO diperbarui.');
+    }
+
+    public function showReceiveForm($companyCode, PurchaseOrder $po)
+    {
+        // Load item detail + satuan
+        $po->load(['details.item.satuan']);
+
+        return view('company.purchase_order.receive', [
+            'po' => $po,
+            'companyCode' => $companyCode,
+        ]);
+    }
+
+    public function processReceive(Request $request, $companyCode, PurchaseOrder $po)
+    {
+        // LOAD DETAIL + ITEM
+        $po->load(['details.item']);
+
+        $receiveQty = $request->input('receive_qty', []);
+        $returnQty = $request->input('return_qty', []);
+
+        // Ambil warehouse dari cabang PO
+        $warehouse = Warehouse::where('cabang_resto_id', $po->cabang_resto_id)->first();
+        if (! $warehouse) {
+            return back()->withErrors(['Gudang tidak ditemukan untuk cabang ini.']);
+        }
+
+        /* ---------------------------------------------------
+         | VALIDASI SETIAP ITEM
+         --------------------------------------------------- */
+        foreach ($po->details as $detail) {
+
+            $recv = floatval($receiveQty[$detail->id] ?? 0);
+            $ret = floatval($returnQty[$detail->id] ?? 0);
+
+            if ($recv < 0 || $ret < 0) {
+                return back()->withErrors([
+                    "Item {$detail->item->name}: nilai tidak boleh negatif.",
+                ]);
+            }
+
+            if ($recv + $ret != $detail->qty_ordered) {
+                return back()->withErrors([
+                    "Item {$detail->item->name}: total diterima + return harus = {$detail->qty_ordered}.",
+                ]);
+            }
+        }
+
+        /* ---------------------------------------------------
+         | CREATE RECEIVE HEADER
+         --------------------------------------------------- */
+        $receiveHeader = PoReceive::create([
+            'purchase_order_id' => $po->id,
+            'warehouse_id' => $warehouse->id,
+            'received_by' => auth()->id(),
+            'received_at' => now(),
+        ]);
+
+        /* ---------------------------------------------------
+         | INSERT RECEIVE DETAIL + UPDATE STOCK
+         --------------------------------------------------- */
+        foreach ($po->details as $detail) {
+
+            $recv = floatval($receiveQty[$detail->id] ?? 0);
+            $ret = floatval($returnQty[$detail->id] ?? 0);
+
+            // ALWAYS USE $detail->item->id (safe integer)
+            $itemId = $detail->item->id;
+
+            // --- INSERT RECEIVE DETAIL ---
+            PoReceiveDetail::create([
+                'po_receive_id' => $receiveHeader->id,
+                'po_detail_id' => $detail->id,
+                'item_id' => $itemId,
+                'qty_received' => $recv,
+                'qty_returned' => $ret,
+                'note' => null,
+            ]);
+
+            // --- UPDATE STOCK ---
+            if ($recv > 0) {
+
+                $stock = Stock::firstOrCreate(
+                    [
+                        'warehouse_id' => $warehouse->id,
+                        'item_id' => $itemId,
+                    ],
+                    [
+                        'company_id' => $po->cabangResto->company_id,
+                        'code' => 'STK-'.strtoupper(Str::random(6)),
+                        'qty' => 0,
+                    ]
+                );
+
+                // Tambah qty
+                $stock->increment('qty', $recv);
+
+                // Catat movement
+                StockMovement::create([
+                    'company_id' => $po->cabangResto->company_id,
+                    'warehouse_id' => $warehouse->id,
+                    'stock_id' => $stock->id,
+                    'item_id' => $itemId,
+                    'created_by' => auth()->id(),
+                    'type' => 'IN',
+                    'qty' => $recv,
+                    'reference' => "PO#{$po->po_number}",
+                    'notes' => 'Receive PO',
+                ]);
+            }
+        }
+
+        /* ---------------------------------------------------
+         | UPDATE STATUS PO
+         --------------------------------------------------- */
+        $allReceived = true;
+        $allReturned = true;
+
+        foreach ($po->details as $detail) {
+
+            $recv = floatval($receiveQty[$detail->id] ?? 0);
+            $ret = floatval($returnQty[$detail->id] ?? 0);
+
+            // FULL RECEIVED → semua diterima
+            if ($recv != $detail->qty_ordered) {
+                $allReceived = false;
+            }
+
+            // FULL RETURN → semua direturn
+            if ($ret != $detail->qty_ordered) {
+                $allReturned = false;
+            }
+        }
+
+        if ($allReceived) {
+            $po->status = 'RECEIVED';
+        } elseif ($allReturned) {
+            $po->status = 'CANCELLED';
+        } else {
+            return back()->withErrors([
+                'Penerimaan tidak valid. Sistem tidak mengizinkan PO partial.',
+            ]);
+        }
+
+        $po->save();
+
+        return redirect()
+            ->route('po.show', [$companyCode, $po->id])
+            ->with('success', 'Penerimaan PO berhasil disimpan. Stok telah diperbarui.');
     }
 }
