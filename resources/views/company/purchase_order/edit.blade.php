@@ -30,26 +30,37 @@
         <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4">Informasi PO</h2>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
+
+                {{-- Cabang --}}
                 <div>
                     <label class="text-sm font-medium">Cabang</label>
                     <input readonly class="mt-1 p-2 w-full border rounded-lg bg-gray-100"
                         value="{{ $po->cabangResto->name }}">
                 </div>
 
+                {{-- Warehouse --}}
+                <div>
+                    <label class="text-sm font-medium">Gudang</label>
+                    <input readonly class="mt-1 p-2 w-full border rounded-lg bg-gray-100"
+                        value="{{ $po->warehouse->name }}">
+                </div>
+
+                {{-- Supplier --}}
                 <div>
                     <label class="text-sm font-medium">Supplier</label>
-                    <input readonly id="supplierSelect"
-                        class="mt-1 p-2 w-full border rounded-lg bg-gray-100"
+                    <input readonly class="mt-1 p-2 w-full border rounded-lg bg-gray-100"
                         value="{{ $po->supplier->name }}">
                 </div>
 
+                {{-- Tanggal PO --}}
                 <div>
                     <label class="text-sm font-medium">Tanggal PO</label>
                     <input readonly class="mt-1 p-2 w-full border rounded-lg bg-gray-100"
                         value="{{ $po->po_date }}">
                 </div>
 
+                {{-- Tanggal Expected --}}
                 <div>
                     <label class="text-sm font-medium">Tanggal Diharapkan</label>
                     <input readonly class="mt-1 p-2 w-full border rounded-lg bg-gray-100"
@@ -58,10 +69,11 @@
             </div>
 
             {{-- CATATAN --}}
-            <div class="mt-4">
+            <div class="mt-4 col-span-3">
                 <label class="text-sm font-medium">Catatan</label>
                 <textarea name="note" rows="3"
-                    class="mt-1 p-2 w-full border rounded-lg">{{ old('note', $po->note) }}</textarea>
+                    class="mt-1 p-2 w-full border rounded-lg"
+                >{{ old('note', $po->note) }}</textarea>
             </div>
         </div>
 
@@ -76,10 +88,10 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="p-2">Item</th>
-                        <th class="p-2">Qty</th>
-                        <th class="p-2">Harga</th>
-                        <th class="p-2">Diskon (%)</th>
-                        <th class="p-2 text-center">Aksi</th>
+                        <th class="p-2 w-20">Qty</th>
+                        <th class="p-2 w-28">Harga</th>
+                        <th class="p-2 w-28">Diskon (%)</th>
+                        <th class="p-2 text-center w-20">Aksi</th>
                     </tr>
                 </thead>
                 <tbody id="itemTable"></tbody>
@@ -101,75 +113,87 @@
 
 
 {{-- ========================== --}}
-{{-- JAVASCRIPT FINAL FIX --}}
+{{-- JAVASCRIPT FINAL & AMAN --}}
 {{-- ========================== --}}
 <script>
 let rowIndex = 0;
 
-// Data supplier items
+// Supplier → Items
 const supplierItems = @json($supplierItems);
 
-// Existing PO items
+// Existing PO details
 const existing = @json($po->details);
 
-// Track used IDs (prevent duplicate)
+// Supplier ID
+const supplierId = @json($po->suppliers_id);
+
+// Track item yang sudah dipakai
 let usedItemIds = [];
 
-// =======================
-// LOAD EXISTING 
-// =======================
+
+/* ======================================================
+   LOAD EXISTING ITEM
+====================================================== */
 window.onload = function () {
-    const supplierId = @json($po->suppliers_id);
     const items = supplierItems[supplierId] ?? [];
 
     existing.forEach(d => {
-        let existingItem = items.find(i => i.id === d.item_id);
+        const match = items.find(i => i.id === d.item_id);
 
-        let itemName = existingItem
-            ? existingItem.name
-            : d.item.name + " (Tidak lagi dijual)";
-
-        addRow(d.item_id, d.qty_ordered, d.unit_price, d.discount_pct, itemName);
+        addRow({
+            item_id: d.item_id,
+            qty: d.qty_ordered,
+            price: d.unit_price,
+            discount: d.discount_pct,
+            displayName: match ? match.name : d.item.name + " (Tidak lagi dijual)"
+        });
     });
 };
 
 
-// =======================
-// ADD ROW (SAFE VERSION)
-// =======================
-function addRow(itemId = null, qty = 1, price = 0, discount = 0, legacyName = null) {
 
-    const supplierId = @json($po->suppliers_id);
+/* ======================================================
+   ADD ROW (untuk existing atau new)
+====================================================== */
+function addRow(data = {}) {
+    const item_id = data.item_id ?? null;
+    const qty = data.qty ?? 1;
+    const price = data.price ?? 0;
+    const discount = data.discount ?? 0;
+    const displayName = data.displayName ?? null;
+
     let items = supplierItems[supplierId] ?? [];
 
-    // Add legacy item if needed
-    if (itemId && !items.some(i => i.id === itemId)) {
+    // Jika item lama & tidak ada di supplier → tambahkan manual
+    if (item_id && !items.some(i => i.id === item_id)) {
         items.push({
-            id: itemId,
-            name: legacyName ?? "Item Lama"
+            id: item_id,
+            name: displayName ?? "Item Lama"
         });
     }
 
-    // Filter available items
-    const available = items.filter(i => !usedItemIds.includes(i.id) || i.id === itemId);
+    // Filter item yang belum dipakai
+    const available = items.filter(i => !usedItemIds.includes(i.id) || i.id === item_id);
 
     if (available.length === 0) {
-        alert("Semua item supplier sudah dipakai.");
+        alert("Semua item supplier sudah digunakan.");
         return;
     }
 
-    const selectedId = itemId ?? available[0].id;
+    const selectedId = item_id ?? available[0].id;
 
+    // Build options
     let options = "";
     available.forEach(i => {
         options += `<option value="${i.id}" ${i.id === selectedId ? 'selected' : ''}>${i.name}</option>`;
     });
 
+    // Insert Row
     document.getElementById("itemTable").insertAdjacentHTML("beforeend", `
         <tr class="border-b">
 
             <td class="p-2">
-                <select name="items[${rowIndex}][item_id]" 
+                <select name="items[${rowIndex}][item_id]"
                         class="itemSelect w-full border rounded-lg p-2"
                         onchange="changeItem(this)">
                     ${options}
@@ -195,8 +219,8 @@ function addRow(itemId = null, qty = 1, price = 0, discount = 0, legacyName = nu
             </td>
 
             <td class="p-2 text-center">
-                <button type="button" class="text-red-600 hover:underline"
-                        onclick="removeRow(this)">
+                <button type="button" onclick="removeRow(this)"
+                    class="text-red-600 hover:underline">
                     Hapus
                 </button>
             </td>
@@ -207,36 +231,40 @@ function addRow(itemId = null, qty = 1, price = 0, discount = 0, legacyName = nu
     usedItemIds.push(selectedId);
     rowIndex++;
 }
-// =======================
-// CHANGE ITEM SAFE
-// =======================
+
+
+
+/* ======================================================
+   CHANGE ITEM (prevent duplicate)
+====================================================== */
 function changeItem(select) {
     const newId = parseInt(select.value);
 
-    // Ambil semua value itemSelect 
-    const allValues = [...document.querySelectorAll('.itemSelect')]
+    const allSelected = [...document.querySelectorAll('.itemSelect')]
         .map(s => parseInt(s.value));
 
-    const duplicates = allValues.filter(v => v === newId).length > 1;
-
-    if (duplicates) {
+    if (allSelected.filter(id => id === newId).length > 1) {
         alert("Item sudah dipilih.");
         select.value = "";
         return;
     }
+
+    // sync ulang
+    usedItemIds = allSelected;
 }
 
 
-// =======================
-// REMOVE ROW
-// =======================
-function removeRow(btn) {
-    const tr = btn.closest("tr");
-    const itemId = parseInt(tr.querySelector(".itemSelect").value);
 
-    usedItemIds = usedItemIds.filter(id => id !== itemId);
+/* ======================================================
+   REMOVE ROW
+====================================================== */
+function removeRow(button) {
+    const row = button.closest("tr");
+    const id = parseInt(row.querySelector(".itemSelect").value);
 
-    tr.remove();
+    usedItemIds = usedItemIds.filter(x => x !== id);
+
+    row.remove();
 }
 </script>
 

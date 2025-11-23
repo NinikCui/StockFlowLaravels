@@ -460,6 +460,7 @@ return new class extends Migration
             $table->id();
 
             $table->unsignedBigInteger('cabang_resto_id');
+            $table->unsignedBigInteger('warehouse_id');
             $table->unsignedBigInteger('suppliers_id');
 
             $table->date('po_date');
@@ -481,6 +482,8 @@ return new class extends Migration
             $table->foreign('cabang_resto_id')
                 ->references('id')->on('cabang_resto')
                 ->onDelete('cascade');
+
+            $table->foreign('warehouse_id')->references('id')->on('warehouse')->onDelete('cascade');
 
             $table->foreign('suppliers_id')
                 ->references('id')->on('suppliers')

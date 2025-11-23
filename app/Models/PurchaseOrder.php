@@ -13,6 +13,7 @@ class PurchaseOrder extends Model
         'suppliers_id',
         'po_date',
         'status',
+        'warehouse_id',
         'note',
         'ontime',
         'po_number',
@@ -27,6 +28,11 @@ class PurchaseOrder extends Model
     public function cabangResto()
     {
         return $this->belongsTo(CabangResto::class, 'cabang_resto_id');
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'warehouse_id');
     }
 
     public function supplier()

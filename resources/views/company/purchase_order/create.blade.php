@@ -3,7 +3,7 @@
 
     <h1 class="text-2xl font-bold text-gray-900 mb-6">Buat Purchase Order</h1>
 
-    {{-- ERROR ALERT SERVER (JIKA KEBUTUHAN) --}}
+    {{-- ERROR ALERT SERVER --}}
     @if ($errors->any())
         <div class="mb-6 p-4 bg-red-100 text-red-700 rounded-xl shadow-sm">
             <ul class="list-disc list-inside text-sm">
@@ -17,19 +17,34 @@
     <form method="POST" action="{{ route('po.store', $companyCode) }}" id="poForm">
         @csrf
 
+        {{-- ========================== --}}
         {{-- INFORMASI PO --}}
+        {{-- ========================== --}}
         <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6">
             <h2 class="text-lg font-semibold text-gray-800 mb-4">Informasi PO</h2>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
+                
                 {{-- CABANG --}}
                 <div>
                     <label class="text-sm font-medium text-gray-700">Cabang</label>
-                    <select name="cabang_resto_id" class="w-full mt-1 p-2 border rounded-lg">
+                    <select name="cabang_resto_id"
+                        class="w-full mt-1 p-2 border rounded-lg"
+                    >
                         <option value="">-- Pilih Cabang --</option>
                         @foreach($cabangs as $c)
                             <option value="{{ $c->id }}">{{ $c->name }}</option>
                         @endforeach
+                    </select>
+                </div>
+
+                {{-- WAREHOUSE --}}
+                <div>
+                    <label class="text-sm font-medium text-gray-700">Gudang</label>
+                    <select id="warehouseSelect" name="warehouse_id"
+                        class="w-full mt-1 p-2 border rounded-lg"
+                    >
+                        <option value="">-- Pilih Cabang Terlebih Dahulu --</option>
                     </select>
                 </div>
 
@@ -38,7 +53,8 @@
                     <label class="text-sm font-medium text-gray-700">Supplier</label>
                     <select id="supplierSelect" name="suppliers_id"
                         class="w-full mt-1 p-2 border rounded-lg"
-                        onchange="onSupplierChange()">
+                        onchange="onSupplierChange()"
+                    >
                         <option value="">-- Pilih Supplier --</option>
                         @foreach($suppliers as $s)
                             <option value="{{ $s->id }}">{{ $s->name }}</option>
@@ -68,14 +84,18 @@
             </div>
 
             {{-- CATATAN --}}
-            <div class="mt-4">
+            <div class="mt-4 col-span-3">
                 <label class="text-sm font-medium text-gray-700">Catatan</label>
                 <textarea name="note" rows="3"
-                    class="w-full mt-1 p-2 border rounded-lg"></textarea>
+                    required placeholder="Wajib Diisi"
+                    class="w-full mt-1 p-2 border rounded-lg"
+                ></textarea>
             </div>
         </div>
 
-        {{-- ITEMS --}}
+        {{-- ========================== --}}
+        {{-- ITEM PEMBELIAN --}}
+        {{-- ========================== --}}
         <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h2 class="text-lg font-semibold text-gray-800 mb-4">Item Pembelian</h2>
 
@@ -83,9 +103,9 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="p-2">Item</th>
-                        <th class="p-2">Qty</th>
-                        <th class="p-2">Harga</th>
-                        <th class="p-2">Diskon (%)</th>
+                        <th class="p-2 w-24">Qty</th>
+                        <th class="p-2 w-32">Harga</th>
+                        <th class="p-2 w-32">Diskon (%)</th>
                         <th class="p-2 text-center">Aksi</th>
                     </tr>
                 </thead>
@@ -98,7 +118,9 @@
             </button>
         </div>
 
+        {{-- ========================== --}}
         {{-- SUBMIT --}}
+        {{-- ========================== --}}
         <button type="submit"
             class="mt-6 px-6 py-2 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700">
             Simpan PO
@@ -107,46 +129,58 @@
     </form>
 </div>
 
+{{-- ========================== --}}
+{{-- JAVASCRIPT --}}
+{{-- ========================== --}}
 <script>
 let rowIndex = 0;
 const supplierItems = @json($supplierItems);
-let usedItemIds = []; // Prevent duplicate item
+const warehouses = @json($warehouses);
+let usedItemIds = [];
 
-// ============================
-// TANGGAL DEFAULT & VALIDASI
-// ============================
+// DEFAULT DATE
 const today = new Date().toISOString().split("T")[0];
 document.getElementById("poDate").value = today;
 document.getElementById("poDate").max = today;
-
 document.getElementById("expectedDate").min = today;
 
-// Validasi tanggal PO
 document.getElementById("poDate").addEventListener("change", function() {
-    const err = document.getElementById("poDateError");
-    if (this.value > today) err.classList.remove("hidden");
-    else err.classList.add("hidden");
+    document.getElementById("poDateError").classList.toggle("hidden", !(this.value > today));
 });
 
-// Validasi tanggal expected
 document.getElementById("expectedDate").addEventListener("change", function() {
-    const err = document.getElementById("expectedDateError");
-    if (this.value <= today) err.classList.remove("hidden");
-    else err.classList.add("hidden");
+    document.getElementById("expectedDateError").classList.toggle("hidden", !(this.value <= today));
 });
 
-// ============================
-// CHANGE SUPPLIER
-// ============================
+
+document.querySelector("[name='cabang_resto_id']").addEventListener("change", function () {
+    const cabangId = parseInt(this.value);
+    const warehouseSelect = document.getElementById("warehouseSelect");
+
+    warehouseSelect.innerHTML = '<option value="">-- Pilih Gudang --</option>';
+
+    if (!cabangId) return;
+
+    const filtered = warehouses.filter(w => w.cabang_resto_id === cabangId);
+
+    filtered.forEach(w => {
+        warehouseSelect.insertAdjacentHTML("beforeend",
+            `<option value="${w.id}">${w.name}</option>`
+        );
+    });
+
+    if (filtered.length === 0) {
+        warehouseSelect.innerHTML = '<option value="">Tidak ada gudang untuk cabang ini</option>';
+    }
+});
+
+
 function onSupplierChange() {
     document.getElementById("itemTable").innerHTML = "";
-    rowIndex = 0;
     usedItemIds = [];
+    rowIndex = 0;
 }
 
-// ============================
-// ADD ROW ITEM
-// ============================
 function addRow() {
     const supplierId = document.getElementById("supplierSelect").value;
 
@@ -156,60 +190,48 @@ function addRow() {
     }
 
     const items = supplierItems[supplierId];
+    const available = items.filter(i => !usedItemIds.includes(i.id));
 
-    // Filter item yang belum dipakai
-    const availableItems = items.filter(i => !usedItemIds.includes(i.id));
-
-    if (availableItems.length === 0) {
-        alert("Semua item supplier sudah ditambahkan.");
+    if (available.length === 0) {
+        alert("Semua item supplier sudah dimasukkan.");
         return;
     }
 
     let options = "";
-    availableItems.forEach(i => {
-        options += `<option value="${i.id}">${i.name}</option>`;
-    });
+    available.forEach(i => options += `<option value="${i.id}">${i.name}</option>`);
 
-    const newItemId = availableItems[0].id;
-    usedItemIds.push(newItemId); // Tandai sebagai sudah digunakan
+    const newItemId = available[0].id;
+    usedItemIds.push(newItemId);
 
-    const tbody = document.getElementById("itemTable");
-
-    tbody.insertAdjacentHTML("beforeend", `
+    document.getElementById("itemTable").insertAdjacentHTML("beforeend", `
         <tr class="border-b">
             <td class="p-2">
                 <select name="items[${rowIndex}][item_id]"
-                        class="w-full border rounded-lg p-2 itemSelect"
+                        class="w-full border rounded-lg p-2"
                         onchange="changeItem(this, ${rowIndex})">
                     ${options}
                 </select>
             </td>
 
             <td class="p-2">
-                <input type="number" min="1"
+                <input type="number" min="1" value="1"
                        name="items[${rowIndex}][qty_ordered]"
-                       value="1"
-                       class="w-full border rounded-lg p-2 qtyInput"
-                       oninput="validateQty(this)">
-                <p class="text-xs text-red-600 hidden">Minimal 1.</p>
+                       class="w-full border rounded-lg p-2"
+                >
             </td>
 
             <td class="p-2">
-                <input type="number" min="0"
+                <input type="number" min="0" value="0"
                        name="items[${rowIndex}][unit_price]"
-                       value="0"
-                       class="w-full border rounded-lg p-2 priceInput"
-                       oninput="validatePrice(this)">
-                <p class="text-xs text-red-600 hidden">Harga tidak valid.</p>
+                       class="w-full border rounded-lg p-2"
+                >
             </td>
 
             <td class="p-2">
-                <input type="number" min="0" max="100"
+                <input type="number" min="0" max="100" value="0"
                        name="items[${rowIndex}][discount_pct]"
-                       value="0"
-                       class="w-full border rounded-lg p-2 discountInput"
-                       oninput="validateDiscount(this)">
-                <p class="text-xs text-red-600 hidden">Diskon 0–100.</p>
+                       class="w-full border rounded-lg p-2"
+                >
             </td>
 
             <td class="p-2 text-center">
@@ -224,45 +246,19 @@ function addRow() {
     rowIndex++;
 }
 
-// ============================
-// VALIDASI INPUT
-// ============================
-function validateQty(el) {
-    const err = el.nextElementSibling;
-    if (el.value < 1) err.classList.remove("hidden");
-    else err.classList.add("hidden");
-}
 
-function validatePrice(el) {
-    const err = el.nextElementSibling;
-    if (el.value < 0) err.classList.remove("hidden");
-    else err.classList.add("hidden");
-}
-
-function validateDiscount(el) {
-    const err = el.nextElementSibling;
-    if (el.value < 0 || el.value > 100) err.classList.remove("hidden");
-    else err.classList.add("hidden");
-}
-
-// ============================
-// REMOVE ROW
-// ============================
-function removeRow(button, itemId) {
+function removeRow(button, id) {
     button.closest("tr").remove();
-    usedItemIds = usedItemIds.filter(id => id !== itemId);
+    usedItemIds = usedItemIds.filter(x => x !== id);
 }
 
-// ============================
-// CHANGE ITEM (PREVENT DUPLICATE)
-// ============================
+
 function changeItem(select, index) {
-    const oldId = usedItemIds[index];
     const newId = parseInt(select.value);
 
     if (usedItemIds.includes(newId)) {
         alert("Item sudah dipilih.");
-        select.value = oldId;
+        select.value = usedItemIds[index];
         return;
     }
 
