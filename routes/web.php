@@ -4,6 +4,7 @@ use App\Http\Controllers\Company\CabangController;
 use App\Http\Controllers\Company\CategoriesIssuesController;
 use App\Http\Controllers\Company\CompanySettingController;
 use App\Http\Controllers\Company\ItemsController;
+use App\Http\Controllers\Company\MaterialRequestController;
 use App\Http\Controllers\Company\PegawaiController;
 use App\Http\Controllers\Company\PurchaseOrderController;
 use App\Http\Controllers\Company\RoleController;

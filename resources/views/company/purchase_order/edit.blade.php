@@ -111,29 +111,14 @@
     </form>
 </div>
 
-
-{{-- ========================== --}}
-{{-- JAVASCRIPT FINAL & AMAN --}}
-{{-- ========================== --}}
 <script>
 let rowIndex = 0;
-
-// Supplier → Items
 const supplierItems = @json($supplierItems);
-
-// Existing PO details
 const existing = @json($po->details);
-
-// Supplier ID
 const supplierId = @json($po->suppliers_id);
 
-// Track item yang sudah dipakai
 let usedItemIds = [];
 
-
-/* ======================================================
-   LOAD EXISTING ITEM
-====================================================== */
 window.onload = function () {
     const items = supplierItems[supplierId] ?? [];
 
@@ -145,6 +130,8 @@ window.onload = function () {
             qty: d.qty_ordered,
             price: d.unit_price,
             discount: d.discount_pct,
+            supplier_price: match ? match.price : d.unit_price,
+            supplier_min: match ? match.min_order_qty : 1,
             displayName: match ? match.name : d.item.name + " (Tidak lagi dijual)"
         });
     });
@@ -152,75 +139,67 @@ window.onload = function () {
 
 
 
-/* ======================================================
-   ADD ROW (untuk existing atau new)
-====================================================== */
 function addRow(data = {}) {
-    const item_id = data.item_id ?? null;
-    const qty = data.qty ?? 1;
-    const price = data.price ?? 0;
-    const discount = data.discount ?? 0;
-    const displayName = data.displayName ?? null;
+    const items = supplierItems[supplierId] ?? [];
 
-    let items = supplierItems[supplierId] ?? [];
+    const selectedId = data.item_id ?? null;
 
-    // Jika item lama & tidak ada di supplier → tambahkan manual
-    if (item_id && !items.some(i => i.id === item_id)) {
-        items.push({
-            id: item_id,
-            name: displayName ?? "Item Lama"
-        });
-    }
-
-    // Filter item yang belum dipakai
-    const available = items.filter(i => !usedItemIds.includes(i.id) || i.id === item_id);
+    let available = items.filter(i =>
+        !usedItemIds.includes(i.id) || i.id === selectedId
+    );
 
     if (available.length === 0) {
-        alert("Semua item supplier sudah digunakan.");
+        alert("Semua item telah dipakai.");
         return;
     }
 
-    const selectedId = item_id ?? available[0].id;
+    const itemId = selectedId ?? available[0].id;
 
-    // Build options
+    // Tambah ke used list
+    usedItemIds.push(itemId);
+
+    const selectedSupplierItem = items.find(i => i.id === itemId);
+
+    const qty = data.qty ?? (selectedSupplierItem?.min_order_qty ?? 1);
+    const price = data.price ?? (selectedSupplierItem?.price ?? 0);
+    const discount = data.discount ?? 0;
+
     let options = "";
     available.forEach(i => {
-        options += `<option value="${i.id}" ${i.id === selectedId ? 'selected' : ''}>${i.name}</option>`;
+        options += `<option value="${i.id}" ${i.id === itemId ? 'selected' : ''}>${i.name}</option>`;
     });
 
-    // Insert Row
     document.getElementById("itemTable").insertAdjacentHTML("beforeend", `
         <tr class="border-b">
 
             <td class="p-2">
-                <select name="items[${rowIndex}][item_id]"
-                        class="itemSelect w-full border rounded-lg p-2"
-                        onchange="changeItem(this)">
+                <select class="itemSelect w-full p-2 border rounded-lg"
+                        name="items[${rowIndex}][item_id]"
+                        onchange="changeItem(this, ${rowIndex})">
                     ${options}
                 </select>
             </td>
 
             <td class="p-2">
-                <input type="number" min="1" value="${qty}"
-                       name="items[${rowIndex}][qty_ordered]"
-                       class="w-full border rounded-lg p-2">
+                <input type="number" class="qtyInput w-full p-2 border rounded-lg"
+                    name="items[${rowIndex}][qty_ordered]" 
+                    value="${qty}" min="1">
             </td>
 
             <td class="p-2">
-                <input type="number" min="0" value="${price}"
-                       name="items[${rowIndex}][unit_price]"
-                       class="w-full border rounded-lg p-2">
+                <input type="number" class="priceInput w-full p-2 border rounded-lg"
+                    name="items[${rowIndex}][unit_price]" 
+                    value="${price}" min="0">
             </td>
 
             <td class="p-2">
-                <input type="number" min="0" max="100" value="${discount}"
-                       name="items[${rowIndex}][discount_pct]"
-                       class="w-full border rounded-lg p-2">
+                <input type="number" class="discInput w-full p-2 border rounded-lg"
+                    name="items[${rowIndex}][discount_pct]" 
+                    value="${discount}" min="0" max="100">
             </td>
 
             <td class="p-2 text-center">
-                <button type="button" onclick="removeRow(this)"
-                    class="text-red-600 hover:underline">
+                <button type="button" onclick="removeRow(this)" class="text-red-600 hover:underline">
                     Hapus
                 </button>
             </td>
@@ -228,16 +207,12 @@ function addRow(data = {}) {
         </tr>
     `);
 
-    usedItemIds.push(selectedId);
     rowIndex++;
 }
 
 
 
-/* ======================================================
-   CHANGE ITEM (prevent duplicate)
-====================================================== */
-function changeItem(select) {
+function changeItem(select, index) {
     const newId = parseInt(select.value);
 
     const allSelected = [...document.querySelectorAll('.itemSelect')]
@@ -249,8 +224,22 @@ function changeItem(select) {
         return;
     }
 
-    // sync ulang
     usedItemIds = allSelected;
+
+    const items = supplierItems[supplierId];
+    const find = items.find(i => i.id === newId);
+
+    // Set otomatis ke field qty + price
+    const row = select.closest("tr");
+
+    if (find) {
+        row.querySelector(".qtyInput").value = find.min_order_qty ?? 1;
+        row.querySelector(".priceInput").value = find.price ?? 0;
+    } else {
+        // Legacy item
+        row.querySelector(".qtyInput").value = 1;
+        row.querySelector(".priceInput").value = 0;
+    }
 }
 
 
@@ -267,5 +256,6 @@ function removeRow(button) {
     row.remove();
 }
 </script>
+
 
 </x-app-layout>

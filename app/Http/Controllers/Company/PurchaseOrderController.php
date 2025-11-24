@@ -78,6 +78,8 @@ class PurchaseOrderController extends Controller
                 return [
                     'id' => $si->items_id,
                     'name' => $si->item->name,
+                    'price' => $si->price,
+                    'min_order_qty' => $si->min_order_qty,
                 ];
             });
         }
@@ -170,6 +172,7 @@ class PurchaseOrderController extends Controller
             'details.item',
             'supplier.supplierItems.item',
             'cabangResto',
+            'warehouse',
         ])->findOrFail($id);
 
         if ($po->status !== 'DRAFT') {
@@ -184,7 +187,9 @@ class PurchaseOrderController extends Controller
         // CABANG LIST
         $cabangs = CabangResto::orderBy('name')->get();
 
-        // BUILD supplierItems EXACTLY seperti halaman CREATE
+        // WAREHOUSE LIST
+        $warehouses = Warehouse::with('cabangResto')->get();
+
         $supplierItems = [];
 
         foreach ($suppliers as $s) {
@@ -192,22 +197,38 @@ class PurchaseOrderController extends Controller
                 return [
                     'id' => $si->items_id,
                     'name' => $si->item->name,
+                    'price' => $si->price,
+                    'min_order_qty' => $si->min_order_qty, // ← DITAMBAHKAN
                 ];
             })->toArray();
         }
 
-        // Tambahkan LEGACY ITEM agar tetap muncul
+        /*
+        |--------------------------------------------------------------------------
+        | TAMBAHKAN ITEM LEGACY (item yang sudah ada di PO tapi tidak ada di supplier)
+        |--------------------------------------------------------------------------
+        */
         $supplierId = $po->suppliers_id;
 
         foreach ($po->details as $d) {
             $exists = collect($supplierItems[$supplierId])
                 ->contains(fn ($i) => $i['id'] == $d->item_id);
 
+            if (! $exists) {
+                // Tambahkan secara manual
+                $supplierItems[$supplierId][] = [
+                    'id' => $d->item_id,
+                    'name' => $d->item->name.' (Tidak lagi dijual)',
+                    'price' => $d->unit_price,  // harga PO lama
+                    'min_order_qty' => 1,
+                ];
+            }
         }
 
         return view('company.purchase_order.edit', compact(
             'po',
             'cabangs',
+            'warehouses',
             'suppliers',
             'supplierItems',
             'companyCode'

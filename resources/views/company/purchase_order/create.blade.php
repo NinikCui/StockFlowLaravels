@@ -197,16 +197,24 @@ function addRow() {
         return;
     }
 
-    let options = "";
-    available.forEach(i => options += `<option value="${i.id}">${i.name}</option>`);
+    const firstItem = available[0];
 
-    const newItemId = available[0].id;
-    usedItemIds.push(newItemId);
+    usedItemIds.push(firstItem.id);
+
+    let options = "";
+    available.forEach(i => {
+        options += `<option value="${i.id}"
+                        data-price="${i.price}"
+                        data-moq="${i.min_order_qty}">
+                        ${i.name}
+                    </option>`;
+    });
 
     document.getElementById("itemTable").insertAdjacentHTML("beforeend", `
-        <tr class="border-b">
+        <tr class="border-b" data-row="${rowIndex}">
+            
             <td class="p-2">
-                <select name="items[${rowIndex}][item_id]"
+                <select name="items[${rowIndex}][item_id]" 
                         class="w-full border rounded-lg p-2"
                         onchange="changeItem(this, ${rowIndex})">
                     ${options}
@@ -214,32 +222,33 @@ function addRow() {
             </td>
 
             <td class="p-2">
-                <input type="number" min="1" value="1"
+                <input type="number" min="1"
+                       value="${firstItem.min_order_qty}"
                        name="items[${rowIndex}][qty_ordered]"
-                       class="w-full border rounded-lg p-2"
-                >
+                       class="w-full border rounded-lg p-2 qty-input-${rowIndex}">
             </td>
 
             <td class="p-2">
-                <input type="number" min="0" value="0"
+                <input type="number" min="0"
+                       value="${firstItem.price}"
                        name="items[${rowIndex}][unit_price]"
-                       class="w-full border rounded-lg p-2"
-                >
+                       class="w-full border rounded-lg p-2 price-input-${rowIndex}">
             </td>
 
             <td class="p-2">
                 <input type="number" min="0" max="100" value="0"
                        name="items[${rowIndex}][discount_pct]"
-                       class="w-full border rounded-lg p-2"
-                >
+                       class="w-full border rounded-lg p-2">
             </td>
 
             <td class="p-2 text-center">
-                <button type="button" onclick="removeRow(this, ${newItemId})"
-                    class="text-red-600 hover:underline">
+                <button type="button" 
+                        onclick="removeRow(this, ${firstItem.id})"
+                        class="text-red-600 hover:underline">
                     Hapus
                 </button>
             </td>
+
         </tr>
     `);
 
@@ -254,6 +263,7 @@ function removeRow(button, id) {
 
 
 function changeItem(select, index) {
+
     const newId = parseInt(select.value);
 
     if (usedItemIds.includes(newId)) {
@@ -263,7 +273,15 @@ function changeItem(select, index) {
     }
 
     usedItemIds[index] = newId;
+
+    const option = select.selectedOptions[0];
+    const price = option.getAttribute("data-price");
+    const moq = option.getAttribute("data-moq");
+
+    document.querySelector(`.qty-input-${index}`).value = moq;
+    document.querySelector(`.price-input-${index}`).value = price;
 }
+
 </script>
 
 </x-app-layout>
