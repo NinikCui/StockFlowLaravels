@@ -223,6 +223,25 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::delete('/{id}', [PurchaseOrderController::class, 'destroy'])->name('po.destroy');
         Route::patch('/{id}/status', [PurchaseOrderController::class, 'updateStatus'])->name('po.updateStatus');
     });
+
+    Route::prefix('{companyCode}/stock/request-cabang')->group(function () {
+
+        Route::get('/', [MaterialRequestController::class, 'index'])->name('request.index');
+        Route::get('/create', [MaterialRequestController::class, 'create'])->name('request.create');
+        Route::post('/store', [MaterialRequestController::class, 'store'])->name('request.store');
+
+        // Approved by warehouse
+        Route::post('/{id}/approve', [MaterialRequestController::class, 'approve'])->name('request.approve');
+
+        // Mark items as sent from warehouse
+        Route::post('/{id}/send', [MaterialRequestController::class, 'send'])->name('request.send');
+
+        // Receive items in cabang
+        Route::post('/{id}/receive', [MaterialRequestController::class, 'receive'])->name('request.receive');
+
+        // Show detail
+        Route::get('/{id}', [MaterialRequestController::class, 'show'])->name('request.show');
+    });
 });
 
 require __DIR__.'/auth.php';

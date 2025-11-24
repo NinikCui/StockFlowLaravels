@@ -17,15 +17,131 @@ use Illuminate\Support\Facades\DB;
 class SupplierController extends Controller
 {
     // LIST
+    private function varianceFromArray($array)
+    {
+        $count = count($array);
+        if ($count < 2) {
+            return 0;
+        }
+
+        $mean = array_sum($array) / $count;
+        $variance = 0;
+
+        foreach ($array as $value) {
+            $variance += pow(($value - $mean), 2);
+        }
+
+        $std = sqrt($variance / ($count - 1));
+
+        return $mean > 0 ? round(($std / $mean) * 100, 2) : 0;
+    }
+
     public function index($companyCode)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
 
+        $itemFilter = request('item_id');
+        $performance = request('performance');
+        $sort = request('sort');
+
         $suppliers = Supplier::where('company_id', $company->id)
-            ->orderBy('name')
+            ->when($itemFilter, function ($q) use ($itemFilter) {
+                $q->whereHas('suppliedItems', function ($i) use ($itemFilter) {
+                    $i->where('items.id', $itemFilter);
+                });
+            })
             ->get();
 
-        return view('company.supplier.index', compact('suppliers', 'companyCode'));
+        // 🔥 HITUNG KPI LIVE UNTUK SETIAP SUPPLIER
+        foreach ($suppliers as $s) {
+
+            // Ambil PO
+            $poQuery = PurchaseOrder::where('suppliers_id', $s->id);
+            $totalOrders = $poQuery->count();
+
+            // ON TIME
+            $onTime = (clone $poQuery)
+                ->whereColumn('delivered_date', '<=', 'expected_delivery_date')
+                ->count();
+
+            $s->kpi_on_time = $totalOrders > 0
+                ? round(($onTime / $totalOrders) * 100, 2)
+                : 0;
+
+            // REJECT RATE
+            $returns = DB::table('po_receive_detail as rd')
+                ->join('po_receive as r', 'r.id', '=', 'rd.po_receive_id')
+                ->join('purchase_order as po', 'po.id', '=', 'r.purchase_order_id')
+                ->where('po.suppliers_id', $s->id)
+                ->selectRaw('SUM(rd.qty_received) total_received, SUM(rd.qty_returned) total_returned')
+                ->first();
+
+            $received = $returns->total_received ?? 0;
+            $returned = $returns->total_returned ?? 0;
+
+            $s->kpi_reject = $received > 0
+                ? round(($returned / $received) * 100, 2)
+                : 0;
+
+            // PRICE VARIANCE (ambil harga dari PO Detail)
+            $poIds = $poQuery->pluck('id');
+            $prices = PoDetail::whereIn('purchase_order_id', $poIds)
+                ->pluck('unit_price')
+                ->toArray();
+
+            $s->kpi_var = $this->varianceFromArray($prices);
+        }
+
+        // 🔥 FILTER PERFORMA LIVE
+        if ($performance) {
+            $suppliers = $suppliers->filter(function ($s) use ($performance) {
+
+                if ($performance === 'good') {
+                    return $s->kpi_on_time >= 90
+                        && $s->kpi_reject <= 10
+                        && $s->kpi_var <= 5;
+                }
+
+                if ($performance === 'average') {
+                    return $s->kpi_on_time >= 70
+                        && $s->kpi_reject <= 20;
+                }
+
+                if ($performance === 'poor') {
+                    return $s->kpi_on_time < 70
+                        || $s->kpi_reject > 20;
+                }
+
+                return true;
+            });
+        }
+
+        // 🔥 SORTING KPI LIVE
+        if ($sort) {
+            $suppliers = $suppliers->sortBy(function ($s) use ($sort) {
+
+                return match ($sort) {
+                    'on_time' => -$s->kpi_on_time,
+                    'reject_low' => $s->kpi_reject,
+                    'variance_low' => $s->kpi_var,
+                    'name_asc' => $s->name,
+                    default => $s->id,
+                };
+            });
+
+            if ($sort === 'name_desc') {
+                $suppliers = $suppliers->sortByDesc('name');
+            }
+        }
+
+        // Semua item
+        $allItems = Item::orderBy('name')->get();
+
+        return view('company.supplier.index', compact(
+            'suppliers',
+            'allItems',
+            'companyCode'
+        ));
     }
 
     // FORM TAMBAH

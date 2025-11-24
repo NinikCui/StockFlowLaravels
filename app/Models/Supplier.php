@@ -33,9 +33,10 @@ class Supplier extends Model
     }
 
     public function supplierItems()
-{
-    return $this->hasMany(SuppliersItem::class, 'suppliers_id');
-}
+    {
+        return $this->hasMany(SuppliersItem::class, 'suppliers_id');
+    }
+
     public function suppliedItems()
     {
         return $this->belongsToMany(Item::class, 'suppliers_item', 'suppliers_id', 'items_id')
@@ -46,14 +47,34 @@ class Supplier extends Model
     public function items()
     {
         return $this->hasManyThrough(
-            Item::class,          
-            SuppliersItem::class, 
-            'id',                
-            'id',                
+            Item::class,
+            SuppliersItem::class,
+            'id',
+            'id',
         );
     }
+
     public function scores()
     {
         return $this->hasMany(SupplierScore::class, 'suppliers_id');
+    }
+
+    public function performanceCategory()
+    {
+        $score = $this->scores->first(); // score terbaru
+
+        if (! $score) {
+            return 'unknown';
+        }
+
+        if ($score->on_time_rate >= 90 && $score->reject_rate <= 10 && $score->price_variance <= 5) {
+            return 'good';
+        }
+
+        if ($score->on_time_rate >= 70 && $score->reject_rate <= 20) {
+            return 'average';
+        }
+
+        return 'poor';
     }
 }
