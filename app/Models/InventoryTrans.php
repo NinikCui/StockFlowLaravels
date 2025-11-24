@@ -18,7 +18,11 @@ class InventoryTrans extends Model
         'reason',
         'created_by',
         'posted_at',
-        'updated_at'
+        'updated_at',
+    ];
+
+    protected $casts = [
+        'trans_date' => 'date',
     ];
 
     public $timestamps = false;

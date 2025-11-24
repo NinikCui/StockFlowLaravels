@@ -225,24 +225,30 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::patch('/{id}/status', [PurchaseOrderController::class, 'updateStatus'])->name('po.updateStatus');
     });
 
-    Route::prefix('{companyCode}/stock/request-cabang')->group(function () {
+    Route::prefix('{companyCode}/request-cabang')->group(function () {
 
-        Route::get('/', [MaterialRequestController::class, 'index'])->name('request.index');
-        Route::get('/create', [MaterialRequestController::class, 'create'])->name('request.create');
-        Route::post('/store', [MaterialRequestController::class, 'store'])->name('request.store');
+        Route::get('/', [MaterialRequestController::class, 'index'])
+            ->name('request.index');
 
-        // Approved by warehouse
-        Route::post('/{id}/approve', [MaterialRequestController::class, 'approve'])->name('request.approve');
+        Route::get('/create', [MaterialRequestController::class, 'create'])
+            ->name('request.create');
 
-        // Mark items as sent from warehouse
-        Route::post('/{id}/send', [MaterialRequestController::class, 'send'])->name('request.send');
+        Route::post('/', [MaterialRequestController::class, 'store'])
+            ->name('request.store');
+        Route::post('/anjay', [MaterialRequestController::class, 'store'])
+            ->name('request.storeeeee');
 
-        // Receive items in cabang
-        Route::post('/{id}/receive', [MaterialRequestController::class, 'receive'])->name('request.receive');
-
-        // Show detail
+        Route::get('/items/{branchId}', [MaterialRequestController::class, 'loadItems'])
+            ->name('request.load.items');
         Route::get('/{id}', [MaterialRequestController::class, 'show'])->name('request.show');
+
+        Route::get('/{id}/edit',
+            [MaterialRequestController::class, 'edit']
+        )->name('request.edit');
+        Route::put('/{id}',
+            [MaterialRequestController::class, 'update'])->name('request.update');
     });
+
 });
 
 require __DIR__.'/auth.php';

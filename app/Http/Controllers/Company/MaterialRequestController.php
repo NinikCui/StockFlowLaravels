@@ -4,14 +4,13 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use App\Models\CabangResto;
+use App\Models\Company;
 use App\Models\InventoryTrans;
 use App\Models\InvenTransDetail;
 use App\Models\Item;
 use App\Models\Stock;
-use App\Models\StockMovement;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class MaterialRequestController extends Controller
 {
@@ -22,7 +21,7 @@ class MaterialRequestController extends Controller
     {
         $companyId = session('role.company.id');
 
-        // Ambil semua gudang dari seluruh cabang perusahaan
+        // Ambil semua gudang milik perusahaan tersebut
         $warehouseIds = Warehouse::whereHas('cabangResto', function ($q) use ($companyId) {
             $q->where('company_id', $companyId);
         })->pluck('id');
@@ -30,7 +29,7 @@ class MaterialRequestController extends Controller
         $requests = InventoryTrans::with([
             'warehouseFrom.cabangResto',
             'warehouseTo.cabangResto',
-            'details.stock.item',
+            'details.item',
         ])
             ->whereIn('warehouse_id_to', $warehouseIds)
             ->orderByDesc('id')
@@ -44,22 +43,44 @@ class MaterialRequestController extends Controller
      */
     public function create($companyCode)
     {
-        $companyId = session('role.company.id');
+        $company = Company::where('code', $companyCode)->firstOrFail();
 
-        $branches = CabangResto::where('company_id', $companyId)
-            ->with('warehouses')
-            ->orderBy('name')
-            ->get();
+        $branches = CabangResto::where('company_id', $company->id)->get();
 
-        $items = Item::with('satuan')
-            ->where('company_id', $companyId)
-            ->orderBy('name')
-            ->get();
+        $stocks = Stock::with(['item.satuan'])->get();
+
+        $warehouses = Warehouse::all();
+
+        $itemsPerBranch = [];
+
+        foreach ($warehouses as $w) {
+
+            if (! isset($itemsPerBranch[$w->cabang_resto_id])) {
+                $itemsPerBranch[$w->cabang_resto_id] = [];
+            }
+
+            $alreadyAdded = [];
+
+            foreach ($stocks->where('warehouse_id', $w->id) as $s) {
+
+                if (in_array($s->item->id, $alreadyAdded)) {
+                    continue;
+                }
+
+                $alreadyAdded[] = $s->item->id;
+
+                $itemsPerBranch[$w->cabang_resto_id][] = [
+                    'id' => $s->item->id,
+                    'name' => $s->item->name,
+                    'satuan' => $s->item->satuan->code,
+                ];
+            }
+        }
 
         return view('company.request-cabang.create', [
-            'branches' => $branches,
-            'items' => $items,
             'companyCode' => $companyCode,
+            'branches' => $branches,
+            'itemsPerBranch' => $itemsPerBranch,
         ]);
     }
 
@@ -71,9 +92,10 @@ class MaterialRequestController extends Controller
         $validated = $request->validate([
             'cabang_from_id' => 'required|exists:cabang_resto,id',
             'cabang_to_id' => 'required|exists:cabang_resto,id|different:cabang_from_id',
-            'items' => 'required|array',
+            'items' => 'required|array|min:1',
             'items.*.item_id' => 'required|exists:items,id',
             'items.*.qty' => 'required|numeric|min:0.01',
+            'note' => 'nullable|string',
         ]);
 
         $warehouseFrom = Warehouse::where('cabang_resto_id', $validated['cabang_from_id'])->firstOrFail();
@@ -85,30 +107,22 @@ class MaterialRequestController extends Controller
             'trans_number' => 'MR-'.now()->format('YmdHis'),
             'trans_date' => today(),
             'status' => 'REQUESTED',
-            'note' => $request->note,
             'reason' => 'MATERIAL_REQUEST',
-            'created_by' => session('user.id'),
+            'note' => $validated['note'] ?? null,
+            'created_by' => auth()->id(),
         ]);
 
         foreach ($validated['items'] as $row) {
-
-            // Stock gudang asal
-            $stock = Stock::where('warehouse_id', $warehouseFrom->id)
-                ->where('item_id', $row['item_id'])
-                ->first();
-
-            if (! $stock) {
-                continue; // Owner bebas, skip item yg stoknya tidak ditemukan
-            }
-
             InvenTransDetail::create([
                 'inven_trans_id' => $trans->id,
-                'stocks_id' => $stock->id,
+                'items_id' => $row['item_id'],
                 'qty' => $row['qty'],
+                'note' => null,
             ]);
         }
 
-        return redirect()->route('request.index', $companyCode)
+        return redirect()
+            ->route('request.index', $companyCode)
             ->with('success', 'Request berhasil dibuat.');
     }
 
@@ -117,107 +131,114 @@ class MaterialRequestController extends Controller
      */
     public function show($companyCode, $id)
     {
-        $trans = InventoryTrans::with([
+        $requestTrans = InventoryTrans::with([
             'warehouseFrom.cabangResto',
             'warehouseTo.cabangResto',
-            'details.stock.item.satuan',
+            'details.item.satuan',
+        ])
+            ->where('id', $id)
+            ->firstOrFail();
+
+        return view('company.request-cabang.show', [
+            'companyCode' => $companyCode,
+            'req' => $requestTrans,
+        ]);
+    }
+
+    public function edit($companyCode, $id)
+    {
+        $companyId = session('role.company.id');
+
+        $req = InventoryTrans::with([
+            'warehouseFrom.cabangResto',
+            'warehouseTo.cabangResto',
+            'details.item.satuan',
         ])->findOrFail($id);
 
-        return view('company.request-cabang.show', compact('trans', 'companyCode'));
-    }
-
-    /**
-     * APPROVE — Owner approve request
-     */
-    public function approve($companyCode, $id)
-    {
-        $trans = InventoryTrans::findOrFail($id);
-
-        if ($trans->status !== 'REQUESTED') {
-            return back()->with('error', 'Request hanya bisa di-approve dari REQUESTED.');
+        if ($req->status !== 'REQUESTED') {
+            return redirect()
+                ->route('request.show', [$companyCode, $id])
+                ->with('error', 'Request ini sudah tidak dapat diedit.');
         }
 
-        $trans->update([
-            'status' => 'APPROVED',
-            'posted_at' => now(),
-        ]);
+        $branches = CabangResto::where('company_id', $companyId)->get();
 
-        return back()->with('success', 'Request disetujui.');
-    }
+        // Load item per cabang (seperti create)
+        $stocks = Stock::with(['item.satuan'])->get();
+        $warehouses = Warehouse::all();
+        $itemsPerBranch = [];
 
-    /**
-     * SEND — Owner melakukan pengiriman barang
-     */
-    public function send($companyCode, $id)
-    {
-        $trans = InventoryTrans::with('details.stock.item')->findOrFail($id);
-
-        if ($trans->status !== 'APPROVED') {
-            return back()->with('error', 'Hanya bisa kirim dari status APPROVED.');
-        }
-
-        foreach ($trans->details as $d) {
-
-            if ($d->stock->qty < $d->qty) {
-                return back()->with('error', "Stok tidak cukup untuk item {$d->stock->item->name}");
+        foreach ($warehouses as $w) {
+            if (! isset($itemsPerBranch[$w->cabang_resto_id])) {
+                $itemsPerBranch[$w->cabang_resto_id] = [];
             }
 
-            StockMovement::create([
-                'company_id' => $trans->company_id,
-                'warehouse_id' => $trans->warehouse_id_from,
-                'stock_id' => $d->stocks_id,
-                'item_id' => $d->stock->item_id,
-                'type' => 'TRANSFER_OUT',
-                'qty' => -$d->qty,
-                'reference' => $trans->trans_number,
-                'created_by' => session('user.id'),
-            ]);
+            $added = [];
 
-            $d->stock->decrement('qty', $d->qty);
+            foreach ($stocks->where('warehouse_id', $w->id) as $s) {
+                if (in_array($s->item->id, $added)) {
+                    continue;
+                }
+                $added[] = $s->item->id;
+
+                $itemsPerBranch[$w->cabang_resto_id][] = [
+                    'id' => $s->item->id,
+                    'name' => $s->item->name,
+                    'satuan' => $s->item->satuan->code,
+                ];
+            }
         }
 
-        $trans->update(['status' => 'IN_TRANSIT']);
-
-        return back()->with('success', 'Barang sedang dikirim.');
+        return view('company.request-cabang.edit', [
+            'companyCode' => $companyCode,
+            'req' => $req,
+            'branches' => $branches,
+            'itemsPerBranch' => $itemsPerBranch,
+        ]);
     }
 
-    /**
-     * RECEIVE — Owner melakukan penerimaan di cabang tujuan
-     */
-    public function receive($companyCode, $id)
+    public function update(Request $request, $companyCode, $id)
     {
-        $trans = InventoryTrans::with('details.stock.item')->findOrFail($id);
+        $validated = $request->validate([
+            'cabang_from_id' => 'required|exists:cabang_resto,id',
+            'cabang_to_id' => 'required|exists:cabang_resto,id|different:cabang_from_id',
+            'items' => 'required|array|min:1',
+            'items.*.item_id' => 'required|exists:items,id',
+            'items.*.qty' => 'required|numeric|min:0.01',
+            'note' => 'nullable|string',
+        ]);
 
-        if ($trans->status !== 'IN_TRANSIT') {
-            return back()->with('error', 'Hanya bisa terima dari status IN_TRANSIT.');
+        $req = InventoryTrans::findOrFail($id);
+
+        if ($req->status !== 'REQUESTED') {
+            return redirect()
+                ->route('request.show', [$companyCode, $id])
+                ->with('error', 'Tidak dapat mengedit request ini.');
         }
 
-        foreach ($trans->details as $d) {
+        // Update header
+        $warehouseFrom = Warehouse::where('cabang_resto_id', $validated['cabang_from_id'])->first();
+        $warehouseTo = Warehouse::where('cabang_resto_id', $validated['cabang_to_id'])->first();
 
-            $targetStock = Stock::updateOrCreate(
-                [
-                    'warehouse_id' => $trans->warehouse_id_to,
-                    'item_id' => $d->stock->item_id,
-                ],
-                [
-                    'qty' => DB::raw("qty + {$d->qty}"),
-                ]
-            );
+        $req->update([
+            'warehouse_id_from' => $warehouseFrom->id,
+            'warehouse_id_to' => $warehouseTo->id,
+            'note' => $validated['note'],
+        ]);
 
-            StockMovement::create([
-                'company_id' => $trans->company_id,
-                'warehouse_id' => $trans->warehouse_id_to,
-                'stock_id' => $targetStock->id,
-                'item_id' => $targetStock->item_id,
-                'type' => 'TRANSFER_IN',
-                'qty' => $d->qty,
-                'reference' => $trans->trans_number,
-                'created_by' => session('user.id'),
+        // Reset detail
+        $req->details()->delete();
+
+        foreach ($validated['items'] as $row) {
+            InvenTransDetail::create([
+                'inven_trans_id' => $req->id,
+                'items_id' => $row['item_id'],
+                'qty' => $row['qty'],
             ]);
         }
 
-        $trans->update(['status' => 'RECEIVED']);
-
-        return back()->with('success', 'Barang berhasil diterima.');
+        return redirect()
+            ->route('request.show', [$companyCode, $req->id])
+            ->with('success', 'Request berhasil diperbarui.');
     }
 }

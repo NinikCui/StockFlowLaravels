@@ -58,11 +58,7 @@
                                 d="M3 3h18v4H3V3zm0 6h18v4H3V9zm0 6h18v4H3v-4z" />
                     </svg>',
             'children' => [
-                ['label' => 'Stok Masuk',        'href' => "/$prefix/stock/in"],
-                ['label' => 'Stok Keluar',       'href' => "/$prefix/stock/out"],
-                ['label' => 'Mutasi Stok',       'href' => "/$prefix/stock/mutation"],
-                ['label' => 'History Item',      'href' => "/$prefix/stock/history"],
-                ['label' => 'Request Cabang',    'href' => "/$prefix/stock/request-cabang"],  // ⭐ BARU
+                ['label' => 'Request Cabang',    'href' => "/$prefix/request-cabang"],  
             ]
         ],
         [

@@ -23,9 +23,8 @@ return new class extends Migration
             $table->timestamp('closed_at')->nullable();
             $table->decimal('closing_cash', 16, 2)->nullable();
 
-            $table->enum('status', ['OPEN','CLOSED'])
-                ->default('OPEN')
-                ;
+            $table->enum('status', ['OPEN', 'CLOSED'])
+                ->default('OPEN');
 
             $table->string('note', 200)->nullable();
 
@@ -46,15 +45,13 @@ return new class extends Migration
             $table->index('cabang_resto_id', 'fk_pos_shifts_cabang_resto1_idx');
         });
 
-        
-
         Schema::create('pos_order', function (Blueprint $table) {
             $table->id();
 
             $table->unsignedBigInteger('cabang_resto_id');
             $table->timestamp('order_datetime');
 
-            $table->enum('status', ['OPEN','PAID','VOID']);
+            $table->enum('status', ['OPEN', 'PAID', 'VOID']);
 
             $table->string('order_number', 45)->nullable();
 
@@ -84,21 +81,18 @@ return new class extends Migration
             $table->index('pos_shifts_id', 'fk_pos_order_pos_shifts1_idx');
         });
 
-      
-
-
         Schema::create('pos_payments', function (Blueprint $table) {
             $table->id();
 
             $table->unsignedBigInteger('pos_order_id');
-            $table->enum('method', ['CASH','QRIS','CARD','TRANSFER','OTHER']);
+            $table->enum('method', ['CASH', 'QRIS', 'CARD', 'TRANSFER', 'OTHER']);
 
             $table->decimal('amount', 16, 2);
             $table->string('ref_number', 80)->nullable();
             $table->timestamp('paid_at');
 
             $table->enum('status', [
-                'PENDING','SUCCESS','FAILED','REFUNDED'
+                'PENDING', 'SUCCESS', 'FAILED', 'REFUNDED',
             ])->default('SUCCESS');
 
             $table->string('note', 200)->nullable();
@@ -137,8 +131,6 @@ return new class extends Migration
             $table->index('products_id', 'fk_order_detail_products1_idx');
         });
 
-        
-
         Schema::create('inven_trans', function (Blueprint $table) {
             $table->id();
 
@@ -149,7 +141,7 @@ return new class extends Migration
             $table->date('trans_date');
 
             $table->enum('status', [
-                'REQUESTED','APPROVED','IN_TRANSIT','RECEIVED','CANCELLED','DRAFT'
+                'REQUESTED', 'APPROVED', 'IN_TRANSIT', 'RECEIVED', 'CANCELLED', 'DRAFT',
             ])->default('DRAFT');
 
             $table->text('note')->nullable();
@@ -180,14 +172,14 @@ return new class extends Migration
         Schema::create('inven_trans_detail', function (Blueprint $table) {
             $table->id();
 
-            $table->unsignedBigInteger('stocks_id');
+            $table->unsignedBigInteger('items_id');
             $table->unsignedBigInteger('inven_trans_id');
             $table->decimal('qty', 16, 4);
             $table->text('note')->nullable();
 
             // FK
-            $table->foreign('stocks_id')
-                ->references('id')->on('stocks')
+            $table->foreign('items_id')
+                ->references('id')->on('items')
                 ->onDelete('cascade');
 
             $table->foreign('inven_trans_id')
@@ -195,10 +187,9 @@ return new class extends Migration
                 ->onDelete('cascade');
 
             // Index
-            $table->index('stocks_id', 'fk_inven_trans_stocks1_idx');
+            $table->index('items_id', 'fk_inven_trans_items_id1_idx');
             $table->index('inven_trans_id', 'fk_inven_trans_inven_trans1_idx');
         });
-
 
         Schema::create('production_orders', function (Blueprint $table) {
             $table->id();
@@ -212,7 +203,7 @@ return new class extends Migration
             $table->date('due_date');
 
             $table->enum('status', [
-                'DRAFT','APPROVED','IN_PROGRESS','COMPLETED','CANCELLED'
+                'DRAFT', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED',
             ])->default('DRAFT');
 
             $table->string('note', 245)->nullable();
@@ -245,7 +236,7 @@ return new class extends Migration
             $table->index('products_id', 'fk_production_orders_products1_idx');
         });
 
- Schema::create('categories_issues', function (Blueprint $table) {
+        Schema::create('categories_issues', function (Blueprint $table) {
             $table->id();
 
             $table->string('name', 45);
@@ -257,7 +248,7 @@ return new class extends Migration
             $table->unsignedBigInteger('production_orders_id');
             $table->timestamp('issue_datetime');
 
-            $table->enum('status', ['DRAFT','POSTED','CANCELLED'])
+            $table->enum('status', ['DRAFT', 'POSTED', 'CANCELLED'])
                 ->default('DRAFT');
 
             $table->text('note');
@@ -305,8 +296,6 @@ return new class extends Migration
             $table->index('stocks_id', 'fk_production_issues_detail_stocks1_idx');
         });
 
-       
-
         Schema::create('stocks_adjustmens', function (Blueprint $table) {
             $table->id();
 
@@ -316,9 +305,9 @@ return new class extends Migration
             $table->timestamp('adjustment_date')->nullable();
 
             // enum ProductionStatus?  (DRAFT | POSTED | CANCELLED)
-            $table->enum('status', ['DRAFT','POSTED','CANCELLED'])
-                  ->nullable()
-                  ->using('status::production_status');
+            $table->enum('status', ['DRAFT', 'POSTED', 'CANCELLED'])
+                ->nullable()
+                ->using('status::production_status');
 
             $table->string('note', 200)->nullable();
 
@@ -410,8 +399,6 @@ return new class extends Migration
             $table->index('items_id', 'fk_demand_daily_items1_idx');
         });
 
-        
-
         Schema::create('restock_recomendations', function (Blueprint $table) {
             $table->id();
 
@@ -425,8 +412,8 @@ return new class extends Migration
             $table->decimal('confidence', 5, 2)->nullable();
             $table->string('reason', 245)->nullable();
 
-            $table->enum('review_status', ['NEW','ACCEPTED','REJECTED','ORDERED'])
-                  ->default('NEW');
+            $table->enum('review_status', ['NEW', 'ACCEPTED', 'REJECTED', 'ORDERED'])
+                ->default('NEW');
 
             $table->timestamp('created_at')->useCurrent();
 

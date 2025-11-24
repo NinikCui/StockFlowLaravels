@@ -9,20 +9,20 @@ class InvenTransDetail extends Model
     protected $table = 'inven_trans_detail';
 
     protected $fillable = [
-        'stocks_id',
+        'items_id',
         'inven_trans_id',
         'qty',
-        'note'
+        'note',
     ];
 
     public $timestamps = false;
 
-    public function stock()
+    public function item()
     {
-        return $this->belongsTo(Stock::class, 'stocks_id');
+        return $this->belongsTo(Item::class, 'items_id');
     }
 
-    public function inventoryTrans()
+    public function header()
     {
         return $this->belongsTo(InventoryTrans::class, 'inven_trans_id');
     }

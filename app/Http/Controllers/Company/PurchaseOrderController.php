@@ -197,17 +197,12 @@ class PurchaseOrderController extends Controller
                 return [
                     'id' => $si->items_id,
                     'name' => $si->item->name,
-                    'price' => $si->price,
-                    'min_order_qty' => $si->min_order_qty, // ← DITAMBAHKAN
+                    'price' => $si->price,              
+                    'min_order_qty' => $si->min_order_qty,
                 ];
             })->toArray();
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | TAMBAHKAN ITEM LEGACY (item yang sudah ada di PO tapi tidak ada di supplier)
-        |--------------------------------------------------------------------------
-        */
         $supplierId = $po->suppliers_id;
 
         foreach ($po->details as $d) {
