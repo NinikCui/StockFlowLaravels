@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class EnsureUserHasCorrectPath
 {
@@ -35,9 +36,13 @@ class EnsureUserHasCorrectPath
             return $next($request);
         }
 
-        // ===========================================
+        // NEW FIX: abaikan dashboard redirection routes
+        if (Str::contains($request->path(), 'dashboard/company') ||
+            Str::contains($request->path(), 'dashboard/branch')) {
+            return $next($request);
+        }
+
         // FIX: Jika request bukan GET → jangan redirect
-        // ===========================================
         if (! $request->isMethod('get')) {
             return $next($request);
         }

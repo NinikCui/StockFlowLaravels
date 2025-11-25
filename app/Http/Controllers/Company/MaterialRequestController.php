@@ -21,21 +21,44 @@ class MaterialRequestController extends Controller
     {
         $companyId = session('role.company.id');
 
-        // Ambil semua gudang milik perusahaan tersebut
-        $warehouseIds = Warehouse::whereHas('cabangResto', function ($q) use ($companyId) {
-            $q->where('company_id', $companyId);
-        })->pluck('id');
+        // Ambil semua cabang perusahaan
+        $branches = CabangResto::where('company_id', $companyId)->get();
 
-        $requests = InventoryTrans::with([
+        // Ambil semua warehouse
+        $warehouseIds = Warehouse::whereIn('cabang_resto_id', $branches->pluck('id'))->pluck('id');
+
+        $query = InventoryTrans::with([
             'warehouseFrom.cabangResto',
             'warehouseTo.cabangResto',
             'details.item',
         ])
-            ->whereIn('warehouse_id_to', $warehouseIds)
-            ->orderByDesc('id')
-            ->get();
+            ->whereIn('warehouse_id_to', $warehouseIds);
 
-        return view('company.request-cabang.index', compact('requests', 'companyCode'));
+        // ==== FILTERS ====
+
+        if (request('from')) {
+            $query->where('warehouse_id_from', request('from'));
+        }
+
+        if (request('to')) {
+            $query->where('warehouse_id_to', request('to'));
+        }
+
+        if (request('status')) {
+            $query->where('status', request('status'));
+        }
+
+        if (request('date')) {
+            $query->whereDate('trans_date', request('date'));
+        }
+
+        $requests = $query->orderByDesc('id')->get();
+
+        return view('company.request-cabang.index', compact(
+            'requests',
+            'companyCode',
+            'branches'
+        ));
     }
 
     /**
@@ -240,5 +263,88 @@ class MaterialRequestController extends Controller
         return redirect()
             ->route('request.show', [$companyCode, $req->id])
             ->with('success', 'Request berhasil diperbarui.');
+    }
+
+    public function cabangAnalytics($companyCode)
+    {
+        $companyId = session('role.company.id');
+
+        $branches = CabangResto::where('company_id', $companyId)->get();
+
+        $branchNames = $branches->pluck('name', 'id');
+
+        $warehouses = Warehouse::whereIn('cabang_resto_id', $branches->pluck('id'))->get();
+
+        $warehouseToBranch = $warehouses->pluck('cabang_resto_id', 'id');
+
+        $trans = InventoryTrans::whereIn('warehouse_id_from', $warehouses->pluck('id'))
+            ->whereIn('warehouse_id_to', $warehouses->pluck('id'))
+            ->get([
+                'warehouse_id_from',
+                'warehouse_id_to',
+            ]);
+
+        $heatmap = [];
+
+        foreach ($branchNames as $fromBranchId => $fromBranchName) {
+            foreach ($branchNames as $toBranchId => $toBranchName) {
+                $heatmap[$fromBranchName][$toBranchName] = 0;
+            }
+        }
+
+        foreach ($trans as $t) {
+            $fromBranch = $warehouseToBranch[$t->warehouse_id_from] ?? null;
+            $toBranch = $warehouseToBranch[$t->warehouse_id_to] ?? null;
+
+            if (! $fromBranch || ! $toBranch) {
+                continue;
+            }
+
+            $fromName = $branchNames[$fromBranch];
+            $toName = $branchNames[$toBranch];
+
+            $heatmap[$fromName][$toName]++;
+        }
+
+        $outbound = [];
+        $inbound = [];
+
+        foreach ($heatmap as $from => $cols) {
+            $outbound[$from] = array_sum($cols);
+        }
+
+        foreach ($branchNames as $bname) {
+            $inbound[$bname] = 0;
+        }
+        foreach ($heatmap as $from => $cols) {
+            foreach ($cols as $to => $qty) {
+                $inbound[$to] += $qty;
+            }
+        }
+
+        $itemRanking = InvenTransDetail::selectRaw('items_id, SUM(qty) as total_qty')
+            ->whereIn('inven_trans_id', $trans->pluck('id'))
+            ->groupBy('items_id')
+            ->pluck('total_qty', 'items_id');
+
+        $totalRequest = $trans->count();
+
+        $avgPerMonth = InventoryTrans::whereIn('warehouse_id_from', $warehouses->pluck('id'))
+            ->whereIn('warehouse_id_to', $warehouses->pluck('id'))
+            ->selectRaw("DATE_FORMAT(trans_date, '%Y-%m') as month, COUNT(*) as total")
+            ->groupBy('month')
+            ->pluck('total')
+            ->avg() ?? 0;
+
+        return view('company.request-cabang.analytics', compact(
+            'companyCode',
+            'branches',
+            'heatmap',
+            'outbound',
+            'inbound',
+            'itemRanking',
+            'totalRequest',
+            'avgPerMonth'
+        ));
     }
 }

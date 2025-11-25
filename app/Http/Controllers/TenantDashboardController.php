@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\Session;
-
 class TenantDashboardController extends Controller
 {
     public function index($code)
@@ -15,20 +13,18 @@ class TenantDashboardController extends Controller
         }
 
         $branch = $role['branch'] ?? null;
+        $company = $role['company'];
 
+        // Jika user di level company
         if ($branch === null) {
-            return view('company.dashboard', [
-                'code' => $code,
-                'role' => $role,
-                'company' => $role['company'],
+            return redirect()->route('company.dashboard', [
+                'companyCode' => $company['code'],
             ]);
         }
 
-        return view('branch.dashboard', [
-            'code' => $code,
-            'role' => $role,
-            'branch' => $branch,
-            'company' => $role['company'],
+        // Jika user di level branch
+        return redirect()->route('branch.dashboard', [
+            'branchCode' => $branch['code'],
         ]);
     }
 }

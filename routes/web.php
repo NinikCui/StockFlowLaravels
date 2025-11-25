@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Company\CabangController;
 use App\Http\Controllers\Company\CategoriesIssuesController;
+use App\Http\Controllers\Company\CompanyDashboardController;
 use App\Http\Controllers\Company\CompanySettingController;
 use App\Http\Controllers\Company\ItemsController;
 use App\Http\Controllers\Company\MaterialRequestController;
@@ -20,9 +21,19 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'tenant.path'])->group(function () {
 
-    // DASHBOARD
+    // MAIN ENTRY
     Route::get('/{code}/dashboard', [TenantDashboardController::class, 'index'])
         ->name('dashboard');
+
+    // COMPANY
+    Route::get('/{companyCode}/dashboard/company',
+        [CompanyDashboardController::class, 'index'])
+        ->name('company.dashboard');
+
+    // BRANCH
+    Route::get('/{branchCode}/dashboard/branch',
+        [BranchDashboardController::class, 'index'])
+        ->name('branch.dashboard');
 
     Route::prefix('{companyCode}/pegawai')->group(function () {
 
@@ -247,6 +258,9 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         )->name('request.edit');
         Route::put('/{id}',
             [MaterialRequestController::class, 'update'])->name('request.update');
+
+        Route::get('/analytics/cabang', [MaterialRequestController::class, 'cabangAnalytics'])
+            ->name('analytics.cabang');
     });
 
 });
