@@ -42,28 +42,35 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/tambah', [PegawaiController::class, 'create'])->name('pegawai.create');
         Route::post('/', [PegawaiController::class, 'store'])->name('pegawai.store');
 
-        // AJAX
-        Route::get('/roles-json', [RoleController::class, 'rolesJson'])->name('roles.json');
-
-        // EDIT PEGAWAI (lebih spesifik, taruh atas)
+        // EDIT harus diletakkan sebelum DELETE
         Route::get('/edit/{id}', [PegawaiController::class, 'edit'])->name('pegawai.edit');
         Route::put('/{id}', [PegawaiController::class, 'update'])->name('pegawai.update');
 
-        // DELTE PEGAWAI
         Route::delete('/{id}', [PegawaiController::class, 'destroy'])->name('pegawai.destroy');
 
-        // ROLE MANAGEMENT
+        // AJAX posisi bebas aman
+        Route::get('/roles-json', [RoleController::class, 'rolesJson'])->name('roles.json');
+
+        // LIST ROLES
         Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
+
+        // CREATE
         Route::get('/roles/tambah', [RoleController::class, 'create'])->name('roles.create');
         Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
 
-        // Route detail/edit role — lebih spesifik dulu
+        // EDIT ROLE — harus sebelum {code}
         Route::get('/roles/{code}/edit', [RoleController::class, 'edit'])->name('roles.edit');
         Route::put('/roles/{code}', [RoleController::class, 'update'])->name('roles.update');
+
+        // DELETE ROLE
         Route::delete('/roles/{code}', [RoleController::class, 'destroy'])->name('roles.destroy');
 
-        // ROLE SHOW — paling bawah karena paling umum
+        // SHOW ROLE — paling bawah karena paling umum, biar tidak override route lainnya
         Route::get('/roles/{code}', [RoleController::class, 'show'])->name('roles.show');
+
+        Route::get('/manage', [PegawaiController::class, 'combined'])
+            ->name('pegawai.roles.combined');
+
     });
 
     Route::prefix('{companyCode}/cabang')->group(function () {
