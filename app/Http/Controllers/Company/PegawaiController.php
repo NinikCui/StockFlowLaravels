@@ -11,6 +11,9 @@ use Illuminate\Validation\Rule;
 
 class PegawaiController extends Controller
 {
+    // =========================================
+    // INDEX
+    // =========================================
     public function index(Request $req, $companyCode)
     {
         $companyId = session('role.company.id');
@@ -18,41 +21,37 @@ class PegawaiController extends Controller
             abort(403, 'Session perusahaan tidak valid');
         }
 
-        // ================================
-        // AMBIL SEMUA ROLE PERUSAHAAN
-        // ================================
-        $roleIds = Role::where('company_id', $companyId)->pluck('id')->toArray();
+        // Semua role untuk perusahaan ini
+        $roleIds = Role::where('company_id', $companyId)->pluck('id');
 
-        // ================================
-        // AMBIL PEGAWAI DENGAN ROLE TERSEBUT
-        // ================================
+        // Ambil user yang punya role-role tersebut
         $pegawai = User::with(['roles', 'roles.cabangResto'])
-            ->whereHas('roles', function ($q) use ($roleIds) {
-                $q->whereIn('id', $roleIds);
-            })
-            ->orderBy('username', 'asc')
+            ->whereHas('roles', fn ($q) => $q->whereIn('id', $roleIds))
+            ->orderBy('username')
             ->get()
             ->map(function ($p) {
-                $role = $p->roles->first(); // ambil role aktif
+
+                $r = $p->roles->first(); // satu role / user
 
                 return [
                     'id' => $p->id,
                     'username' => $p->username,
                     'phone' => $p->phone,
                     'is_active' => $p->is_active,
-                    'role_name' => $role?->name,
-                    'role_code' => $role?->code,
-                    'branch_name' => $role?->cabangResto?->name,
-                    'branch_code' => $role?->cabangResto?->code,
+
+                    // ROLE INFO
+                    'role_code' => $r?->code ?? '-',
+                    'role_name' => $r?->name ?? '-',
+
+                    // CABANG
+                    'branch_name' => $r?->cabangResto?->name ?? 'Universal',
+                    'branch_code' => $r?->cabangResto?->code,
                 ];
             });
 
-        // ================================
-        // LIST SEMUA ROLE
-        // ================================
-        $roles = Role::with('cabangResto')
-            ->where('company_id', $companyId)
-            ->orderBy('name')
+        $roles = Role::where('company_id', $companyId)
+            ->with('cabangResto')
+            ->orderBy('code')
             ->get();
 
         $cabangList = CabangResto::where('company_id', $companyId)->orderBy('name')->get();
@@ -65,19 +64,14 @@ class PegawaiController extends Controller
         ));
     }
 
+    // =========================================
+    // HAPUS PEGAWAI
+    // =========================================
     public function destroy($companyCode, $id)
     {
-        $companyId = session('role.company.id');
-        if (! $companyId) {
-            return back()->with('error', 'Session tidak valid.');
-        }
-
         $user = User::findOrFail($id);
 
-        // Hapus role dulu (pivot)
         $user->roles()->detach();
-
-        // Hapus user
         $user->delete();
 
         return redirect()
@@ -85,13 +79,16 @@ class PegawaiController extends Controller
             ->with('success', 'Pegawai berhasil dihapus.');
     }
 
+    // =========================================
+    // CREATE PAGE
+    // =========================================
     public function create(Request $req, $companyCode)
     {
         $companyId = session('role.company.id');
 
         $branches = CabangResto::where('company_id', $companyId)
             ->orderBy('name')
-            ->get(['id', 'name', 'code']);
+            ->get();
 
         return view('company.pegawai.create', [
             'companyCode' => strtolower($companyCode),
@@ -99,6 +96,9 @@ class PegawaiController extends Controller
         ]);
     }
 
+    // =========================================
+    // STORE
+    // =========================================
     public function store(Request $req, $companyCode)
     {
         $companyId = session('role.company.id');
@@ -106,39 +106,71 @@ class PegawaiController extends Controller
         $req->validate([
             'username' => 'required|string|max:50|unique:users,username',
             'email' => 'required|email|max:100|unique:users,email',
+            'phone' => 'nullable|string|max:20',
             'password' => 'required|min:6|confirmed',
             'role_id' => 'required|exists:roles,id',
         ]);
 
-        $user = User::create([
-            'username' => $req->username,
-            'email' => $req->email,
-            'phone' => $req->phone,
-            'password' => bcrypt($req->password),
-            'is_active' => true,
-        ]);
+        try {
 
-        // ========== SPATIE ROLE ==========
-        $user->assignRole($req->role_id);
+            $result = \DB::transaction(function () use ($req, $companyId) {
 
-        return redirect()->route('pegawai.index', strtolower($companyCode))
-            ->with('success', 'Pegawai berhasil ditambahkan');
+                // ===============================
+                // 1️⃣ Buat User
+                // ===============================
+                $user = User::create([
+                    'username' => $req->username,
+                    'email' => $req->email,
+                    'phone' => $req->phone,
+                    'password' => \Hash::make($req->password),
+                    'is_active' => 1,
+                ]);
+
+                // ===============================
+                // 2️⃣ Ambil Role yang dipilih user
+                // ===============================
+                $role = Role::where('company_id', $companyId)
+                    ->where('id', $req->role_id)
+                    ->firstOrFail();
+
+                // ===============================
+                // 3️⃣ Assign Role → HARUS PAKAI NAME !!
+                // ===============================
+                $user->assignRole($role->name);
+
+                return $user;
+            });
+
+            return redirect()
+                ->route('pegawai.index', strtolower($companyCode))
+                ->with('success', 'Pegawai berhasil ditambahkan');
+
+        } catch (\Exception $e) {
+
+            return back()->withErrors([
+                'global' => $e->getMessage(),
+            ])->withInput();
+        }
     }
 
+    // =========================================
+    // EDIT PAGE
+    // =========================================
     public function edit(Request $req, $companyCode, $id)
     {
         $companyId = session('role.company.id');
 
         $pegawai = User::with(['roles', 'roles.cabangResto'])->findOrFail($id);
-        $role = $pegawai->roles->first();
+        $currentRole = $pegawai->roles->first();
+        $currentRoleId = $currentRole?->id;
+        $branches = CabangResto::where('company_id', $companyId)->orderBy('name')->get();
 
-        $branches = CabangResto::where('company_id', $companyId)->get();
-
-        $isUniversal = $role?->cabang_resto_id == null;
+        $isUniversal = $currentRole?->cabang_resto_id === null;
 
         $roles = Role::where('company_id', $companyId)
             ->when($isUniversal, fn ($q) => $q->whereNull('cabang_resto_id'))
-            ->when(! $isUniversal, fn ($q) => $q->where('cabang_resto_id', $role->cabang_resto_id))
+            ->when(! $isUniversal, fn ($q) => $q->where('cabang_resto_id', $currentRole->cabang_resto_id))
+            ->orderBy('code')
             ->get();
 
         return view('company.pegawai.edit', [
@@ -147,9 +179,13 @@ class PegawaiController extends Controller
             'roles' => $roles,
             'branches' => $branches,
             'isUniversal' => $isUniversal,
+            'currentRoleId' => $currentRoleId,
         ]);
     }
 
+    // =========================================
+    // UPDATE PEGAWAI
+    // =========================================
     public function update(Request $req, $companyCode, $id)
     {
         $req->validate([
@@ -167,21 +203,22 @@ class PegawaiController extends Controller
             'is_active' => $req->is_active ? 1 : 0,
         ]);
 
-        // Update password jika diisi
         if ($req->password) {
             $req->validate(['password' => 'confirmed|min:6']);
             $pegawai->password = bcrypt($req->password);
             $pegawai->save();
         }
 
-        // ========== UPDATE ROLE (SYNC) ==========
-        $pegawai->syncRoles([$req->role_id]);
+        // 🔥 FIX UTAMA — syncRoles HARUS pakai model, bukan ID
+        $currentRoleId = $currentRole->id ?? null;
+        $currentRoleId = $currentRole->id ?? null;
 
         return redirect()
             ->route('pegawai.index', strtolower($companyCode))
             ->with('success', 'Pegawai berhasil diperbarui');
     }
 
+    // Alias
     public function combined(Request $req, $companyCode)
     {
         return $this->index($req, $companyCode);
