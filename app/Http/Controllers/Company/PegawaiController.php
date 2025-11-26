@@ -196,6 +196,9 @@ class PegawaiController extends Controller
 
         $pegawai = User::findOrFail($id);
 
+        // =========================
+        // UPDATE USER INFORMATION
+        // =========================
         $pegawai->update([
             'username' => $req->username,
             'email' => $req->email,
@@ -203,15 +206,22 @@ class PegawaiController extends Controller
             'is_active' => $req->is_active ? 1 : 0,
         ]);
 
-        if ($req->password) {
+        // =========================
+        // UPDATE PASSWORD (OPTIONAL)
+        // =========================
+        if (! empty($req->password)) {
             $req->validate(['password' => 'confirmed|min:6']);
             $pegawai->password = bcrypt($req->password);
             $pegawai->save();
         }
 
-        // 🔥 FIX UTAMA — syncRoles HARUS pakai model, bukan ID
-        $currentRoleId = $currentRole->id ?? null;
-        $currentRoleId = $currentRole->id ?? null;
+        // =========================
+        // UPDATE ROLE (VERY IMPORTANT)
+        // =========================
+        $newRole = Role::findOrFail($req->role_id);
+
+        // Spatie requires role MODEL, not ID
+        $pegawai->syncRoles([$newRole]);
 
         return redirect()
             ->route('pegawai.index', strtolower($companyCode))

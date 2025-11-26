@@ -97,31 +97,40 @@ class CabangController extends Controller
             abort(403, 'Session perusahaan tidak valid');
         }
 
+        // ============================
+        // 1. DATA CABANG
+        // ============================
         $cabang = CabangResto::where('company_id', $companyId)
             ->where('code', $code)
             ->firstOrFail();
 
-        /** AMBIL ROLE KHUSUS CABANG INI */
-        $roles = Role::where('cabang_resto_id', $cabang->id)
-            ->orderBy('name')
+        // ============================
+        // 2. ROLE KHUSUS CABANG INI
+        // ============================
+        $roles = Role::where('company_id', $companyId)
+            ->where('cabang_resto_id', $cabang->id)
+            ->orderBy('code')
             ->get();
 
-        /** AMBIL PEGAWAI YANG ROLE-NYA BERADA DI CABANG INI (SPATIE) */
+        // ============================
+        // 3. PEGAWAI YANG PUNYA ROLE DI CABANG INI
+        // ============================
         $pegawai = User::with(['roles'])
             ->whereHas('roles', function ($q) use ($cabang) {
-                $q->where('roles.cabang_resto_id', $cabang->id);
+                $q->where('roles.cabang_resto_id', $cabang->id);   // 🔥 WAJIB pakai prefix roles.
             })
             ->orderBy('username')
             ->get()
             ->map(function ($p) {
+
                 $role = $p->roles->first();
 
                 return [
                     'id' => $p->id,
                     'username' => $p->username,
                     'email' => $p->email,
-                    'role_name' => $role?->name,
                     'role_code' => $role?->code,
+                    'role_name' => $role?->name,
                 ];
             });
 
@@ -141,15 +150,19 @@ class CabangController extends Controller
             ->where('code', $code)
             ->firstOrFail();
 
-        /** PEGAWAI DI CABANG INI BERDASARKAN ROLE SPATIE */
-        $pegawai = User::whereHas('roles', function ($q) use ($cabang) {
-            $q->where('roles.cabang_resto_id', $cabang->id);
-        })
+        // Daftar pegawai yang role-nya sesuai cabang
+        $pegawai = User::with('roles')
+            ->whereHas('roles', function ($q) use ($cabang) {
+                $q->where('roles.cabang_resto_id', $cabang->id);
+            })
             ->get()
             ->map(function ($p) {
+                $role = $p->roles->first();
+
                 return [
                     'id' => $p->id,
                     'username' => $p->username,
+                    'role_code' => $role?->code ?? '-',
                 ];
             });
 
@@ -164,21 +177,46 @@ class CabangController extends Controller
     {
         $companyId = session('role.company.id');
 
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50',
-            'is_active' => 'required|boolean',
-            'address' => 'required|string',
-            'manager_user_id' => 'nullable|exists:users,id',
-        ]);
-
         $cabang = CabangResto::where('company_id', $companyId)
             ->where('code', $code)
             ->firstOrFail();
 
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => [
+                'required',
+                'string',
+                Rule::unique('cabang_resto', 'code')
+                    ->ignore($cabang->id)
+                    ->where('company_id', $companyId),
+            ],
+            'city' => 'nullable|string|max:100',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
+            'is_active' => 'required|boolean',
+            'manager_user_id' => ['nullable', Rule::exists('users', 'id')],
+        ]);
+
+        // Jika ada manager, pastikan role cabangnya cocok
+        if ($request->manager_user_id) {
+            $valid = User::where('id', $request->manager_user_id)
+                ->whereHas('roles', function ($q) use ($cabang) {
+                    $q->where('roles.cabang_resto_id', $cabang->id);
+                })
+                ->exists();
+
+            if (! $valid) {
+                return back()->withErrors([
+                    'manager_user_id' => 'Pegawai ini tidak memiliki role pada cabang ini.',
+                ]);
+            }
+        }
+
         $cabang->update([
             'name' => $request->name,
             'code' => strtoupper($request->code),
+            'city' => $request->city,
+            'phone' => $request->phone,
             'address' => $request->address,
             'is_active' => $request->is_active,
             'manager_user_id' => $request->manager_user_id,

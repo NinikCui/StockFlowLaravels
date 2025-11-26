@@ -5,42 +5,58 @@
 <x-app-layout>
 <main class="min-h-screen px-6 py-10 bg-gray-50">
 
-    {{-- HEADER --}}
+    {{-- ================= HEADER ================= --}}
     <div class="flex items-center justify-between mb-10">
         <div>
-            <h1 class="text-3xl font-black text-gray-900 tracking-tight">Detail Cabang</h1>
-            <p class="text-sm text-gray-500 mt-1">Informasi lengkap dan aktivitas cabang restoran.</p>
+            <h1 class="text-3xl font-black text-gray-900 tracking-tight">
+                Detail Cabang — {{ $cabang->name }}
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">
+                Informasi lengkap dan aktivitas cabang restoran.
+            </p>
         </div>
 
-        <a href="/{{ $companyCode }}/cabang"
+        <a href="/{{ strtolower($companyCode) }}/cabang"
            class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
             ← Kembali
         </a>
     </div>
 
+
     <div class="max-w-5xl mx-auto">
 
-        {{-- TAB HEADER --}}
+        {{-- ================= TAB HEADER ================= --}}
         <x-tab-header
             :tabs="[
-                'info' => 'Informasi Cabang',
-                'roles' => 'Role Cabang',
-                'pegawai' => 'Pegawai Cabang',
+                'info'    => 'Informasi Cabang',
+                'roles'   => 'Role Cabang',
+                'pegawai' => 'Pegawai Cabang'
             ]"
             :active="$tab"
+            baseUrl="/{{ strtolower($companyCode) }}/cabang/{{ strtolower($cabang->code) }}"
         />
 
-        {{-- TAB CONTENT --}}
-        @if ($tab === 'info')
-            @include('company.cabang.partials.info')
+        {{-- ================= TAB CONTENT ================= --}}
+        @switch($tab)
 
-        @elseif ($tab === 'roles')
-            @include('company.cabang.partials.roles')
+            @case('info')
+                @include('company.cabang.partials.info')
+                @break
 
-        @elseif ($tab === 'pegawai')
-            @include('company.cabang.partials.pegawai')
+            @case('roles')
+                @include('company.cabang.partials.roles')
+                @break
 
-        @endif
+            @case('pegawai')
+                @include('company.cabang.partials.pegawai')
+                @break
+
+            @default
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+                    Tab tidak dikenal.
+                </div>
+
+        @endswitch
 
     </div>
 
