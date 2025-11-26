@@ -31,7 +31,6 @@ return new class extends Migration
                     ->after('action');
             }
 
-            $table->index('company_id');
         });
 
         // ================================

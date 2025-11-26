@@ -99,8 +99,9 @@
     <div class="px-5 py-5 border-b flex items-center gap-3">
         <div class="h-10 w-10 bg-emerald-600 text-white rounded-xl grid place-items-center font-bold">R</div>
         <div>
-            <div class="font-bold text-gray-900">RestoApp</div>
-            <div class="text-xs text-gray-500">{{ strtoupper($companyCode) }}</div>
+            <div class="font-bold text-gray-900">{{ strtoupper($companyCode) }}</div>
+                        <div class="text-xs text-gray-500">{{ strtoupper($roleCode) }}</div>
+
         </div>
     </div>
 

@@ -16,7 +16,6 @@
         <thead class="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
             <tr>
                 <th class="px-6 py-4 text-left font-semibold text-gray-700">Nama Role</th>
-                <th class="px-6 py-4 text-center font-semibold text-gray-700">Kode</th>
                 <th class="px-6 py-4 text-center font-semibold text-gray-700">Scope</th>
                 <th class="px-6 py-4 text-right font-semibold text-gray-700">Aksi</th>
             </tr>
@@ -32,16 +31,10 @@
                         <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold">
                             {{ strtoupper(substr($r->name, 0, 1)) }}
                         </div>
-                        <span class="font-semibold text-gray-900">{{ $r->name }}</span>
+                        <span class="font-semibold text-gray-900">{{ $r->code }}</span>
                     </div>
                 </td>
 
-                {{-- KODE --}}
-                <td class="px-6 py-4 text-center">
-                    <span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-gray-100 font-mono text-xs font-semibold text-gray-700">
-                        {{ $r->code }}
-                    </span>
-                </td>
 
                 {{-- SCOPE: UNIVERSAL vs CABANG --}}
                 <td class="px-6 py-4 text-center">

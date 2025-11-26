@@ -58,7 +58,7 @@ class RegisteredUserController extends Controller
                 ]);
 
                 // ============================================
-                // 3️⃣ INSERT USER (Owner Admin)
+                // 3️⃣ INSERT USER
                 // ============================================
                 $user = User::create([
                     'username' => $data['username'],
@@ -69,25 +69,26 @@ class RegisteredUserController extends Controller
                 ]);
 
                 // ============================================
-                // 4️⃣ CREATE ROLE OWNER (Spatie Roles)
+                // 4️⃣ CREATE OWNER ROLE (UNIK PER COMPANY)
                 // ============================================
                 $role = Role::create([
-                    'name' => "Owner-{$company->id}",   // unik per perusahaan
-                    'guard_name' => 'web',
                     'company_id' => $company->id,
-                    'cabang_resto_id' => null,
-                    'code' => 'OWNER',
+                    'cabang_resto_id' => null,               // universal
+                    'code' => 'OWNER',            // untuk UI
+                    'name' => 'OWNER_'.strtoupper($companyCode),
+                    'guard_name' => 'web',
                 ]);
 
                 // ============================================
-                // 5️⃣ Owner gets ALL permissions
+                // 5️⃣ Owner mendapatkan SEMUA PERMISSION
                 // ============================================
                 $role->syncPermissions(Permission::all());
 
                 // ============================================
                 // 6️⃣ Assign role ke user
                 // ============================================
-                $user->assignRole($role);
+                $user->assignRole($role->name);
+                // NOTE: assignRole pakai NAME, bukan ID!
 
                 return [
                     'company' => $company,
@@ -97,7 +98,7 @@ class RegisteredUserController extends Controller
             });
 
             // ============================================
-            // 7️⃣ Auto Login
+            // 7️⃣ Auto login setelah registrasi
             // ============================================
             Auth::login($result['user']);
 
