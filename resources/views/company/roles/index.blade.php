@@ -1,4 +1,5 @@
-<div class="flex justify-between items-center mb-6">
+<x-app-layout>
+    <div class="flex justify-between items-center mb-6">
     <div>
         <h2 class="text-2xl font-bold text-gray-900">Daftar Roles</h2>
         <p class="text-sm text-gray-500 mt-1">Atur peran dan hak akses pegawai</p>
@@ -82,3 +83,5 @@
         </tbody>
     </table>
 </div>
+
+</x-app-layout>

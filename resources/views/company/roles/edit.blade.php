@@ -118,7 +118,7 @@
 
             {{-- ===== PERMISSIONS ===== --}}
             <section class="bg-gradient-to-br from-amber-50 to-white rounded-xl p-6 border border-amber-100">
-                
+
                 {{-- Header --}}
                 <div class="flex items-center justify-between mb-6">
                     <div class="flex items-center gap-3">
@@ -127,71 +127,39 @@
                         </div>
                         <div>
                             <h2 class="text-xl font-bold text-gray-900">Hak Akses</h2>
-                            <p class="text-sm text-gray-600">Pilih permission untuk role ini</p>
+                            <p class="text-sm text-gray-600">Kelompokkan permission berdasarkan fitur</p>
                         </div>
                     </div>
                 </div>
 
-                {{-- Controls --}}
+                {{-- FILTER + SELECT ALL --}}
                 <div class="flex flex-col sm:flex-row gap-3 mb-5">
                     <div class="relative flex-1">
                         <input id="filterBox"
-                               oninput="filterPermissions()"
-                               placeholder="Cari permission..."
-                               class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200">
+                            oninput="filterPermissions()"
+                            placeholder="Cari permission..."
+                            class="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200">
                         <span class="absolute left-4 top-3.5 text-gray-400 text-lg">🔍</span>
                     </div>
 
                     <div class="flex gap-2">
-                        <button type="button" onclick="setAll(true)"
+                        <button type="button" onclick="toggleAll(true)"
                                 class="inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-semibold hover:bg-emerald-100 transition-all duration-200">
-                            <span>✓</span>
-                            <span>Pilih Semua</span>
+                            ✓ Pilih Semua
                         </button>
 
-                        <button type="button" onclick="setAll(false)"
+                        <button type="button" onclick="toggleAll(false)"
                                 class="inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm font-semibold hover:bg-red-100 transition-all duration-200">
-                            <span>✕</span>
-                            <span>Hapus Semua</span>
+                            ✕ Hapus Semua
                         </button>
                     </div>
                 </div>
 
-                {{-- Grid Permission --}}
-                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3" id="permGrid">
+                {{-- GROUPED PERMISSION BUILDER --}}
+                <x-permission-builder :permissions="$permissions" :selected="$selectedCodes" />
 
-                    @foreach($permissions as $p)
-                        <label class="permission-item group flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-all duration-200 hover:shadow-md
-                                      {{ $p['isGranted'] ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200' : 'bg-white border-gray-200 hover:border-gray-300' }}"
-                               data-key="{{ strtolower($p['code'].' '.$p['name'].' '.$p['description']) }}">
-                            
-                            <input type="checkbox" name="permissionIds[]" value="{{ $p['id'] }}"
-                                   class="mt-1 h-5 w-5 accent-emerald-600 rounded"
-                                   {{ $p['isGranted'] ? 'checked' : '' }}
-                                   onchange="this.parentElement.classList.toggle('bg-gradient-to-br', this.checked); this.parentElement.classList.toggle('from-emerald-50', this.checked); this.parentElement.classList.toggle('to-emerald-100', this.checked); this.parentElement.classList.toggle('border-emerald-200', this.checked); this.parentElement.classList.toggle('bg-white', !this.checked); this.parentElement.classList.toggle('border-gray-200', !this.checked);">
-
-                            <div class="flex-1 min-w-0">
-                                <div class="font-semibold text-gray-900 text-sm truncate">{{ $p['name'] }}</div>
-                                <code class="text-xs text-gray-500 bg-white border border-gray-200 px-2 py-0.5 rounded-md inline-block mt-1">{{ $p['code'] }}</code>
-                                @if($p['description'])
-                                    <p class="text-xs text-gray-600 mt-1">{{ $p['description'] }}</p>
-                                @endif
-                            </div>
-                        </label>
-                    @endforeach
-
-                </div>
-
-                {{-- Counter --}}
-                <div class="mt-5 p-4 bg-white rounded-xl border border-gray-200">
-                    <p class="text-sm text-gray-600">
-                        <span class="font-semibold text-gray-900" id="selectedCount">{{ collect($permissions)->where('isGranted', true)->count() }}</span> 
-                        dari 
-                        <span class="font-semibold text-gray-900">{{ count($permissions) }}</span> 
-                        permission dipilih
-                    </p>
-                </div>
             </section>
+
 
             {{-- ===== BUTTON SAVE ===== --}}
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pt-6 border-t border-gray-200">

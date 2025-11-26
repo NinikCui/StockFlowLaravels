@@ -2,36 +2,25 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Spatie\Permission\Models\Role as SpatieRole;
 
-class Role extends Model
+class Role extends SpatieRole
 {
-    protected $table = 'roles';
-
     protected $fillable = [
-        'company_id', 'name', 'code', 'cabang_resto_id'
+        'name',
+        'guard_name',
+        'company_id',
+        'cabang_resto_id',
+        'code',
     ];
-
-    public $timestamps = false;
 
     public function company()
     {
-        return $this->belongsTo(Company::class, 'company_id');
+        return $this->belongsTo(Company::class);
     }
 
     public function cabangResto()
     {
-        return $this->belongsTo(CabangResto::class, 'cabang_resto_id');
-    }
-
-    public function users()
-    {
-        return $this->hasMany(User::class, 'roles_id');
-    }
-
-    public function permissions()
-    {
-        return $this->belongsToMany(Permission::class, 'role_permissions', 'roles_id', 'permission_id')
-            ->withPivot('effect', 'cabang_resto_id');
+        return $this->belongsTo(CabangResto::class);
     }
 }

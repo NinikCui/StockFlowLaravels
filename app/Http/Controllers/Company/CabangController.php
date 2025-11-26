@@ -1,76 +1,62 @@
 <?php
+
 namespace App\Http\Controllers\Company;
+
 use App\Http\Controllers\Controller;
 use App\Models\CabangResto;
 use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
-
-class CabangController extends Controller{
+class CabangController extends Controller
+{
     public function index(Request $request, $companyCode)
     {
         // Cari company berdasarkan code tenant
         $company = Company::where('code', $companyCode)->firstOrFail();
 
-        // Query dasar
         $query = CabangResto::with([
-            'manager:id,username,email',   // load manager
+            'manager:id,username,email',
         ])->where('company_id', $company->id);
 
-        /** ------------------------------
-         * 🔍 FILTER STATUS
-         * ------------------------------*/
+        /** FILTER STATUS */
         if ($request->status === 'ACTIVE') {
             $query->where('is_active', true);
         } elseif ($request->status === 'INACTIVE') {
             $query->where('is_active', false);
         }
 
-        /** ------------------------------
-         * 🔎 SEARCH
-         * ------------------------------*/
+        /** SEARCH */
         if ($request->filled('search')) {
-
             $q = strtolower($request->search);
 
             $query->where(function ($x) use ($q) {
                 $x->whereRaw('LOWER(name) LIKE ?', ["%$q%"])
-                ->orWhereRaw('LOWER(code) LIKE ?', ["%$q%"])
-                ->orWhereRaw('LOWER(city) LIKE ?', ["%$q%"])
-                ->orWhereRaw('LOWER(phone) LIKE ?', ["%$q%"]);
+                    ->orWhereRaw('LOWER(code) LIKE ?', ["%$q%"])
+                    ->orWhereRaw('LOWER(city) LIKE ?', ["%$q%"])
+                    ->orWhereRaw('LOWER(phone) LIKE ?', ["%$q%"]);
             });
         }
 
-        /** ------------------------------
-         * 🔃 SORTING
-         * ------------------------------*/
+        /** SORTING */
         $sort = $request->sort ?? 'created_at';
-
         $allowedSort = ['created_at', 'name', 'code', 'city'];
-
-        if (!in_array($sort, $allowedSort)) {
+        if (! in_array($sort, $allowedSort)) {
             $sort = 'created_at';
         }
 
-        // created_at = newest first
         if ($sort === 'created_at') {
             $query->orderBy('created_at', 'desc');
         } else {
             $query->orderBy($sort, 'asc');
         }
 
-        /** ------------------------------
-         * 🚀 GET RESULT
-         * ------------------------------*/
         $cabang = $query->get();
 
         return view('company.cabang.index', compact('cabang', 'companyCode'));
     }
-
 
     public function create($companyCode)
     {
@@ -87,7 +73,7 @@ class CabangController extends Controller{
                 'required',
                 'max:100',
                 Rule::unique('cabang_resto', 'code')
-                    ->where('company_id', $company->id), // 🔥 unique per company
+                    ->where('company_id', $company->id),
             ],
             'city' => 'required',
             'address' => 'nullable',
@@ -107,34 +93,43 @@ class CabangController extends Controller{
     public function detail(Request $req, $companyCode, $code)
     {
         $companyId = session('role.company.id');
-
-        if (!$companyId) {
-            abort(403, "Session perusahaan tidak valid");
+        if (! $companyId) {
+            abort(403, 'Session perusahaan tidak valid');
         }
 
-        // Ambil cabang berdasarkan CODE (bukan ID)
         $cabang = CabangResto::where('company_id', $companyId)
             ->where('code', $code)
             ->firstOrFail();
 
-        // Ambil role yang dimiliki cabang ini
+        /** AMBIL ROLE KHUSUS CABANG INI */
         $roles = Role::where('cabang_resto_id', $cabang->id)
             ->orderBy('name')
             ->get();
 
-        // Ambil pegawai yang role-nya di cabang ini
-        $pegawai = User::with(['role'])
-            ->whereHas('role', function ($q) use ($cabang) {
-                $q->where('cabang_resto_id', $cabang->id);
+        /** AMBIL PEGAWAI YANG ROLE-NYA BERADA DI CABANG INI (SPATIE) */
+        $pegawai = User::with(['roles'])
+            ->whereHas('roles', function ($q) use ($cabang) {
+                $q->where('roles.cabang_resto_id', $cabang->id);
             })
             ->orderBy('username')
-            ->get();
+            ->get()
+            ->map(function ($p) {
+                $role = $p->roles->first();
+
+                return [
+                    'id' => $p->id,
+                    'username' => $p->username,
+                    'email' => $p->email,
+                    'role_name' => $role?->name,
+                    'role_code' => $role?->code,
+                ];
+            });
 
         return view('company.cabang.detail', [
             'companyCode' => strtolower($companyCode),
-            'cabang'      => $cabang,
-            'roles'       => $roles,
-            'pegawai'     => $pegawai,
+            'cabang' => $cabang,
+            'roles' => $roles,
+            'pegawai' => $pegawai,
         ]);
     }
 
@@ -142,15 +137,21 @@ class CabangController extends Controller{
     {
         $companyId = session('role.company.id');
 
-        // Ambil data cabang berdasarkan kode
         $cabang = CabangResto::where('company_id', $companyId)
-                    ->where('code', $code)
-                    ->firstOrFail();
+            ->where('code', $code)
+            ->firstOrFail();
 
-        // Ambil pegawai yang role-nya berada pada cabang ini
-        $pegawai = User::whereHas('role', function ($q) use ($cabang) {
-            $q->where('cabang_resto_id', $cabang->id);
-        })->get();
+        /** PEGAWAI DI CABANG INI BERDASARKAN ROLE SPATIE */
+        $pegawai = User::whereHas('roles', function ($q) use ($cabang) {
+            $q->where('roles.cabang_resto_id', $cabang->id);
+        })
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'username' => $p->username,
+                ];
+            });
 
         return view('company.cabang.edit', [
             'companyCode' => $companyCode,
@@ -167,13 +168,13 @@ class CabangController extends Controller{
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50',
             'is_active' => 'required|boolean',
-            'address' => "required|string",
+            'address' => 'required|string',
             'manager_user_id' => 'nullable|exists:users,id',
         ]);
 
         $cabang = CabangResto::where('company_id', $companyId)
-                    ->where('code', $code)
-                    ->firstOrFail();
+            ->where('code', $code)
+            ->firstOrFail();
 
         $cabang->update([
             'name' => $request->name,
@@ -187,8 +188,4 @@ class CabangController extends Controller{
             ->route('cabang.detail', [$companyCode, strtoupper($request->code)])
             ->with('success', 'Cabang berhasil diperbarui.');
     }
-
-
-
-
 }

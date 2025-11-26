@@ -3,18 +3,15 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\CabangResto;
 use App\Models\Company;
-use App\Models\Role;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class RegisteredUserController extends Controller
 {
@@ -25,76 +22,83 @@ class RegisteredUserController extends Controller
     {
         return view('auth.register');
     }
+
     public function store(Request $request)
     {
-        
         $data = $request->validate([
             'companyName' => 'required|string|max:255',
             'companyCode' => 'nullable|string|max:20',
-            'username'    => 'required|string|max:50|unique:users,username',
-            'email'       => 'required|email|unique:users,email',
-            'phone'       => 'required|string|max:20',
-            'password'    => 'required|min:6|confirmed',
+            'username' => 'required|string|max:50|unique:users,username',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'required|string|max:20',
+            'password' => 'required|min:6|confirmed',
         ]);
 
         try {
-            
+
             $result = DB::transaction(function () use ($data) {
 
-                // =================================================
-                // 2️⃣ Generate Company Code (mirip toCompanyCode)
-                // =================================================
-                if (!empty($data['companyCode'])) {
-                    $companyCode = $this->toCompanyCode($data['companyCode']);
-                } else {
-                    $companyCode = $this->toCompanyCode($data['companyName']);
-                }
+                // ============================================
+                // 1️⃣ Generate Company Code
+                // ============================================
+                $companyCode = $this->toCompanyCode(
+                    $data['companyCode'] ?: $data['companyName']
+                );
 
-                // Cek company code sudah ada?
                 if (Company::where('code', $companyCode)->exists()) {
-                    throw new \Exception("Kode perusahaan sudah dipakai.");
+                    throw new \Exception('Kode perusahaan sudah dipakai.');
                 }
 
-                // =================================================
-                // 3️⃣ INSERT COMPANY
-                // =================================================
+                // ============================================
+                // 2️⃣ INSERT COMPANY
+                // ============================================
                 $company = Company::create([
                     'name' => $data['companyName'],
                     'code' => $companyCode,
                 ]);
 
-               
-
-                // =================================================
-                // 5️⃣ INSERT ROLE OWNER
-                // =================================================
-                $role = Role::create([
-                    'company_id' => $company->id,
-                    'code' => 'OWNER',
-                    'name' => 'Owner',
-                    'is_universal' => false,
-                ]);
-
-                // =================================================
-                // 6️⃣ INSERT USER ADMIN/OWNER
-                // =================================================
+                // ============================================
+                // 3️⃣ INSERT USER (Owner Admin)
+                // ============================================
                 $user = User::create([
                     'username' => $data['username'],
-                    'email'    => $data['email'],
-                    'phone'    => $data['phone'],
+                    'email' => $data['email'],
+                    'phone' => $data['phone'],
                     'password' => Hash::make($data['password']),
-                    'roles_id' => $role->id,
                     'is_active' => true,
-                    'company_id' => $company->id,
                 ]);
+
+                // ============================================
+                // 4️⃣ CREATE ROLE OWNER (Spatie Roles)
+                // ============================================
+                $role = Role::create([
+                    'name' => "Owner-{$company->id}",   // unik per perusahaan
+                    'guard_name' => 'web',
+                    'company_id' => $company->id,
+                    'cabang_resto_id' => null,
+                    'code' => 'OWNER',
+                ]);
+
+                // ============================================
+                // 5️⃣ Owner gets ALL permissions
+                // ============================================
+                $role->syncPermissions(Permission::all());
+
+                // ============================================
+                // 6️⃣ Assign role ke user
+                // ============================================
+                $user->assignRole($role);
 
                 return [
                     'company' => $company,
-                    'role'    => $role,
-                    'user'    => $user,
+                    'role' => $role,
+                    'user' => $user,
                 ];
             });
 
+            // ============================================
+            // 7️⃣ Auto Login
+            // ============================================
             Auth::login($result['user']);
 
             return redirect('/login')
@@ -107,10 +111,14 @@ class RegisteredUserController extends Controller
         }
     }
 
-    private function toCompanyCode(string $s): string
+    /**
+     * Convert to Company Code
+     * Example: "Resto Maju Jaya" => "RESTO-MAJU-JAYA"
+     */
+    private function toCompanyCode($name)
     {
-        $clean = preg_replace('/[^A-Z0-9]/', '', strtoupper(trim($s)));
-        $code = substr($clean, 0, 12);
-        return $code ?: 'COMP';
+        return strtoupper(
+            preg_replace('/[^A-Za-z0-9]/', '-', $name)
+        );
     }
 }

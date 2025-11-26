@@ -2,23 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-class User extends Authenticatable 
+use Spatie\Permission\Traits\HasRoles;
+
+class User extends Authenticatable
 {
     protected $table = 'users';
 
+    use HasRoles;
+
+    protected $guard_name = 'web';
+
     protected $fillable = [
-        'username','email','password','phone','is_active',
-        'created_at','updated_at','last_login_at','roles_id'
+        'username', 'email', 'password', 'phone', 'is_active',
+        'created_at', 'updated_at', 'last_login_at',
     ];
 
     public $timestamps = false;
-
-    public function role()
-    {
-        return $this->belongsTo(Role::class, 'roles_id');
-    }
 
     public function overrides()
     {
