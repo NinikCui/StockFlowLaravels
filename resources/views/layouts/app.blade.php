@@ -27,7 +27,18 @@
     </head>
     <body class="bg-gray-50">
     
-        @include('components.sidebarCompany')
+        @php
+            $scope = session('role.scope'); 
+        @endphp
+        <p>{{ $scope }}</p>
+        {{-- SIDEBAR --}}
+        @if ($scope === 'COMPANY')
+            @include('components.sidebarCompany')
+
+        @elseif($scope === 'BRANCH')
+            @include('components.sidebarBranch')
+
+        @endif
     <main class="md:ml-64 min-h-screen p-6">
             <div class="mx-auto max-w-6xl p-6 min-h-screen">
 {{ $slot }}

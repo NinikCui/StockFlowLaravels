@@ -68,7 +68,7 @@ class AuthenticatedSessionController extends Controller
                 'id' => $activeRole->id,
                 'code' => $activeRole->code,
                 'name' => $activeRole->name,
-
+                'scope' => $activeRole->cabangResto ? 'BRANCH' : 'COMPANY',
                 'company' => $activeRole->company ? [
                     'id' => $activeRole->company->id,
                     'code' => $activeRole->company->code,
