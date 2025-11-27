@@ -13,9 +13,9 @@ use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
-    // ===========================
-    // UTIL: BUILD PERMISSION GROUPS
-    // ===========================
+    // =======================================
+    // BUILD PERMISSION GROUPS
+    // =======================================
     protected function buildPermissionGroups()
     {
         return Permission::orderBy('name')
@@ -43,9 +43,9 @@ class RoleController extends Controller
             ->toArray();
     }
 
-    // ===========================
+    // =======================================
     // INDEX
-    // ===========================
+    // =======================================
     public function index(Request $request, $companyCode)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
@@ -53,7 +53,6 @@ class RoleController extends Controller
         $query = Role::where('company_id', $company->id);
 
         if ($request->filterCabang && $request->filterCabang !== 'all') {
-
             if ($request->filterCabang === 'universal') {
                 $query->whereNull('cabang_resto_id');
             } else {
@@ -63,16 +62,12 @@ class RoleController extends Controller
 
         if ($request->q) {
             $q = strtolower($request->q);
-
-            $query->where(function ($x) use ($q) {
-                $x->whereRaw('LOWER(code) LIKE ?', ["%$q%"]);
-            });
+            $query->whereRaw('LOWER(code) LIKE ?', ["%$q%"]);
         }
 
-        $sortKey = $request->sortKey ?? 'code';
-        $sortDir = $request->sortDir ?? 'asc';
-
-        $roles = $query->orderBy($sortKey, $sortDir)->get();
+        $roles = $query
+            ->orderBy($request->sortKey ?? 'code', $request->sortDir ?? 'asc')
+            ->get();
 
         $cabangList = CabangResto::whereIn(
             'id',
@@ -80,18 +75,17 @@ class RoleController extends Controller
         )->get();
 
         return view('company.roles.index', compact(
-            'roles', 'cabangList', 'companyCode', 'sortKey', 'sortDir'
+            'roles', 'cabangList', 'companyCode'
         ));
     }
 
-    // ===========================
+    // =======================================
     // CREATE
-    // ===========================
+    // =======================================
     public function create($companyCode)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
         $cabangList = $company->cabang()->get(['id', 'name', 'code']);
-
         $permissions = $this->buildPermissionGroups();
 
         return view('company.roles.create', compact(
@@ -99,9 +93,9 @@ class RoleController extends Controller
         ));
     }
 
-    // ===========================
+    // =======================================
     // STORE
-    // ===========================
+    // =======================================
     public function store(Request $request, $companyCode)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
@@ -109,7 +103,10 @@ class RoleController extends Controller
         $validated = $request->validate([
             'code' => 'required|string|max:100|alpha_dash',
             'permissions' => 'required|array|min:1',
-            'permissions.*' => 'string',
+
+            // FIXED: hindari input kosong
+            'permissions.*' => 'string|min:1',
+
             'cabangRestoId' => 'nullable|integer',
             'isUniversal' => 'nullable|boolean',
         ]);
@@ -118,13 +115,10 @@ class RoleController extends Controller
         $cabangRestoId = $isUniversal ? null : ($validated['cabangRestoId'] ?? null);
 
         $code = strtoupper($validated['code']);
-        $autoName = $code.'_'.strtoupper($companyCode);   // <-- AUTO NAME
+        $autoName = $code.'_'.strtoupper($companyCode);
 
-        $exists = Role::where('company_id', $company->id)
-            ->where('code', $code)
-            ->exists();
-
-        if ($exists) {
+        // Cek duplikat role
+        if (Role::where('company_id', $company->id)->where('code', $code)->exists()) {
             return back()->withErrors([
                 'code' => 'Kode role sudah digunakan di perusahaan ini.',
             ])->withInput();
@@ -134,23 +128,35 @@ class RoleController extends Controller
             $company, $autoName, $code,
             $validated, $cabangRestoId
         ) {
+
             $role = Role::create([
                 'company_id' => $company->id,
                 'cabang_resto_id' => $cabangRestoId,
                 'code' => $code,
-                'name' => $autoName,   // <-- AUTO NAME ONLY
+                'name' => $autoName,
                 'guard_name' => 'web',
             ]);
 
             $permissionIds = [];
 
-            foreach (array_unique($validated['permissions']) as $permName) {
+            // FIXED: Filter input kosong
+            $permissionNames = array_filter(
+                array_unique($validated['permissions']),
+                fn ($p) => trim($p) !== ''
+            );
+
+            foreach ($permissionNames as $permName) {
 
                 [$resource, $action] = array_pad(explode('.', $permName), 2, null);
 
                 $perm = Permission::firstOrCreate(
-                    ['name' => $permName, 'guard_name' => 'web'],
                     [
+                        'name' => $permName,
+                        'guard_name' => 'web',
+                    ],
+                    [
+                        'name' => $permName,
+                        'guard_name' => 'web',
                         'code' => $permName,
                         'resource' => $resource ?: 'other',
                         'action' => $action ?: 'view',
@@ -169,9 +175,9 @@ class RoleController extends Controller
             ->with('success', 'Role berhasil dibuat.');
     }
 
-    // ===========================
+    // =======================================
     // SHOW
-    // ===========================
+    // =======================================
     public function show($companyCode, $code)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
@@ -204,9 +210,9 @@ class RoleController extends Controller
         ));
     }
 
-    // ===========================
+    // =======================================
     // EDIT
-    // ===========================
+    // =======================================
     public function edit($companyCode, $code)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
@@ -218,7 +224,6 @@ class RoleController extends Controller
 
         $permissions = $this->buildPermissionGroups();
         $selected = $role->permissions->pluck('name')->toArray();
-
         $cabangList = CabangResto::where('company_id', $company->id)->get();
 
         return view('company.roles.edit', compact(
@@ -230,12 +235,11 @@ class RoleController extends Controller
         ));
     }
 
-    // ===========================
+    // =======================================
     // UPDATE
-    // ===========================
+    // =======================================
     public function update(Request $req, $companyCode, $oldCode)
     {
-
         $company = Company::where('code', $companyCode)->firstOrFail();
 
         $role = Role::where('company_id', $company->id)
@@ -256,31 +260,33 @@ class RoleController extends Controller
                     ->ignore($role->id),
             ],
             'permissions' => 'array',
-            'permissions.*' => 'string',
+            'permissions.*' => 'string|min:1',   // FIXED
             'cabangRestoId' => 'nullable|integer',
             'isUniversal' => 'nullable|boolean',
         ]);
 
-        $newCode = strtoupper($data['code']);
-        $role->code = $newCode;
-        $role->name = $newCode.'_'.strtoupper($companyCode);  // <-- AUTO NAME UPDATE
-
-        $role->cabang_resto_id = $req->isUniversal
-            ? null
-            : ($req->cabangRestoId ?? null);
-
+        $role->code = strtoupper($data['code']);
+        $role->name = $role->code.'_'.strtoupper($companyCode);
+        $role->cabang_resto_id = $req->isUniversal ? null : ($req->cabangRestoId ?? null);
         $role->save();
 
-        // update permissions
+        // FIXED: filter yang kosong
+        $permissionNames = array_filter($data['permissions'] ?? [], fn ($p) => trim($p) !== '');
+
         $permissionIds = [];
 
-        foreach ($data['permissions'] ?? [] as $permName) {
+        foreach ($permissionNames as $permName) {
 
             [$resource, $action] = array_pad(explode('.', $permName), 2, null);
 
             $perm = Permission::firstOrCreate(
-                ['name' => $permName, 'guard_name' => 'web'],
                 [
+                    'name' => $permName,
+                    'guard_name' => 'web',
+                ],
+                [
+                    'name' => $permName,
+                    'guard_name' => 'web',
                     'code' => $permName,
                     'resource' => $resource ?: 'other',
                     'action' => $action ?: 'view',
@@ -298,6 +304,9 @@ class RoleController extends Controller
             ->with('success', 'Role berhasil diupdate.');
     }
 
+    // =======================================
+    // DELETE
+    // =======================================
     public function destroy($companyCode, $code)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
@@ -318,9 +327,9 @@ class RoleController extends Controller
             ->with('success', 'Role berhasil dihapus.');
     }
 
-    // ===========================
+    // =======================================
     // JSON UNTUK PEGAWAI
-    // ===========================
+    // =======================================
     public function rolesJson(Request $req, $companyCode)
     {
         $companyId = session('role.company.id');
@@ -329,21 +338,19 @@ class RoleController extends Controller
             return response()->json(['ok' => false], 403);
         }
 
-        $branchId = $req->query('cabangId');
-        $universal = $req->query('universal');
-
         $query = Role::where('company_id', $companyId);
 
-        if ($universal === 'true') {
+        if ($req->query('universal') === 'true') {
             $query->whereNull('cabang_resto_id');
         }
 
-        if ($branchId) {
-            $query->where('cabang_resto_id', $branchId);
+        if ($req->query('cabangId')) {
+            $query->where('cabang_resto_id', $req->query('cabangId'));
         }
 
-        $roles = $query->orderBy('code')->get(['id', 'code']);
-
-        return response()->json(['ok' => true, 'data' => $roles]);
+        return response()->json([
+            'ok' => true,
+            'data' => $query->orderBy('code')->get(['id', 'code']),
+        ]);
     }
 }

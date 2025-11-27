@@ -8,9 +8,10 @@ class Permission extends Model
 {
     protected $table = 'permissions';
 
-    protected $fillable = [
-        'company_id','code','resource','action','description',
-        'scope','created_at','updated_at'
+    protected $fillable = ['name',
+        'guard_name',
+        'company_id', 'code', 'resource', 'action', 'description',
+        'scope', 'created_at', 'updated_at',
     ];
 
     public $timestamps = false;
