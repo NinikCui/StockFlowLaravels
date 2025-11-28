@@ -1,4 +1,5 @@
 <?php
+
 use App\Models\CompanySetting;
 
 if (! function_exists('setting')) {
@@ -11,8 +12,8 @@ if (! function_exists('setting')) {
         }
 
         $record = CompanySetting::where('companies_id', $companyId)
-                ->where('key', $key)
-                ->first();
+            ->where('key', $key)
+            ->first();
 
         return $record->value ?? $default;
     }

@@ -3,7 +3,7 @@
 
     <h1 class="text-2xl font-bold mb-6">Tambah Item</h1>
 
-    <form method="POST" action="{{ route('items.item.store', $companyCode) }}" class="space-y-6">
+    <form method="POST" action="{{ route('item.store', $companyCode) }}" class="space-y-6">
         @csrf
 
         <div>

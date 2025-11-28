@@ -12,7 +12,7 @@
     {{-- CARD --}}
     <div class="bg-white border rounded-xl p-6 shadow-sm">
         
-        <form method="POST" action="{{ route('items.satuan.update', [$companyCode, $satuan->code]) }}" class="space-y-6">
+        <form method="POST" action="{{ route('satuan.update', [$companyCode, $satuan->code]) }}" class="space-y-6">
             @csrf
             @method('PUT')
 

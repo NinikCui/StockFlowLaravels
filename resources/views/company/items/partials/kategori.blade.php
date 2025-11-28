@@ -4,10 +4,10 @@
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-semibold text-gray-900">Daftar Kategori</h2>
 
-        <x-add-button 
-            href="/items/category/create"
-            text="+ Tambah Kategori"
-            variant="primary"
+        <x-crud-add
+            resource="category"
+            :companyCode="$companyCode"
+            permissionPrefix="item"
         />
     </div>
 
@@ -44,23 +44,12 @@
                             <td class="p-3 border-t">
                                 <div class="flex items-center justify-center gap-2">
 
-                                    {{-- EDIT --}}
-                                    <a href="{{ route('items.category.edit', [$companyCode, $kat->code]) }}"
-                                        class="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition">
-                                        Edit
-                                    </a>
-
-                                    {{-- DELETE --}}
-                                    <form method="POST"
-                                        action="{{ route('items.category.delete', [$companyCode, $kat->code]) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button
-                                            onclick="return confirm('Yakin ingin menghapus kategori {{ $kat->name }}?');"
-                                            class="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition">
-                                            Hapus
-                                        </button>
-                                    </form>
+                                    <x-crud 
+                                        resource="category"
+                                        :model="$kat"
+                                        :companyCode="$companyCode"
+                                        permissionPrefix="item"
+                                    />
 
                                 </div>
                             </td>

@@ -1,18 +1,14 @@
 <?php
+
 namespace App\Http\Controllers\Company;
+
 use App\Http\Controllers\Controller;
-use App\Models\CabangResto;
 use App\Models\Category;
 use App\Models\Company;
 use App\Models\Item;
-use App\Models\Role;
 use App\Models\Satuan;
-use App\Models\Supplier;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
-
 
 class ItemsController extends Controller
 {
@@ -20,27 +16,28 @@ class ItemsController extends Controller
     {
         return Company::where('code', $companyCode)->firstOrFail();
     }
-    
+
     public function index($companyCode)
     {
-        $company =  $this->getCompany($companyCode);
+        $company = $this->getCompany($companyCode);
+
         return view('company.items.index', [
             'companyCode' => $companyCode,
-            'items'      => Item::where('company_id', $company->id)->get(),
-            'kategori'   => Category::where('company_id', $company->id)->get(),
-            'satuan'     => Satuan::where('company_id', $company->id)->get(),
+            'items' => Item::where('company_id', $company->id)->get(),
+            'kategori' => Category::where('company_id', $company->id)->get(),
+            'satuan' => Satuan::where('company_id', $company->id)->get(),
         ]);
     }
 
-    // ITEM 
+    // ITEM
     public function createItem($companyCode)
     {
         $company = $this->getCompany($companyCode);
 
         return view('company.items.item.create', [
             'companyCode' => $companyCode,
-            'kategori'    => Category::where('company_id', $company->id)->get(),
-            'satuan'      => Satuan::where('company_id', $company->id)->get(),
+            'kategori' => Category::where('company_id', $company->id)->get(),
+            'satuan' => Satuan::where('company_id', $company->id)->get(),
         ]);
     }
 
@@ -49,21 +46,21 @@ class ItemsController extends Controller
         $company = $this->getCompany($companyCode);
 
         $r->validate([
-            'name'        => 'required|max:255',
+            'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
-            'satuan_id'   => 'required|exists:satuan,id',
+            'satuan_id' => 'required|exists:satuan,id',
         ]);
 
         Item::create([
-            'company_id'  => $company->id,
-            'name'        => $r->name,
+            'company_id' => $company->id,
+            'name' => $r->name,
             'category_id' => $r->category_id,
-            'satuan_id'   => $r->satuan_id,
+            'satuan_id' => $r->satuan_id,
         ]);
 
         return redirect()->route('items.index', $companyCode)
-                        ->with('activeTab', 'item')
-                        ->with('success', 'Item berhasil ditambahkan');
+            ->with('activeTab', 'item')
+            ->with('success', 'Item berhasil ditambahkan');
     }
 
     public function editItem($companyCode, $id)
@@ -71,39 +68,40 @@ class ItemsController extends Controller
         $company = $this->getCompany($companyCode);
 
         $item = Item::where('company_id', $company->id)
-                    ->where('id', $id)
-                    ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         return view('company.items.item.edit', [
             'companyCode' => $companyCode,
-            'item'        => $item,
-            'kategori'    => Category::where('company_id', $company->id)->get(),
-            'satuan'      => Satuan::where('company_id', $company->id)->get(),
+            'item' => $item,
+            'kategori' => Category::where('company_id', $company->id)->get(),
+            'satuan' => Satuan::where('company_id', $company->id)->get(),
         ]);
     }
+
     public function updateItem(Request $r, $companyCode, $id)
     {
         $company = $this->getCompany($companyCode);
 
         $item = Item::where('company_id', $company->id)
-                    ->where('id', $id)
-                    ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         $r->validate([
-            'name'        => 'required|max:255',
+            'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
-            'satuan_id'   => 'required|exists:satuan,id',
+            'satuan_id' => 'required|exists:satuan,id',
         ]);
 
         $item->update([
-            'name'        => $r->name,
+            'name' => $r->name,
             'category_id' => $r->category_id,
-            'satuan_id'   => $r->satuan_id,
+            'satuan_id' => $r->satuan_id,
         ]);
 
         return redirect()->route('items.index', $companyCode)
-                        ->with('activeTab', 'item')
-                        ->with('success', 'Item berhasil diperbarui');
+            ->with('activeTab', 'item')
+            ->with('success', 'Item berhasil diperbarui');
     }
 
     public function deleteItem($companyCode, $id)
@@ -111,24 +109,24 @@ class ItemsController extends Controller
         $company = $this->getCompany($companyCode);
 
         $item = Item::where('company_id', $company->id)
-                    ->where('id', $id)
-                    ->firstOrFail();
+            ->where('id', $id)
+            ->firstOrFail();
 
         $item->delete();
 
         return redirect()->route('items.index', $companyCode)
-                        ->with('activeTab', 'item')
-                        ->with('success', 'Item berhasil dihapus');
+            ->with('activeTab', 'item')
+            ->with('success', 'Item berhasil dihapus');
     }
 
-
-        // CATEGORY 
+    // CATEGORY
     public function createCategory($companyCode)
     {
         return view('company.items.category.create', [
-            'companyCode' => $companyCode
+            'companyCode' => $companyCode,
         ]);
     }
+
     public function storeCategory(Request $r, $companyCode)
     {
         $company = $this->getCompany($companyCode);
@@ -140,25 +138,26 @@ class ItemsController extends Controller
 
         Category::create([
             'company_id' => $company->id,
-            'code'       => $r->code,
-            'name'       => $r->name,
+            'code' => $r->code,
+            'name' => $r->name,
         ]);
 
         return redirect()->route('items.index', $companyCode)
-                        ->with('activeTab', 'kategori')
-                        ->with('success', 'Kategori berhasil ditambahkan');
+            ->with('activeTab', 'kategori')
+            ->with('success', 'Kategori berhasil ditambahkan');
     }
+
     public function editCategory($companyCode, $code)
     {
         $company = $this->getCompany($companyCode);
 
         $category = Category::where('company_id', $company->id)
-                            ->where('code', $code)
-                            ->firstOrFail();
+            ->where('code', $code)
+            ->firstOrFail();
 
         return view('company.items.category.edit', [
             'companyCode' => $companyCode,
-            'category'    => $category
+            'category' => $category,
         ]);
     }
 
@@ -167,13 +166,13 @@ class ItemsController extends Controller
         $company = $this->getCompany($companyCode);
 
         $category = Category::where('company_id', $company->id)
-                            ->where('code', $code)
-                            ->firstOrFail();
+            ->where('code', $code)
+            ->firstOrFail();
 
         $r->validate([
             'code' => [
                 'required',
-                Rule::unique('categories')->where('company_id', $company->id)->ignore($category->id)
+                Rule::unique('categories')->where('company_id', $company->id)->ignore($category->id),
             ],
             'name' => 'required|string|max:255',
         ]);
@@ -184,8 +183,8 @@ class ItemsController extends Controller
         ]);
 
         return redirect()->route('items.index', $companyCode)
-                        ->with('activeTab', 'kategori')
-                        ->with('success', 'Kategori berhasil diperbarui');
+            ->with('activeTab', 'kategori')
+            ->with('success', 'Kategori berhasil diperbarui');
     }
 
     public function deleteCategory($companyCode, $code)
@@ -193,22 +192,21 @@ class ItemsController extends Controller
         $company = $this->getCompany($companyCode);
 
         $category = Category::where('company_id', $company->id)
-                            ->where('code', $code)
-                            ->firstOrFail();
+            ->where('code', $code)
+            ->firstOrFail();
 
         $category->delete();
 
         return redirect()->route('items.index', $companyCode)
-                        ->with('activeTab', 'kategori')
-                        ->with('success', 'Kategori berhasil dihapus');
+            ->with('activeTab', 'kategori')
+            ->with('success', 'Kategori berhasil dihapus');
     }
 
-
-        // SATUAN 
+    // SATUAN
     public function createSatuan($companyCode)
     {
         return view('company.items.satuan.create', [
-            'companyCode' => $companyCode
+            'companyCode' => $companyCode,
         ]);
     }
 
@@ -223,13 +221,13 @@ class ItemsController extends Controller
 
         Satuan::create([
             'company_id' => $company->id,
-            'code'       => $r->code,
-            'name'       => $r->name,
+            'code' => $r->code,
+            'name' => $r->name,
         ]);
 
         return redirect()->route('items.index', $companyCode)
-                        ->with('activeTab', 'satuan')
-                        ->with('success', 'Satuan berhasil ditambahkan');
+            ->with('activeTab', 'satuan')
+            ->with('success', 'Satuan berhasil ditambahkan');
     }
 
     public function editSatuan($companyCode, $code)
@@ -237,12 +235,12 @@ class ItemsController extends Controller
         $company = $this->getCompany($companyCode);
 
         $satuan = Satuan::where('company_id', $company->id)
-                        ->where('code', $code)
-                        ->firstOrFail();
+            ->where('code', $code)
+            ->firstOrFail();
 
         return view('company.items.satuan.edit', [
             'companyCode' => $companyCode,
-            'satuan'      => $satuan,
+            'satuan' => $satuan,
         ]);
     }
 
@@ -251,13 +249,13 @@ class ItemsController extends Controller
         $company = $this->getCompany($companyCode);
 
         $satuan = Satuan::where('company_id', $company->id)
-                        ->where('code', $code)
-                        ->firstOrFail();
+            ->where('code', $code)
+            ->firstOrFail();
 
         $r->validate([
             'code' => [
                 'required',
-                Rule::unique('satuan')->where('company_id', $company->id)->ignore($satuan->id)
+                Rule::unique('satuan')->where('company_id', $company->id)->ignore($satuan->id),
             ],
             'name' => 'required|string|max:255',
         ]);
@@ -268,8 +266,8 @@ class ItemsController extends Controller
         ]);
 
         return redirect()->route('items.index', $companyCode)
-                        ->with('activeTab', 'satuan')
-                        ->with('success', 'Satuan berhasil diperbarui');
+            ->with('activeTab', 'satuan')
+            ->with('success', 'Satuan berhasil diperbarui');
     }
 
     public function deleteSatuan($companyCode, $code)
@@ -277,13 +275,13 @@ class ItemsController extends Controller
         $company = $this->getCompany($companyCode);
 
         $satuan = Satuan::where('company_id', $company->id)
-                        ->where('code', $code)
-                        ->firstOrFail();
+            ->where('code', $code)
+            ->firstOrFail();
 
         $satuan->delete();
 
         return redirect()->route('items.index', $companyCode)
-                        ->with('activeTab', 'satuan')
-                        ->with('success', 'Satuan berhasil dihapus');
+            ->with('activeTab', 'satuan')
+            ->with('success', 'Satuan berhasil dihapus');
     }
 }

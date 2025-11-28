@@ -27,11 +27,12 @@
                         🔄 Segarkan
                     </a>
 
-                    <x-add-button 
-                        href="cabang/tambah"
-                        text="+ Tambah Cabang"
-                        variant="primary"
+                    <x-crud-add 
+                        resource="cabang"
+                        :companyCode="$companyCode"
+                        permissionPrefix="branch"
                     />
+
                 </div>
 
             </div>

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Support\Access;
 use App\View\Components\kpiCard;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
@@ -22,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
+        Blade::if('canAction', function ($permission) {
+            return Access::can($permission);
+        });
         Paginator::defaultView('components.pagination.custom');
         Blade::component('owner.kpi-card', kpiCard::class);
     }

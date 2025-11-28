@@ -51,9 +51,11 @@
     </div>
 
     <div class="mt-8 flex justify-end">
-        <a href="{{ route('cabang.edit', [$companyCode, $cabang->code]) }}"
-           class="px-5 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium shadow hover:bg-emerald-700">
-            ✎ Edit Cabang
-        </a>
+        <x-crud 
+            resource="cabang"
+            :model="$cabang"
+            :companyCode="$companyCode"
+            permissionPrefix="branch"
+        />
     </div>
 </div>

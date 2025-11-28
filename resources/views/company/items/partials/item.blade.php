@@ -4,11 +4,12 @@
     <div class="flex justify-between items-center mb-5">
         <h2 class="text-xl font-bold text-gray-800">Daftar Item</h2>
 
-        <x-add-button 
-                        href="/items/create"
-                        text="+ Tambah Item"
-                        variant="primary"
-                    />
+        <x-crud-add 
+            resource="item"
+            :companyCode="$companyCode"
+            permissionPrefix="item"
+            
+        />
                     
     </div>
 
@@ -59,22 +60,13 @@
                         <td class="p-3 border-b">
                             <div class="flex items-center justify-center gap-2">
 
-                                {{-- EDIT --}}
-                                <a href="{{ route('items.item.edit', [$companyCode, $item->id]) }}"
-                                   class="px-3 py-1 text-xs rounded-md bg-amber-100 text-amber-700 hover:bg-amber-200 transition">
-                                    Edit
-                                </a>
-
-                                {{-- DELETE --}}
-                                <form action="{{ route('items.item.delete', [$companyCode, $item->id]) }}"
-                                      method="POST">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button
-                                        class="px-3 py-1 text-xs rounded-md bg-red-100 text-red-700 hover:bg-red-200 transition">
-                                        Hapus
-                                    </button>
-                                </form>
+                                <x-crud 
+                                    resource="item"
+                                    :model="$item"
+                                    :companyCode="$companyCode"
+                                    permissionPrefix="item"
+                                    keyField="id"
+                                />
 
                             </div>
                         </td>

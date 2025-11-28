@@ -10,7 +10,7 @@
 
     <div class="bg-white border rounded-xl p-6 shadow-sm">
         
-        <form method="POST" action="{{ route('items.category.update', [$companyCode, $category->code]) }}" class="space-y-6">
+        <form method="POST" action="{{ route('category.update', [$companyCode, $category->code]) }}" class="space-y-6">
             @csrf
             @method('PUT')
 

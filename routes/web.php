@@ -109,25 +109,25 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             ->name('items.index');
 
         // Item
-        Route::get('/create', [ItemsController::class, 'createItem'])->name('items.item.create');
-        Route::post('/store', [ItemsController::class, 'storeItem'])->name('items.item.store');
-        Route::get('/{id}/edit', [ItemsController::class, 'editItem'])->name('items.item.edit');
-        Route::put('/{id}', [ItemsController::class, 'updateItem'])->name('items.item.update');
-        Route::delete('/{id}', [ItemsController::class, 'deleteItem'])->name('items.item.delete');
+        Route::get('/create', [ItemsController::class, 'createItem'])->name('item.create');
+        Route::post('/store', [ItemsController::class, 'storeItem'])->name('item.store');
+        Route::get('/{id}/edit', [ItemsController::class, 'editItem'])->name('item.edit');
+        Route::put('/{id}', [ItemsController::class, 'updateItem'])->name('item.update');
+        Route::delete('/{id}', [ItemsController::class, 'deleteItem'])->name('item.destroy');
 
         // Category
-        Route::get('/category/create', [ItemsController::class, 'createCategory'])->name('items.category.create');
-        Route::post('/category', [ItemsController::class, 'storeCategory'])->name('items.category.store');
-        Route::get('/category/{code}/edit', [ItemsController::class, 'editCategory'])->name('items.category.edit');
-        Route::put('/category/{code}', [ItemsController::class, 'updateCategory'])->name('items.category.update');
-        Route::delete('/category/{code}', [ItemsController::class, 'deleteCategory'])->name('items.category.delete');
+        Route::get('/category/create', [ItemsController::class, 'createCategory'])->name('category.create');
+        Route::post('/category', [ItemsController::class, 'storeCategory'])->name('category.store');
+        Route::get('/category/{code}/edit', [ItemsController::class, 'editCategory'])->name('category.edit');
+        Route::put('/category/{code}', [ItemsController::class, 'updateCategory'])->name('category.update');
+        Route::delete('/category/{code}', [ItemsController::class, 'deleteCategory'])->name('category.destroy');
 
         // Satuan
-        Route::get('/satuan/create', [ItemsController::class, 'createSatuan'])->name('items.satuan.create');
-        Route::post('/satuan', [ItemsController::class, 'storeSatuan'])->name('items.satuan.store');
-        Route::get('/satuan/{code}/edit', [ItemsController::class, 'editSatuan'])->name('items.satuan.edit');
-        Route::put('/satuan/{code}', [ItemsController::class, 'updateSatuan'])->name('items.satuan.update');
-        Route::delete('/satuan/{code}', [ItemsController::class, 'deleteSatuan'])->name('items.satuan.delete');
+        Route::get('/satuan/create', [ItemsController::class, 'createSatuan'])->name('satuan.create');
+        Route::post('/satuan', [ItemsController::class, 'storeSatuan'])->name('satuan.store');
+        Route::get('/satuan/{code}/edit', [ItemsController::class, 'editSatuan'])->name('satuan.edit');
+        Route::put('/satuan/{code}', [ItemsController::class, 'updateSatuan'])->name('satuan.update');
+        Route::delete('/satuan/{code}', [ItemsController::class, 'deleteSatuan'])->name('satuan.destroy');
     });
 
     Route::prefix('{companyCode}/supplier')->group(function () {
