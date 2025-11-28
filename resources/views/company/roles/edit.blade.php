@@ -115,7 +115,7 @@
 
             {{-- ACTION BUTTONS --}}
             <div class="flex justify-between pt-6 border-t border-gray-200">
-                <a href="/{{ $companyCode }}/pegawai?tab=roles"
+                <a href="/{{ $companyCode }}/roles"
                    class="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50">
                     Batal
                 </a>

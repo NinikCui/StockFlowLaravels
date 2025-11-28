@@ -51,26 +51,27 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         // AJAX posisi bebas aman
         Route::get('/roles-json', [RoleController::class, 'rolesJson'])->name('roles.json');
 
-        // LIST ROLES
-        Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
-
-        // CREATE
-        Route::get('/roles/tambah', [RoleController::class, 'create'])->name('roles.create');
-        Route::post('/roles', [RoleController::class, 'store'])->name('roles.store');
-
-        // EDIT ROLE — harus sebelum {code}
-        Route::get('/roles/{code}/edit', [RoleController::class, 'edit'])->name('roles.edit');
-        Route::put('/roles/{code}', [RoleController::class, 'update'])->name('roles.update');
-
-        // DELETE ROLE
-        Route::delete('/roles/{code}', [RoleController::class, 'destroy'])->name('roles.destroy');
-
-        // SHOW ROLE — paling bawah karena paling umum, biar tidak override route lainnya
-        Route::get('/roles/{code}', [RoleController::class, 'show'])->name('roles.show');
-
         Route::get('/manage', [PegawaiController::class, 'combined'])
             ->name('pegawai.roles.combined');
 
+    });
+    Route::prefix('{companyCode}/roles')->group(function () {
+        // LIST ROLES
+        Route::get('/', [RoleController::class, 'index'])->name('roles.index');
+
+        // CREATE
+        Route::get('/tambah', [RoleController::class, 'create'])->name('roles.create');
+        Route::post('/store', [RoleController::class, 'store'])->name('roles.store');
+
+        // EDIT ROLE — harus sebelum {code}
+        Route::get('/{code}/edit', [RoleController::class, 'edit'])->name('roles.edit');
+        Route::put('/{code}', [RoleController::class, 'update'])->name('roles.update');
+
+        // DELETE ROLE
+        Route::delete('/{code}', [RoleController::class, 'destroy'])->name('roles.destroy');
+
+        // SHOW ROLE — paling bawah karena paling umum, biar tidak override route lainnya
+        Route::get('/{code}', [RoleController::class, 'show'])->name('roles.show');
     });
 
     Route::prefix('{companyCode}/cabang')->group(function () {
