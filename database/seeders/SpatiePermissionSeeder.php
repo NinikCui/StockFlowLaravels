@@ -63,6 +63,9 @@ class SpatiePermissionSeeder extends Seeder
             // ANALYTICS
             'analytics.inventory',
             'analytics.supplier',
+
+            'settings.general',
+
         ];
 
         foreach ($permissions as $p) {

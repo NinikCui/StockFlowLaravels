@@ -3,12 +3,13 @@
     <div class="flex items-center justify-between mb-5">
         <h2 class="text-xl font-bold text-gray-900">Informasi Gudang</h2>
 
-        <a href="{{ route('warehouse.edit', [$companyCode, $warehouse->id]) }}"
-            class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium
-                   text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg
-                   hover:bg-emerald-100 transition">
-            ✏️ Edit
-        </a>
+      
+        <x-crud 
+            resource="warehouse"
+            :model="$warehouse"
+            :companyCode="$companyCode"
+            permissionPrefix="warehouse"
+        />
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">

@@ -8,11 +8,12 @@
                 <h1 class="text-3xl font-bold text-gray-900">Daftar Supplier</h1>
                 <p class="mt-1 text-sm text-gray-600">Kelola pemasok dan pantau performanya secara real-time</p>
             </div>
-            <x-add-button 
-                href="/{{ $companyCode }}/supplier/create"
-                text="+ Tambah Supplier"
-                variant="primary"
-            />
+
+            <x-crud-add 
+                        resource="supplier"
+                        :companyCode="$companyCode"
+                        permissionPrefix="supplier"
+                    />
         </div>
     </div>
 

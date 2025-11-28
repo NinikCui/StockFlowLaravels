@@ -1,4 +1,3 @@
-
 @php
     function row($label, $value, $full = false) {
         return '
@@ -9,8 +8,10 @@
         ';
     }
 @endphp
+
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
 
+    {{-- HEADER --}}
     <div class="flex items-start justify-between">
         <h2 class="text-xl font-bold text-gray-900">Informasi Supplier</h2>
 
@@ -20,6 +21,7 @@
         </span>
     </div>
 
+    {{-- INFO GRID --}}
     <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
         {!! row('Nama Supplier', $supplier->name) !!}
         {!! row('PIC', $supplier->contact_name) !!}
@@ -33,20 +35,15 @@
         @endif
     </div>
 
-    {{-- Actions --}}
-    <div class="mt-8 flex justify-end gap-3">
-        <a href="{{ route('supplier.edit', [$companyCode, $supplier->id]) }}"
-           class="px-5 py-2 rounded-xl bg-emerald-600 text-white text-sm shadow hover:bg-emerald-700">
-            ✎ Edit Supplier
-        </a>
-
-        <form method="POST"
-              action="{{ route('supplier.destroy', [$companyCode, $supplier->id]) }}"
-              onsubmit="return confirm('Hapus supplier ini?')">
-            @csrf @method('DELETE')
-            <button class="px-5 py-2 rounded-xl bg-red-600 text-white text-sm shadow hover:bg-red-700">
-                🗑 Hapus
-            </button>
-        </form>
+    {{-- ACTIONS --}}
+    <div class="mt-8 flex justify-end">
+        <x-crud 
+            resource="supplier"
+            :model="$supplier"
+            :companyCode="$companyCode"
+            permissionPrefix="supplier"
+            keyField="id"
+        />
     </div>
+
 </div>

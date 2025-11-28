@@ -3,11 +3,12 @@
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-bold text-gray-800">Daftar Warehouse</h2>
 
-        <a href="{{ route('warehouse.create', $companyCode) }}"
-           class="px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg
-                  hover:bg-emerald-700 shadow-sm transition">
-            + Tambah Warehouse
-        </a>
+
+        <x-crud-add 
+            resource="warehouse"
+            :companyCode="$companyCode"
+            permissionPrefix="warehouse"
+        />
     </div>
 
     <div class="overflow-hidden border border-gray-200 rounded-lg">

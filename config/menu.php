@@ -53,13 +53,21 @@ return [
         [
             'label' => 'Pengaturan',
             'icon' => 'settings',
-            'always_show' => true,
-            'parent_only' => true,
+            'permission' => 'settings.general',
             'children' => [
-                ['label' => 'Umum',    'href' => 'settings/general'],
-                ['label' => 'Masalah', 'href' => 'masalah'],
+                [
+                    'label' => 'Umum',
+                    'href' => 'settings/general',
+                    'permission' => 'settings.general',
+                ],
+                [
+                    'label' => 'Masalah',
+                    'href' => 'settings/masalah',
+                    'permission' => 'settings.general',
+                ],
             ],
         ],
+
     ],
     'BRANCH' => [
         [
