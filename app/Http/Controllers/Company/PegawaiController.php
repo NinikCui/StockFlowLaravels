@@ -21,32 +21,25 @@ class PegawaiController extends Controller
             abort(403, 'Session perusahaan tidak valid');
         }
 
-        // Semua role untuk perusahaan ini
+        // Role ID perusahaan
         $roleIds = Role::where('company_id', $companyId)->pluck('id');
 
-        // Ambil user yang punya role-role tersebut
+        // Ambil user dengan 1 role masing-masing
         $pegawai = User::with(['roles', 'roles.cabangResto'])
             ->whereHas('roles', fn ($q) => $q->whereIn('id', $roleIds))
             ->orderBy('username')
             ->get()
             ->map(function ($p) {
 
-                $r = $p->roles->first(); // satu role / user
+                $role = $p->roles->first();
 
-                return [
-                    'id' => $p->id,
-                    'username' => $p->username,
-                    'phone' => $p->phone,
-                    'is_active' => $p->is_active,
+                // Tambahkan dynamic attributes
+                $p->role_code = $role?->code ?? '-';
+                $p->role_name = $role?->name ?? '-';
+                $p->branch_name = $role?->cabangResto?->name ?? 'Universal';
+                $p->branch_code = $role?->cabangResto?->code;
 
-                    // ROLE INFO
-                    'role_code' => $r?->code ?? '-',
-                    'role_name' => $r?->name ?? '-',
-
-                    // CABANG
-                    'branch_name' => $r?->cabangResto?->name ?? 'Universal',
-                    'branch_code' => $r?->cabangResto?->code,
-                ];
+                return $p;
             });
 
         $roles = Role::where('company_id', $companyId)

@@ -13,11 +13,12 @@
             🔄 <span>Refresh</span>
         </button>
 
-        <x-add-button 
-            href="/{{ $companyCode }}/pegawai/tambah"
-            text="+ Pegawai Baru"
-            variant="primary"
-        />
+        
+        <x-crud-add 
+                        resource="pegawai"
+                        :companyCode="$companyCode"
+                        permissionPrefix="employee"
+                    />
     </div>
 </div>
 
