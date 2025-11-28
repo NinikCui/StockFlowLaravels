@@ -226,4 +226,30 @@ class CabangController extends Controller
             ->route('cabang.detail', [$companyCode, strtoupper($request->code)])
             ->with('success', 'Cabang berhasil diperbarui.');
     }
+
+    public function destroy($companyCode, $code)
+    {
+        $companyId = session('role.company.id');
+
+        $cabang = CabangResto::where('company_id', $companyId)
+            ->where('code', $code)
+            ->firstOrFail();
+
+        // Cek apakah cabang ini punya pegawai
+        $hasEmployees = User::whereHas('roles', function ($q) use ($cabang) {
+            $q->where('roles.cabang_resto_id', $cabang->id);
+        })->exists();
+
+        if ($hasEmployees) {
+            return redirect()
+                ->route('cabang.detail', [$companyCode, $code])
+                ->withErrors(['error' => 'Cabang ini tidak dapat dihapus karena masih memiliki pegawai terkait.']);
+        }
+
+        $cabang->delete();
+
+        return redirect()
+            ->route('cabang.index', $companyCode)
+            ->with('success', 'Cabang berhasil dihapus.');
+    }
 }

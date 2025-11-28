@@ -85,6 +85,8 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/{code}/edit', [CabangController::class, 'edit'])->name('cabang.edit');
         Route::put('/{code}', [CabangController::class, 'update'])->name('cabang.update');
 
+        Route::delete('/{code}', [CabangController::class, 'destroy'])->name('cabang.destroy');
+
         // DETAIL — paliiing bawah
         Route::get('/{code}', [CabangController::class, 'detail'])->name('cabang.detail');
     });

@@ -20,13 +20,9 @@
                     <p class="text-sm text-gray-500">{{ $p['email'] }}</p>
 
                     <p class="text-xs text-gray-400 mt-1">
-                        Role: {{ $p['role_name'] }}
+                        Role: {{ $p['role_code'] }}
                     </p>
 
-                    <a href="/{{ $companyCode }}/pegawai/edit/{{ $p['id'] }}"
-                       class="text-emerald-600 text-sm mt-3 inline-block font-medium hover:text-emerald-700">
-                        Edit →
-                    </a>
                 </div>
             @endforeach
         </div>

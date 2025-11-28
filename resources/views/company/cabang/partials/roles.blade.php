@@ -8,12 +8,8 @@
         <ul class="space-y-3">
             @foreach ($roles as $r)
                 <li class="border border-gray-200 rounded-xl px-4 py-3 flex justify-between items-center text-sm bg-gray-50">
-                    <span class="font-medium text-gray-700">{{ $r->name }}</span>
+                    <span class="font-medium text-gray-700">{{ $r->code }}</span>
 
-                    <a href="/{{ $companyCode }}/pegawai/roles/{{ $r->code }}"
-                       class="text-emerald-600 hover:text-emerald-700 font-medium">
-                        Detail →
-                    </a>
                 </li>
             @endforeach
         </ul>
