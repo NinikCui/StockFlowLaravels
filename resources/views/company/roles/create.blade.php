@@ -5,7 +5,7 @@
 
         {{-- HEADER --}}
         <div class="flex items-center gap-4 mb-8">
-            <a href="/{{ $companyCode }}/pegawai?tab=roles"
+            <a href="/{{ $companyCode }}/pegawai/roles"
                 class="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm">
                 ←
             </a>

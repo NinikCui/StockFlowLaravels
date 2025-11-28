@@ -5,11 +5,12 @@
             <p class="text-sm text-gray-500 mt-1">Atur peran dan hak akses pegawai</p>
         </div>
 
-        <x-add-button 
-            href="/{{ $companyCode }}/pegawai/roles/tambah"
-            text="+ Role Baru"
-            variant="primary"
-        />
+
+        <x-crud-add 
+                        resource="roles"
+                        :companyCode="$companyCode"
+                        permissionPrefix="permission"
+                    />
     </div>
 
     <div class="overflow-hidden bg-white border border-gray-200 rounded-2xl shadow-sm">

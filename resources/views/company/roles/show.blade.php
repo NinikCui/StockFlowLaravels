@@ -7,7 +7,7 @@
 
             {{-- Back --}}
             <div class="flex items-center gap-4">
-                <a href="/{{ $companyCode }}/pegawai?tab=roles"
+                <a href="/{{ $companyCode }}/pegawai/roles"
                    class="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm">
                     ←
                 </a>
@@ -24,16 +24,13 @@
                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-white text-gray-700 shadow-sm">
                     🔄 Refresh
                 </a>
-
-                <a href="/{{ $companyCode }}/pegawai/roles/{{ $role->code }}/edit"
-                   class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 shadow-sm">
-                    ✎ Edit
-                </a>
-
-                <button onclick="showDeleteModal()"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 text-red-700 bg-red-50 hover:bg-red-100 shadow-sm">
-                    🗑 Hapus
-                </button>
+            <x-crud 
+                resource="roles"
+                :model="$role"
+                :companyCode="$companyCode"
+                permissionPrefix="permission"
+            />
+                
             </div>
         </div>
     </div>
@@ -174,41 +171,7 @@
 
     </div>
 
-    {{-- DELETE MODAL --}}
-    <div id="delete-modal"
-         class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm items-center justify-center z-50 p-4"
-         onclick="closeDeleteModal(event)">
-
-        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full" onclick="event.stopPropagation()">
-
-            <div class="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-5">
-                ⚠️
-            </div>
-
-            <h2 class="text-2xl font-bold text-center mb-3">Hapus Role?</h2>
-
-            <p class="text-gray-600 text-center mb-8">
-                Apakah Anda yakin ingin menghapus role <strong>{{ $role->code }}</strong>?
-                <br><span class="text-red-600">Tindakan ini tidak dapat dibatalkan.</span>
-            </p>
-
-            <form method="POST" action="/{{ $companyCode }}/pegawai/roles/{{ $role->code }}">
-                @csrf @method('DELETE')
-
-                <div class="flex gap-3">
-                    <button type="button" onclick="closeDeleteModal()"
-                            class="flex-1 px-4 py-3 rounded-xl bg-gray-100 hover:bg-gray-200">
-                        Batal
-                    </button>
-
-                    <button type="submit"
-                            class="flex-1 px-4 py-3 rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-lg">
-                        Hapus Sekarang
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    
 
 </main>
 
@@ -222,16 +185,6 @@ function filterPermissions() {
 function clearSearch() {
     searchBox.value = "";
     filterPermissions();
-}
-function showDeleteModal() {
-    const m = document.getElementById("delete-modal");
-    m.classList.remove("hidden");
-    m.classList.add("flex");
-}
-function closeDeleteModal() {
-    const m = document.getElementById("delete-modal");
-    m.classList.add("hidden");
-    m.classList.remove("flex");
 }
 </script>
 
