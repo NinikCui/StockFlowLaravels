@@ -22,24 +22,46 @@ class RoleController extends Controller
             ->get()
             ->map(function ($p) {
 
+                // -------------------------
+                // 1. Ekstrak resource & action
+                // -------------------------
                 $resource = $p->resource;
                 $action = $p->action;
 
+                // Jika resource/action kosong, fallback pakai name
                 if (! $resource || ! $action) {
                     $parts = explode('.', $p->name);
-                    $resource = $resource ?: ($parts[0] ?? 'other');
-                    $action = $action ?: ($parts[1] ?? 'view');
+
+                    $resource = $resource ?: strtolower($parts[0] ?? 'other');
+                    $action = $action ?: strtolower($parts[1] ?? 'view');
                 }
+
+                // Normalisasi aman
+                $resource = strtolower(trim($resource));
+                $action = strtolower(trim($action));
+
+                // -------------------------
+                // 2. Buat label manusiawi
+                // -------------------------
+                $label = ucfirst($resource).' - '.ucfirst($action);
 
                 return [
                     'id' => $p->id,
+                    'code' => $p->name,      // original permission name
                     'resource' => $resource,
                     'action' => $action,
-                    'code' => $p->name,
-                    'label' => $p->name,
+                    'label' => $label,
                 ];
             })
+
+            // -------------------------
+            // 3. Group berdasarkan resource
+            // -------------------------
             ->groupBy('resource')
+
+            // -------------------------
+            // 4. Convert ke array biasa
+            // -------------------------
             ->toArray();
     }
 

@@ -245,29 +245,22 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
 
     Route::prefix('{companyCode}/request-cabang')->group(function () {
 
-        Route::get('/', [MaterialRequestController::class, 'index'])
-            ->name('request.index');
+        Route::get('/', [MaterialRequestController::class, 'index'])->name('request.index');
 
-        Route::get('/create', [MaterialRequestController::class, 'create'])
-            ->name('request.create');
+        Route::get('/create', [MaterialRequestController::class, 'create'])->name('request.create');
 
-        Route::post('/', [MaterialRequestController::class, 'store'])
-            ->name('request.store');
-        Route::post('/anjay', [MaterialRequestController::class, 'store'])
-            ->name('request.storeeeee');
+        Route::post('/', [MaterialRequestController::class, 'store'])->name('request.store');
+        Route::post('/anjay', [MaterialRequestController::class, 'store'])->name('request.storeeeee');
 
-        Route::get('/items/{branchId}', [MaterialRequestController::class, 'loadItems'])
-            ->name('request.load.items');
+        Route::get('/items/{branchId}', [MaterialRequestController::class, 'loadItems'])->name('request.load.items');
         Route::get('/{id}', [MaterialRequestController::class, 'show'])->name('request.show');
 
         Route::get('/{id}/edit',
-            [MaterialRequestController::class, 'edit']
-        )->name('request.edit');
-        Route::put('/{id}',
-            [MaterialRequestController::class, 'update'])->name('request.update');
+            [MaterialRequestController::class, 'edit'])->name('request.edit');
+        Route::put('/{id}', [MaterialRequestController::class, 'update'])->name('request.update');
+        Route::delete('/{id}', [MaterialRequestController::class, 'destroy'])->name('request.destroy');
 
-        Route::get('/analytics/cabang', [MaterialRequestController::class, 'cabangAnalytics'])
-            ->name('analytics.cabang');
+        Route::get('/analytics/cabang', [MaterialRequestController::class, 'cabangAnalytics'])->name('analytics.cabang');
     });
 
 });

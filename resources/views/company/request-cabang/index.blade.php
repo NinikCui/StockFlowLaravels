@@ -16,13 +16,11 @@
                 </div>
             </div>
 
-            <a href="{{ route('request.create', $companyCode) }}"
-               class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg shadow-lg shadow-emerald-500/30 hover:from-emerald-700 hover:to-emerald-800 hover:shadow-xl hover:shadow-emerald-500/40 transition-all duration-150 font-medium whitespace-nowrap">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Buat Request
-            </a>
+            <x-crud-add 
+                        resource="request"
+                        :companyCode="$companyCode"
+                        permissionPrefix="inventory"
+                    />
         </div>
     </div>
 

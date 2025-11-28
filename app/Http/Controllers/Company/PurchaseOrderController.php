@@ -67,12 +67,25 @@ class PurchaseOrderController extends Controller
      */
     public function create($companyCode)
     {
-        $suppliers = Supplier::with(['supplierItems.item'])->get();
-        $cabangs = CabangResto::all();
-        $warehouses = Warehouse::with('cabangResto')->get();
+        // Ambil perusahaan berdasarkan code
+        $company = Company::where('code', $companyCode)->firstOrFail();
+        $companyId = $company->id;
 
+        // Ambil semua supplier milik perusahaan ini
+        $suppliers = Supplier::with(['supplierItems.item'])
+            ->where('company_id', $companyId)
+            ->get();
+
+        // Ambil semua cabang milik perusahaan
+        $cabangs = CabangResto::where('company_id', $companyId)->get();
+
+        // Ambil gudang milik cabang perusahaan
+        $warehouses = Warehouse::with('cabangResto')
+            ->whereHas('cabangResto', fn ($q) => $q->where('company_id', $companyId))
+            ->get();
+
+        // Supplier → Items mapping
         $supplierItems = [];
-
         foreach ($suppliers as $s) {
             $supplierItems[$s->id] = $s->supplierItems->map(function ($si) {
                 return [
@@ -85,9 +98,9 @@ class PurchaseOrderController extends Controller
         }
 
         return view('company.purchase_order.create', [
+            'companyCode' => $companyCode,
             'suppliers' => $suppliers,
             'cabangs' => $cabangs,
-            'companyCode' => $companyCode,
             'warehouses' => $warehouses,
             'supplierItems' => $supplierItems,
         ]);
@@ -197,7 +210,7 @@ class PurchaseOrderController extends Controller
                 return [
                     'id' => $si->items_id,
                     'name' => $si->item->name,
-                    'price' => $si->price,              
+                    'price' => $si->price,
                     'min_order_qty' => $si->min_order_qty,
                 ];
             })->toArray();

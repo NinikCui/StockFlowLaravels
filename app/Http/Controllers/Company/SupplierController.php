@@ -238,6 +238,7 @@ class SupplierController extends Controller
             ->get();
 
         $allItems = Item::with(['kategori', 'satuan'])
+            ->where('company_id', $company->id)
             ->orderBy('name')
             ->get();
 

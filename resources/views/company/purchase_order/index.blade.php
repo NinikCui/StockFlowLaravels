@@ -10,13 +10,11 @@
             <p class="text-gray-600 mt-2">Kelola semua transaksi pembelian Anda</p>
         </div>
 
-        <a href="{{ route('po.create', $companyCode) }}"
-            class="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-xl shadow-lg hover:bg-emerald-700 hover:shadow-xl transition-all duration-200 font-medium">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Buat PO Baru
-        </a>
+        <x-crud-add 
+                        resource="po"
+                        :companyCode="$companyCode"
+                        permissionPrefix="purchase"
+                    />
     </div>
 
 

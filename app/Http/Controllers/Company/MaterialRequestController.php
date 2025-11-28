@@ -347,4 +347,22 @@ class MaterialRequestController extends Controller
             'avgPerMonth'
         ));
     }
+
+    public function destroy($companyCode, $id)
+    {
+        $req = InventoryTrans::findOrFail($id);
+
+        if ($req->status !== 'REQUESTED') {
+            return redirect()
+                ->route('request.show', [$companyCode, $id])
+                ->with('error', 'Tidak dapat menghapus request ini.');
+        }
+
+        $req->details()->delete();
+        $req->delete();
+
+        return redirect()
+            ->route('request.index', $companyCode)
+            ->with('success', 'Request berhasil dihapus.');
+    }
 }

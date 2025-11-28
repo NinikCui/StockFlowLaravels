@@ -14,7 +14,7 @@
 
                 <div class="flex items-center gap-3">
 
-                   
+
                     @if ($po->status == 'DRAFT')
 
                         <a href="{{ route('po.edit', [$companyCode, $po->id]) }}"
@@ -29,6 +29,8 @@
                                 Hapus
                             </button>
                         </form>
+
+                       
 
                         <form action="{{ route('po.updateStatus', [$companyCode, $po->id]) }}" method="POST">
                             @csrf @method('PATCH')
