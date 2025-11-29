@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Branch\BranchDashboardController;
 use App\Http\Controllers\Company\CabangController;
 use App\Http\Controllers\Company\CategoriesIssuesController;
 use App\Http\Controllers\Company\CompanyDashboardController;
