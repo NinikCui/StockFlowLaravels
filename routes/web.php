@@ -310,6 +310,14 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             // store action
             Route::post('/store', [BranchWarehouseController::class, 'store'])
                 ->name('branch.warehouse.store');
+
+            Route::get('/{warehouse}/edit', [BranchWarehouseController::class, 'edit'])
+                ->name('branch.warehouse.edit');
+            Route::post('/{warehouse}/update', [BranchWarehouseController::class, 'update'])
+                ->name('branch.warehouse.update');
+            // DELETE
+            Route::delete('/{warehouse}/delete', [BranchWarehouseController::class, 'destroy'])
+                ->name('branch.warehouse.destroy');
         });
     });
 

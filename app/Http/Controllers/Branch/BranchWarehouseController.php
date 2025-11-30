@@ -109,4 +109,71 @@ class BranchWarehouseController extends Controller
             ->route('branch.warehouse.index', $branchCode)
             ->with('success', 'Gudang berhasil ditambahkan.');
     }
+
+    public function update(Request $request, $branchCode, Warehouse $warehouse)
+    {
+        $companyId = session('role.company.id');
+
+        $branch = CabangResto::where('company_id', $companyId)
+            ->where('code', $branchCode)
+            ->firstOrFail();
+
+        if ($warehouse->cabang_resto_id !== $branch->id) {
+            abort(403);
+        }
+
+        $data = $request->validate([
+            'name' => 'required|string|max:100',
+            'code' => 'required|string|max:20|unique:warehouse,code,'.$warehouse->id,
+            'warehouse_type_id' => 'required|exists:warehouse_types,id',
+        ]);
+
+        $warehouse->update($data);
+
+        return redirect()
+            ->route('branch.warehouse.index', $branchCode)
+            ->with('success', 'Gudang berhasil diperbarui.');
+    }
+
+    public function edit($branchCode, Warehouse $warehouse)
+    {
+        $companyId = session('role.company.id');
+
+        $branch = CabangResto::where('company_id', $companyId)
+            ->where('code', $branchCode)
+            ->firstOrFail();
+
+        if ($warehouse->cabang_resto_id !== $branch->id) {
+            abort(403);
+        }
+
+        $types = WarehouseType::all();
+
+        return view('branch.warehouse.edit', [
+            'branchCode' => $branchCode,
+            'warehouse' => $warehouse,
+            'types' => $types,
+        ]);
+    }
+
+    public function destroy($branchCode, Warehouse $warehouse)
+    {
+        $companyId = session('role.company.id');
+
+        $branch = CabangResto::where('company_id', $companyId)
+            ->where('code', $branchCode)
+            ->firstOrFail();
+
+        if ($warehouse->cabang_resto_id !== $branch->id) {
+            abort(403);
+        }
+
+        if ($warehouse->stocks()->count() > 0) {
+            return back()->withErrors(['Gudang tidak dapat dihapus karena masih memiliki stok.']);
+        }
+
+        $warehouse->delete();
+
+        return back()->with('success', 'Gudang berhasil dihapus.');
+    }
 }

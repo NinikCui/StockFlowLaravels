@@ -115,7 +115,13 @@
                             {{-- AKSI --}}
                             <td class="px-4 py-3">
                                 <div class="flex justify-end">
-
+                                    <x-crud
+    resource="branch.warehouse"
+    :model="$w"
+    :companyCode="$companyCode"   
+    permissionPrefix="warehouse"
+    :routeParams="[$branchCode, $w->id]"
+/>
                                     <a href="{{ route('branch.stock.index', $branchCode) }}?warehouse={{ $w->id }}"
                                        class="text-blue-600 hover:underline text-sm font-medium">
                                         Lihat Stok

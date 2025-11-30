@@ -4,12 +4,13 @@
     'companyCode',
     'permissionPrefix',
     'keyField' => 'code',
+    'routeParams' => null,
 ])
 
 @php
     $companyCode = strtolower($companyCode);
     $param = $model->{$keyField};
-
+ $params = $routeParams ?: [$companyCode, $param];
     $showRoute   = "$resource.show";
     $editRoute   = "$resource.edit";
     $deleteRoute = "$resource.destroy";
@@ -18,7 +19,7 @@
 <div class="flex items-center gap-2">
 
     @if (\App\Support\Access::can("$permissionPrefix.update"))
-        <a href="{{ route($editRoute, [$companyCode, $param]) }}"
+        <a href="{{ route($editRoute, $params) }}"
            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-white text-sm font-medium shadow-md hover:shadow-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-200 group">
             <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -29,7 +30,7 @@
 
     @if (\App\Support\Access::can("$permissionPrefix.delete"))
         <form method="POST"
-              action="{{ route($deleteRoute, [$companyCode, $param]) }}"
+              action="{{  route($deleteRoute, $params) }}"
               onsubmit="return confirm('⚠️ Apakah Anda yakin ingin menghapus data ini?\n\nData yang dihapus tidak dapat dikembalikan.')">
 
             @csrf
