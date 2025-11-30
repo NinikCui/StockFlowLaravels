@@ -10,11 +10,15 @@ use Illuminate\Http\Request;
 
 class BranchWarehouseController extends Controller
 {
+    /**
+     * INDEX — Daftar Gudang Cabang
+     */
     public function warehousesIndex($branchCode)
     {
         $companyCode = session('role.company.code');
         $companyId = session('role.company.id');
 
+        // Validasi cabang milik company
         $branch = CabangResto::where('company_id', $companyId)
             ->where('code', $branchCode)
             ->firstOrFail();
@@ -37,7 +41,7 @@ class BranchWarehouseController extends Controller
             $query->where('warehouse_type_id', $type);
         }
 
-        // SORTING
+        // SORT
         switch (request('sort')) {
             case 'name_desc':
                 $query->orderBy('name', 'DESC');
@@ -51,10 +55,13 @@ class BranchWarehouseController extends Controller
                 $query->orderBy('name', 'ASC');
         }
 
+        // Ambil semua data tanpa pagination
         $warehouses = $query->get();
 
-        // Dropdown type list
-        $types = WarehouseType::orderBy('name')->get();
+        // Dropdown tipe gudang
+        $types = WarehouseType::where('company_id', $companyId)
+            ->orderBy('name')
+            ->get();
 
         return view('branch.warehouse.index', [
             'companyCode' => strtolower($companyCode),
@@ -65,43 +72,44 @@ class BranchWarehouseController extends Controller
         ]);
     }
 
+    /**
+     * CREATE — Form Tambah Gudang
+     */
     public function create($branchCode)
     {
         $companyId = session('role.company.id');
 
-        // Validasi branch
-        $branch = CabangResto::where('company_id', $companyId)
-            ->where('code', $branchCode)
-            ->firstOrFail();
-
-        // Ambil semua tipe gudang
-        $types = WarehouseType::where('company_id', $companyId)->orderBy('name')->get();
+        $types = WarehouseType::where('company_id', $companyId)
+            ->orderBy('name')
+            ->get();
 
         return view('branch.warehouse.create', [
             'branchCode' => $branchCode,
-            'branch' => $branch,
             'types' => $types,
         ]);
     }
 
+    /**
+     * STORE — Simpan Gudang Baru
+     */
     public function store(Request $request, $branchCode)
     {
         $companyId = session('role.company.id');
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:100|unique:warehouses,code',
+            'warehouse_type_id' => 'required|exists:warehouse_types,id',
+        ]);
 
         $branch = CabangResto::where('company_id', $companyId)
             ->where('code', $branchCode)
             ->firstOrFail();
 
-        $data = $request->validate([
-            'name' => 'required|string|max:100',
-            'code' => 'required|string|max:20|unique:warehouse,code',
-            'warehouse_type_id' => 'required|exists:warehouse_types,id',
-        ]);
-
         Warehouse::create([
-            'name' => $data['name'],
-            'code' => strtoupper($data['code']),
-            'warehouse_type_id' => $data['warehouse_type_id'],
+            'name' => $request->name,
+            'code' => strtoupper($request->code),
+            'warehouse_type_id' => $request->warehouse_type_id,
             'cabang_resto_id' => $branch->id,
         ]);
 
@@ -110,44 +118,19 @@ class BranchWarehouseController extends Controller
             ->with('success', 'Gudang berhasil ditambahkan.');
     }
 
-    public function update(Request $request, $branchCode, Warehouse $warehouse)
-    {
-        $companyId = session('role.company.id');
-
-        $branch = CabangResto::where('company_id', $companyId)
-            ->where('code', $branchCode)
-            ->firstOrFail();
-
-        if ($warehouse->cabang_resto_id !== $branch->id) {
-            abort(403);
-        }
-
-        $data = $request->validate([
-            'name' => 'required|string|max:100',
-            'code' => 'required|string|max:20|unique:warehouse,code,'.$warehouse->id,
-            'warehouse_type_id' => 'required|exists:warehouse_types,id',
-        ]);
-
-        $warehouse->update($data);
-
-        return redirect()
-            ->route('branch.warehouse.index', $branchCode)
-            ->with('success', 'Gudang berhasil diperbarui.');
-    }
-
+    /**
+     * EDIT — Form Edit Gudang
+     */
     public function edit($branchCode, Warehouse $warehouse)
     {
         $companyId = session('role.company.id');
 
-        $branch = CabangResto::where('company_id', $companyId)
-            ->where('code', $branchCode)
-            ->firstOrFail();
+        // Validasi scope
+        $this->authorizeWarehouse($warehouse, $companyId);
 
-        if ($warehouse->cabang_resto_id !== $branch->id) {
-            abort(403);
-        }
-
-        $types = WarehouseType::all();
+        $types = WarehouseType::where('company_id', $companyId)
+            ->orderBy('name')
+            ->get();
 
         return view('branch.warehouse.edit', [
             'branchCode' => $branchCode,
@@ -156,24 +139,48 @@ class BranchWarehouseController extends Controller
         ]);
     }
 
+    /**
+     * UPDATE — Simpan Perubahan
+     */
+    public function update(Request $request, $branchCode, Warehouse $warehouse)
+    {
+        $companyId = session('role.company.id');
+        $this->authorizeWarehouse($warehouse, $companyId);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'warehouse_type_id' => 'required|exists:warehouse_types,id',
+        ]);
+
+        $warehouse->update([
+            'name' => $request->name,
+            'warehouse_type_id' => $request->warehouse_type_id,
+        ]);
+
+        return redirect()
+            ->route('branch.warehouse.index', $branchCode)
+            ->with('success', 'Gudang berhasil diperbarui.');
+    }
+
+    /**
+     * DELETE — Hapus Gudang
+     */
     public function destroy($branchCode, Warehouse $warehouse)
     {
         $companyId = session('role.company.id');
-
-        $branch = CabangResto::where('company_id', $companyId)
-            ->where('code', $branchCode)
-            ->firstOrFail();
-
-        if ($warehouse->cabang_resto_id !== $branch->id) {
-            abort(403);
-        }
-
-        if ($warehouse->stocks()->count() > 0) {
-            return back()->withErrors(['Gudang tidak dapat dihapus karena masih memiliki stok.']);
-        }
+        $this->authorizeWarehouse($warehouse, $companyId);
 
         $warehouse->delete();
 
-        return back()->with('success', 'Gudang berhasil dihapus.');
+        return redirect()
+            ->route('branch.warehouse.index', $branchCode)
+            ->with('success', 'Gudang berhasil dihapus.');
+    }
+
+    private function authorizeWarehouse(Warehouse $warehouse, $companyId)
+    {
+        if ($warehouse->branch->company_id !== $companyId) {
+            abort(403, 'Tidak boleh mengakses gudang ini.');
+        }
     }
 }
