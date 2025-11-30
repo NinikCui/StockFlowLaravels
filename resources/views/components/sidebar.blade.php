@@ -1,21 +1,126 @@
 @php
+    use Illuminate\Support\Str;
+
     $username = session('user.username', 'User');
     $roleCode = session('role.code', 'USER');
 
-    $items = menuItems(); // <-- AUTO GENERATE MENU
+    $role  = session('role');
+    $scope = $role['scope'];
+    $code  = strtolower(
+        $scope === 'COMPANY'
+            ? $role['company']['code']
+            : $role['branch']['code']
+    );
 
-    function isActive($href) {
-        return request()->is(trim($href, '/'))
-            || request()->is(trim($href, '/').'/*');
+    $items = menuItems();
+
+
+    // ============================
+    // tenantHref()
+    // ============================
+    if (!function_exists('tenantHref')) {
+        function tenantHref($href)
+{
+    $role  = session('role');
+    $scope = $role['scope'];
+    $code  = strtolower(
+        $scope === 'COMPANY'
+            ? $role['company']['code']
+            : $role['branch']['code']
+    );
+
+    $prefix = $scope === 'COMPANY'
+        ? "company/$code"
+        : "branch/$code";
+
+    // ========== DEBUG: LOG SEMUA INPUT ==========
+    \Log::info('tenantHref() CALLED', [
+        'href_input' => $href,
+        'prefix' => $prefix,
+        'url_sekarang' => request()->path(),
+    ]);
+
+    // ========== ANTIDUP PREFIX ==========
+    if (\Illuminate\Support\Str::startsWith($href, $prefix)) {
+        \Log::info('PREFIX MATCH -> RETURN ORIGINAL', [
+            'returned' => '/' . trim($href, '/'),
+        ]);
+        return '/' . trim($href, '/');
     }
 
-    function anyChildActive($children) {
-        foreach ($children as $c) {
-            if (isActive($c['href'])) return true;
-        }
-        return false;
+    if (\Illuminate\Support\Str::startsWith($href, '/'.$prefix)) {
+        \Log::info('PREFIX MATCH (with /) -> RETURN ORIGINAL', [
+            'returned' => '/' . trim($href, '/'),
+        ]);
+        return '/' . trim($href, '/');
+    }
+
+    // ========== DASHBOARD ==========
+    if ($href === 'dashboard') {
+        $res = $scope === 'COMPANY'
+            ? "/company/$code/dashboard"
+            : "/branch/$code/dashboard";
+
+        \Log::info('DASHBOARD SPECIAL', ['returned' => $res]);
+        return $res;
+    }
+
+    // ========== NORMAL CASE ==========
+    $final = "/$prefix/" . trim($href, '/');
+
+    \Log::info('NORMAL PREFIX APPLY', [
+        'returned' => $final,
+    ]);
+
+    return $final;
+}
+
+    }
+
+
+    // ============================
+    // isActive
+    // ============================
+    if (!function_exists('isActive')) {
+        function isActive($href)
+{
+    $final = tenantHref($href);
+
+    \Log::info("isActive() check", [
+        'href' => $href,
+        'final' => $final,
+        'path' => request()->path(),
+    ]);
+
+    return request()->is(ltrim($final, '/'))
+        || request()->is(ltrim($final, '/').'/*');
+}
+
+    }
+
+    // ============================
+    // anyChildActive
+    // ============================
+    if (!function_exists('anyChildActive')) {
+        function anyChildActive($children)
+{
+    foreach ($children as $c) {
+
+        \Log::info("anyChildActive: checking child", [
+            'href' => $c['href']
+        ]);
+
+        if (isActive($c['href'])) return true;
+    }
+    return false;
+}
+
     }
 @endphp
+
+
+
+
 
 <button onclick="toggleSidebar()" class="fixed left-4 top-4 z-50 md:hidden h-10 w-10 rounded-lg bg-white border shadow-sm">
     <svg class="h-5 w-5 mx-auto text-gray-700" fill="none" stroke="currentColor">
@@ -35,7 +140,7 @@
         <div class="h-10 w-10 bg-emerald-600 text-white rounded-xl grid place-items-center font-bold">R</div>
 
         <div>
-            <div class="font-bold text-gray-900">{{ strtoupper(session('role.company.code')) }}</div>
+            <div class="font-bold text-gray-900">{{ strtoupper($role['company']['code']) }}</div>
             <div class="text-xs text-gray-500">{{ strtoupper($roleCode) }}</div>
         </div>
     </div>
@@ -47,13 +152,13 @@
             @php
                 $hasChildren = isset($item['children']);
                 $isOpen = $hasChildren
-    ? anyChildActive($item['children'])
-    : (!($item['parent_only'] ?? false) && isActive($item['href'] ?? ''));
+                    ? anyChildActive($item['children'])
+                    : (!($item['parent_only'] ?? false) && isActive($item['href'] ?? ''));
             @endphp
 
             {{-- MENU TANPA CHILDREN --}}
             @if (!$hasChildren)
-                <a href="{{ $item['href'] }}"
+                <a href="{{ tenantHref($item['href']) }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                     {{ isActive($item['href']) ? 'bg-emerald-600 text-white' : 'text-gray-700 hover:bg-gray-100' }}">
                     @include('components.sidebar-icon', ['name' => $item['icon']])
@@ -62,7 +167,7 @@
 
             @else
 
-                {{-- MENU BER-CHILDREN --}}
+                {{-- MENU CHILDREN --}}
                 <div x-data="{ open: {{ $isOpen ? 'true' : 'false' }} }">
 
                     <button @click="open = !open"
@@ -82,7 +187,7 @@
 
                     <div x-show="open" x-collapse class="ml-8 mt-1 pl-3 border-l space-y-1 border-emerald-300">
                         @foreach ($item['children'] as $child)
-                            <a href="{{ $child['href'] }}"
+                            <a href="{{ tenantHref($child['href']) }}"
                                class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
                                {{ isActive($child['href'])
                                    ? 'bg-emerald-50 text-emerald-700 font-medium'

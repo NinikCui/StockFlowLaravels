@@ -10,7 +10,8 @@ class CategoriesIssues extends Model
 
     protected $fillable = [
         'name',
-        'desc'
+        'desc',
+        'company_id',
     ];
 
     public $timestamps = false;

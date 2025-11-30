@@ -1,0 +1,348 @@
+<?php
+
+namespace App\Http\Controllers\Branch;
+
+use App\Http\Controllers\Controller;
+use App\Models\CabangResto;
+use App\Models\CategoriesIssues;
+use App\Models\Category;
+use App\Models\Item;
+use App\Models\Stock;
+use App\Models\StockMovement;
+use App\Models\StocksAdjustment;
+use App\Models\StocksAdjustmentDetail;
+use App\Models\User;
+use App\Models\Warehouse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class BranchStockController extends Controller
+{
+    public function index($branchCode, Request $request)
+    {
+        // Ambil dari session
+        $companyId = session('role.company.id');
+        $companyCode = session('role.company.code');
+
+        // Pastikan branch milik company yang login
+        $branch = CabangResto::where('company_id', $companyId)
+            ->where('code', $branchCode)
+            ->firstOrFail();
+
+        // Filters
+        $search = $request->get('q');
+        $categoryId = $request->get('category');
+        $warehouseId = $request->get('warehouse');
+        $stocks = Stock::query()
+            ->with([
+                'item.kategori',
+                'item.satuan',
+                'warehouse',
+            ])
+            ->where('company_id', $companyId)
+
+            // Filter branch => lewat warehouse
+            ->whereHas('warehouse', function ($q) use ($branch) {
+                $q->where('cabang_resto_id', $branch->id);
+            })
+
+            // Filter Gudang
+            ->when($warehouseId, function ($q) use ($warehouseId) {
+                $q->where('warehouse_id', $warehouseId);
+            })
+
+            // Filter Search
+            ->when($search, function ($q) use ($search) {
+                $q->whereHas('item', function ($qq) use ($search) {
+                    $qq->where('name', 'like', "%$search%")
+                        ->orWhere('code', 'like', "%$search%");
+                });
+            })
+
+            // Filter Category
+            ->when($categoryId, function ($q) use ($categoryId) {
+                $q->whereHas('item', function ($qq) use ($categoryId) {
+                    $qq->where('category_id', $categoryId);
+                });
+            })
+
+            ->orderBy('item_id')
+            ->paginate(20);
+
+        // Gudang berdasarkan cabang
+        $warehouses = Warehouse::where('cabang_resto_id', $branch->id)
+            ->orderBy('name')
+            ->get();
+
+        // Kategori berdasarkan company
+        $categories = Category::where('company_id', $companyId)
+            ->orderBy('name')
+            ->get();
+        $categoriesIssues = CategoriesIssues::where('company_id', $companyId)->orderBy('name')->get();
+
+        return view('branch.stock.index', [
+            'companyCode' => strtolower($companyCode),
+            'branchCode' => $branchCode,
+            'branch' => $branch,
+            'categoriesIssues' => $categoriesIssues,
+            'stocks' => $stocks,
+            'categories' => $categories,
+            'warehouses' => $warehouses,
+
+            'search' => $search,
+            'selectedCategory' => $categoryId,
+            'selectedWarehouse' => $warehouseId,
+        ]);
+    }
+
+    public function adjustStore(Request $request, $branchCode)
+    {
+        $request->validate([
+            'stock_id' => 'required|exists:stocks,id',
+            'prev_qty' => 'required|numeric',
+            'after_qty' => 'required|numeric',
+            'categories_issues_id' => 'required|exists:categories_issues,id',
+            'note' => 'nullable|string|max:200',
+        ]);
+
+        if ($request->after_qty == $request->prev_qty) {
+            return back()->withErrors([
+                'after_qty' => 'Qty penyesuaian tidak berubah.',
+            ])->withInput();
+        }
+
+        $companyId = session('role.company.id');
+
+        // Validasi branch
+        $branch = CabangResto::where('company_id', $companyId)
+            ->where('code', $branchCode)
+            ->firstOrFail();
+
+        // Ambil stok (stock harus milik company dan cabang melalui warehouse)
+        $stock = Stock::with('warehouse')
+            ->where('company_id', $companyId)
+            ->where('id', $request->stock_id)
+            ->firstOrFail();
+
+        // Pastikan gudang yg memuat stok ini milik cabang tersebut
+        if ($stock->warehouse->cabang_resto_id !== $branch->id) {
+            abort(403, 'Gudang tidak valid untuk cabang ini.');
+        }
+
+        $warehouseId = $stock->warehouse_id;
+
+        DB::transaction(function () use ($request, $stock, $warehouseId) {
+
+            // 1️⃣ HEADER ADJUSTMENT
+            $adj = StocksAdjustment::create([
+                'warehouse_id' => $warehouseId,
+                'categories_issues_id' => $request->categories_issues_id,
+                'adjustment_date' => now(),
+                'status' => 'POSTED',
+                'note' => $request->note,
+                'created_by' => auth()->id(),
+            ]);
+
+            // 2️⃣ DETAIL ADJUSTMENT
+            StocksAdjustmentDetail::create([
+                'stocks_adjustmens_id' => $adj->id,
+                'stocks_id' => $stock->id,
+                'prev_qty' => $request->prev_qty,
+                'after_qty' => $request->after_qty,
+            ]);
+
+            // 3️⃣ UPDATE QTY STOCK
+            $stock->update([
+                'qty' => $request->after_qty,
+            ]);
+        });
+
+        return back()->with('success', 'Penyesuaian stok berhasil disimpan.');
+    }
+
+    public function itemHistory($branchCode, Stock $stock)
+    {
+        $companyId = session('role.company.id');
+
+        // 1️⃣ Validasi Branch
+        $branch = CabangResto::where('company_id', $companyId)
+            ->where('code', $branchCode)
+            ->firstOrFail();
+
+        // 2️⃣ Validasi Stok milik company + cabang
+        $stock->load(['item.satuan', 'warehouse']);
+
+        if ($stock->company_id !== $companyId) {
+            abort(403, 'Stok tidak valid.');
+        }
+
+        if ($stock->warehouse->cabang_resto_id !== $branch->id) {
+            abort(403, 'Gudang tidak valid untuk cabang ini.');
+        }
+
+        $item = $stock->item;
+
+        // 3️⃣ Ambil Filter
+        $filterIssue = request('issue');
+        $filterUser = request('user');
+        $filterFrom = request('from');
+        $filterTo = request('to');
+
+        // 4️⃣ Query History
+        $adjustments = StocksAdjustmentDetail::query()
+            ->selectRaw("
+            sa.adjustment_date AS date,
+            '{$stock->code}' AS stock_code,
+            i.name AS item_name,
+            ci.name AS issue_name,
+            d.prev_qty,
+            d.after_qty,
+            (d.after_qty - d.prev_qty) AS diff,
+            sa.note AS note,
+            u.username AS created_by_name
+        ")
+            ->from('stocks_adjustmens_detail AS d')
+            ->join('stocks_adjustmens AS sa', 'sa.id', '=', 'd.stocks_adjustmens_id')
+            ->join('stocks AS s', 's.id', '=', 'd.stocks_id')
+            ->join('items AS i', 'i.id', '=', 's.item_id')
+            ->join('categories_issues AS ci', 'ci.id', '=', 'sa.categories_issues_id')
+            ->leftJoin('users AS u', 'u.id', '=', 'sa.created_by')
+            ->where('d.stocks_id', $stock->id)
+            ->where('s.company_id', $companyId)
+            ->where('s.warehouse_id', $stock->warehouse_id);
+
+        // FILTERS
+        if ($filterFrom) {
+            $adjustments->whereDate('sa.adjustment_date', '>=', $filterFrom);
+        }
+
+        if ($filterTo) {
+            $adjustments->whereDate('sa.adjustment_date', '<=', $filterTo);
+        }
+
+        if ($filterUser) {
+            $adjustments->where('sa.created_by', $filterUser);
+        }
+
+        if ($filterIssue) {
+            $adjustments->where('ci.name', $filterIssue);
+        }
+
+        // FINAL RESULT
+        $history = $adjustments->orderBy('sa.adjustment_date', 'desc')->get();
+
+        // 5️⃣ Ambil daftar User yang pernah melakukan adjust stok ini (lebih efisien)
+        $users = User::whereIn('id', function ($q) use ($stock) {
+            $q->select('created_by')
+                ->from('stocks_adjustmens AS sa')
+                ->join('stocks_adjustmens_detail AS d', 'sa.id', '=', 'd.stocks_adjustmens_id')
+                ->where('d.stocks_id', $stock->id)
+                ->whereNotNull('sa.created_by');
+        })
+            ->get();
+
+        $categoriesIssues = CategoriesIssues::all();
+
+        return view('branch.stock.history', compact(
+            'branchCode',
+            'stock',
+            'item',
+            'history',
+            'users',
+            'categoriesIssues'
+        ));
+    }
+
+    public function createStockIn($branchCode)
+    {
+        $companyId = session('role.company.id');
+
+        // Validasi branch
+        $branch = CabangResto::where('company_id', $companyId)
+            ->where('code', $branchCode)
+            ->firstOrFail();
+
+        // Ambil semua gudang milik branch
+        $warehouses = Warehouse::where('cabang_resto_id', $branch->id)
+            ->orderBy('name')
+            ->get();
+
+        // Ambil items milik company
+        $items = Item::where('company_id', $companyId)
+            ->with('satuan')
+            ->orderBy('name')
+            ->get();
+
+        return view('branch.stock.create', [
+            'branchCode' => $branchCode,
+            'branch' => $branch,
+            'warehouses' => $warehouses,
+            'items' => $items,
+        ]);
+    }
+
+    public function storeStockIn(Request $request, $branchCode)
+    {
+        $companyId = session('role.company.id');
+
+        // Validasi branch
+        $branch = CabangResto::where('company_id', $companyId)
+            ->where('code', $branchCode)
+            ->firstOrFail();
+
+        $data = $request->validate([
+            'warehouse_id' => 'required|exists:warehouse,id',
+            'item_id' => 'required|exists:items,id',
+            'qty' => 'required|numeric|min:0.01',
+            'notes' => 'nullable|string|max:255',
+        ], [
+            'warehouse_id.required' => 'Gudang wajib dipilih.',
+            'item_id.required' => 'Item wajib dipilih.',
+            'qty.required' => 'Jumlah stok wajib diisi.',
+        ]);
+
+        // Pastikan warehouse milik branch
+        $warehouse = Warehouse::where('id', $data['warehouse_id'])
+            ->where('cabang_resto_id', $branch->id)
+            ->firstOrFail();
+
+        // Generate kode stok
+        $prefix = 'STK-'.strtoupper($warehouse->code).'-';
+
+        $last = Stock::where('warehouse_id', $warehouse->id)
+            ->orderBy('id', 'DESC')
+            ->first();
+
+        $nextNumber = $last
+            ? intval(substr($last->code, -4)) + 1
+            : 1;
+
+        $generatedCode = $prefix.str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+        // SIMPAN STOCK
+        $stock = Stock::create([
+            'company_id' => $companyId,
+            'warehouse_id' => $warehouse->id,
+            'item_id' => $data['item_id'],
+            'qty' => $data['qty'],
+            'code' => $generatedCode,
+        ]);
+
+        // STOCK MOVEMENT
+        StockMovement::create([
+            'company_id' => $companyId,
+            'warehouse_id' => $warehouse->id,
+            'created_by' => auth()->id(),
+            'item_id' => $data['item_id'],
+            'stock_id' => $stock->id,
+            'type' => 'IN',
+            'qty' => $data['qty'],
+            'notes' => $data['notes'],
+            'reference' => 'Branch Stock In - '.$generatedCode,
+        ]);
+
+        return redirect()
+            ->route('branch.stock.index', $branchCode)
+            ->with('success', 'Stok berhasil ditambahkan.');
+    }
+}

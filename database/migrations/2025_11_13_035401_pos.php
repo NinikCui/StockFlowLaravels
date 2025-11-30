@@ -241,6 +241,12 @@ return new class extends Migration
 
             $table->string('name', 45);
             $table->text('desc');
+            $table->unsignedBigInteger('company_id');
+
+            $table->foreign('company_id')
+                ->references('id')->on('companies')
+                ->nullOnDelete();
+
         });
         Schema::create('production_issues', function (Blueprint $table) {
             $table->id();

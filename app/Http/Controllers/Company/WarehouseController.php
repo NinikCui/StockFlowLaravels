@@ -342,11 +342,13 @@ class WarehouseController extends Controller
             ->sortByDesc('date')
             ->values();
 
+        $categoriesIssues = CategoriesIssues::where('company_id', $company->id)->orderBy('name')->get();
+
         return view('company.warehouse.detail.show', [
             'companyCode' => $companyCode,
             'warehouse' => $warehouse,
             'stocks' => $stocks,
-            'categoriesIssues' => CategoriesIssues::orderBy('name')->get(),
+            'categoriesIssues' => $categoriesIssues,
             'warehouseMutations' => $warehouseMutations,
         ]);
     }

@@ -12,19 +12,16 @@ class TenantDashboardController extends Controller
             return redirect('/login');
         }
 
-        $branch = $role['branch'] ?? null;
-        $company = $role['company'];
-
-        // Jika user di level company
-        if ($branch === null) {
+        // Jika ROLE COMPANY
+        if (empty($role['branch'])) {
             return redirect()->route('company.dashboard', [
-                'companyCode' => $company['code'],
+                'companyCode' => strtolower($role['company']['code']),
             ]);
         }
 
-        // Jika user di level branch
+        // Jika ROLE BRANCH
         return redirect()->route('branch.dashboard', [
-            'branchCode' => $branch['code'],
+            'branchCode' => strtolower($role['branch']['code']),
         ]);
     }
 }

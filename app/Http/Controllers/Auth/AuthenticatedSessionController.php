@@ -95,13 +95,13 @@ class AuthenticatedSessionController extends Controller
         $branch = $role['branch'];
 
         if ($branch) {
-            $url = '/'.strtolower($branch['code']).'/dashboard/branch';
+            $url = '/'.'branch/'.strtolower($branch['code']).'/dashboard';
             Log::info('Final Redirect URL (branch):', ['redirect' => $url]);
 
             return redirect($url);
         }
 
-        $url = '/'.strtolower($company['code']).'/dashboard/company';
+        $url = '/'.'company/'.strtolower($company['code']).'/dashboard';
         Log::info('Final Redirect URL (company):', ['redirect' => $url]);
 
         return redirect($url);

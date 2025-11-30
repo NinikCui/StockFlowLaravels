@@ -10,7 +10,6 @@ if (! function_exists('menuItems')) {
         }
 
         $scope = $role['branch'] ? 'BRANCH' : 'COMPANY';
-        $prefix = strtolower($role['branch']['code'] ?? $role['company']['code']);
         $permissions = $role['permissions'] ?? [];
 
         $menu = config("menu.$scope");
@@ -21,7 +20,7 @@ if (! function_exists('menuItems')) {
             // ALWAYS SHOW
             if (isset($item['always_show']) && $item['always_show'] === true) {
                 if (isset($item['href'])) {
-                    $item['href'] = "/$prefix/".ltrim($item['href'], '/');
+                    $item['href'] = ltrim($item['href'], '/');
                 }
                 $filtered[] = $item;
 
@@ -37,7 +36,7 @@ if (! function_exists('menuItems')) {
                         ! isset($child['permission']) ||
                         in_array($child['permission'], $permissions)
                     ) {
-                        $child['href'] = "/$prefix/".ltrim($child['href'], '/');
+                        $child['href'] = ltrim($child['href'], '/');
                         $children[] = $child;
                     }
                 }
@@ -55,7 +54,7 @@ if (! function_exists('menuItems')) {
                 ! isset($item['permission']) ||
                 in_array($item['permission'], $permissions)
             ) {
-                $item['href'] = "/$prefix/".ltrim($item['href'], '/');
+                $item['href'] = ltrim($item['href'], '/');
                 $filtered[] = $item;
             }
         }

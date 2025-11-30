@@ -9,6 +9,7 @@
             :model="$warehouse"
             :companyCode="$companyCode"
             permissionPrefix="warehouse"
+            keyField="id"
         />
     </div>
 

@@ -13,49 +13,80 @@ class EnsureUserHasCorrectPath
         $companyCode = session('role.company.code');
         $branchCode = session('role.branch.code');
 
+        // Jika belum login / belum ada role → skip
         if (! $companyCode) {
             return $next($request);
         }
 
-        $prefix = strtolower($branchCode ?? $companyCode);
         $segments = $request->segments();
 
+        // Kalau tidak ada segmen (misal '/'), lanjut saja
         if (count($segments) === 0) {
             return $next($request);
         }
 
-        $first = strtolower($segments[0]);
-
+        // Abaikan route tertentu
         $ignored = [
             'login', 'logout', 'register',
             'password', 'forgot-password', 'reset-password',
             'auth', 'sanctum', 'api', 'storage',
         ];
 
-        if (in_array($first, $ignored)) {
+        if (in_array(strtolower($segments[0]), $ignored)) {
             return $next($request);
         }
 
-        // NEW FIX: abaikan dashboard redirection routes
-        if (Str::contains($request->path(), 'dashboard/company') ||
-            Str::contains($request->path(), 'dashboard/branch')) {
+        // Dashboard redirection tidak boleh diintervensi
+        if (
+            Str::contains($request->path(), 'dashboard/company') ||
+            Str::contains($request->path(), 'dashboard/branch')
+        ) {
             return $next($request);
         }
 
-        // FIX: Jika request bukan GET → jangan redirect
+        // Request non-GET tidak boleh di-redirect
         if (! $request->isMethod('get')) {
             return $next($request);
         }
 
-        // Jika prefix sudah benar
-        if ($first === $prefix) {
+        /*
+        |--------------------------------------------------------------------------
+        | Tentukan prefix yang benar
+        |--------------------------------------------------------------------------
+        | Company  -> "company/{companyCode}"
+        | Branch   -> "branch/{branchCode}"
+        |--------------------------------------------------------------------------
+        */
+        $expectedPrefix = $branchCode
+            ? 'branch/'.strtolower($branchCode)
+            : 'company/'.strtolower($companyCode);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil prefix dari URL sekarang: "segment1/segment2"
+        |--------------------------------------------------------------------------
+        */
+        $currentPrefix = strtolower(
+            ($segments[0] ?? '').'/'.($segments[1] ?? '')
+        );
+
+        // Jika prefix sudah benar → lanjut
+        if ($currentPrefix === $expectedPrefix) {
             return $next($request);
         }
 
-        // Perbaiki prefix
+        /*
+        |--------------------------------------------------------------------------
+        | Jika prefix salah → perbaiki
+        |--------------------------------------------------------------------------
+        */
+        // Buang 2 segmen prefix lama (company/xxxx atau branch/yyyy)
         array_shift($segments);
-        $fixed = $prefix.'/'.implode('/', $segments);
+        array_shift($segments);
 
-        return redirect('/'.trim($fixed, '/'));
+        $fixed = $expectedPrefix.'/'.implode('/', $segments);
+        $fixed = rtrim($fixed, '/');
+
+        return redirect('/'.$fixed);
     }
 }

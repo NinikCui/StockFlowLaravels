@@ -7,7 +7,7 @@ return [
         [
             'label' => 'Dashboard',
             'icon' => 'home',
-            'href' => 'dashboard/company',
+            'href' => 'dashboard',
             'always_show' => true,
         ],
         [
@@ -70,10 +70,11 @@ return [
 
     ],
     'BRANCH' => [
+
         [
             'label' => 'Dashboard Cabang',
             'icon' => 'home',
-            'href' => 'dashboard/branch',
+            'href' => 'dashboard',
             'always_show' => true,
         ],
 
@@ -81,25 +82,108 @@ return [
             'label' => 'Stok & Mutasi',
             'icon' => 'layers',
             'children' => [
-                ['label' => 'Request Cabang', 'href' => 'request-cabang', 'permission' => 'request.view'],
-                ['label' => 'Analytics',      'href' => 'request-cabang/analytics/cabang', 'permission' => 'analytics.view'],
+                [
+                    'label' => 'Gudang',
+                    'href' => 'penyimpanan',
+                    'permission' => 'warehouse.view',
+                ],
+
+                [
+                    'label' => 'Daftar Stok',
+                    'href' => 'stock',
+                    'permission' => 'warehouse.view',
+                ],
+
+                // Analytics Perpindahan Bahan (Opsional)
+                [
+                    'label' => 'Analytics',
+                    'href' => 'request-cabang/analytics/cabang',
+                    'permission' => 'analytics.view',
+                ],
             ],
         ],
 
+        // =========================
+        // 3. SUPPLIER
+        // =========================
         [
             'label' => 'Supplier',
             'icon' => 'truck',
             'children' => [
-                ['label' => 'Daftar Supplier', 'href' => 'supplier', 'permission' => 'supplier.view'],
+                [
+                    'label' => 'Daftar Supplier',
+                    'href' => 'supplier',
+                    'permission' => 'supplier.view',
+                ],
             ],
         ],
 
+        // =========================
+        // 4. PRODUK & ITEM
+        // =========================
         [
             'label' => 'Produk',
             'icon' => 'box',
             'children' => [
-                ['label' => 'Barang Baku', 'href' => 'items', 'permission' => 'items.view'],
+
+                [
+                    'label' => 'Barang Baku',
+                    'href' => 'items',
+                    'permission' => 'items.view',
+                ],
+
+                // (Opsional nanti)
+                // ['label' => 'Resep / BOM', 'href' => 'bom', 'permission' => 'bom.view'],
             ],
         ],
+
+        // =========================
+        // 5. PEGAWAI CABANG
+        // =========================
+        [
+            'label' => 'Pegawai Cabang',
+            'icon' => 'users',
+            'children' => [
+
+                [
+                    'label' => 'Daftar Pegawai',
+                    'href' => 'pegawai',
+                    'permission' => 'employee.branch.view',
+                ],
+
+                [
+                    'label' => 'Roles Cabang',
+                    'href' => 'pegawai/roles',
+                    'permission' => 'permission.branch.view',
+                ],
+            ],
+        ],
+
+        // =========================
+        // 6. LAPORAN / REPORTING
+        // =========================
+        [
+            'label' => 'Laporan',
+            'icon' => 'bar-chart',
+            'children' => [
+                [
+                    'label' => 'Laporan Stok',
+                    'href' => 'laporan/stock',
+                    'permission' => 'report.stock.view',
+                ],
+                [
+                    'label' => 'Laporan Mutasi',
+                    'href' => 'laporan/mutasi',
+                    'permission' => 'report.request.view',
+                ],
+                [
+                    'label' => 'Laporan Supplier',
+                    'href' => 'laporan/supplier',
+                    'permission' => 'report.supplier.view',
+                ],
+            ],
+        ],
+
     ],
+
 ];

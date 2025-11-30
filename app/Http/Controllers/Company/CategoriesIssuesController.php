@@ -1,14 +1,11 @@
 <?php
+
 namespace App\Http\Controllers\Company;
+
 use App\Http\Controllers\Controller;
-use App\Models\CabangResto;
 use App\Models\CategoriesIssues;
 use App\Models\Company;
-use App\Models\Role;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 
 class CategoriesIssuesController extends Controller
 {
@@ -16,24 +13,26 @@ class CategoriesIssuesController extends Controller
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
 
-        $issues = CategoriesIssues::orderBy('name')->get();
+        $issues = CategoriesIssues::where('company_id', $company->id)->orderBy('name')->get();
 
         return view('company.settings.masalah.index', compact('issues', 'companyCode'));
     }
 
-    public function create($companyCode)
-    {
-        return view('company.settings.masalah.create', compact('companyCode'));
-    }
-
     public function store(Request $request, $companyCode)
     {
+        $company = Company::where('code', $companyCode)->firstOrFail();
         $request->validate([
-            'name'        => 'required|string|max:100',
+            'name' => 'required|string|max:100',
             'desc' => 'nullable|string|max:255',
         ]);
-        
-        CategoriesIssues::create($request->only('name', 'desc'));
+
+        CategoriesIssues::create([
+            'name' => $request->name,
+            'desc' => $request->desc,
+            'company_id' => $company->id,
+        ]
+
+        );
 
         return redirect()->route('issues.index', $companyCode)
             ->with('success', 'Kategori masalah berhasil ditambahkan.');
@@ -51,7 +50,7 @@ class CategoriesIssuesController extends Controller
         $issue = CategoriesIssues::findOrFail($id);
 
         $request->validate([
-            'name'        => 'required|string|max:100',
+            'name' => 'required|string|max:100',
             'desc' => 'nullable|string|max:255',
         ]);
 
