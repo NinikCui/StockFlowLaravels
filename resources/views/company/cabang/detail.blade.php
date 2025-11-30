@@ -16,7 +16,7 @@
             </p>
         </div>
 
-        <a href="/{{ strtolower($companyCode) }}/cabang"
+        <a href={{ route('cabang.index', ['companyCode' => $companyCode]) }}
            class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
             ← Kembali
         </a>

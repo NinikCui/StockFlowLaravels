@@ -8,9 +8,8 @@
         {{-- HEADER --}}
         <div class="mb-10">
             <div class="flex items-center gap-3 mb-4">
-                <a href="/{{ strtolower($companyCode) }}/cabang"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 bg-white 
-                        hover:bg-gray-100 text-sm shadow-sm transition">
+                <a href={{ route('cabang.index', ['companyCode' => $companyCode]) }}
+                class="text-sm font-medium text-gray-600 hover:text-gray-900 transition">
                     ← Kembali
                 </a>
 
@@ -106,7 +105,7 @@
                     {{-- FOOTER --}}
                     <div class="pt-6 border-t border-gray-200 flex justify-end gap-3">
 
-                        <a href="/{{ strtolower($companyCode) }}/cabang"
+                        <a href={{ route('cabang.index', ['companyCode' => $companyCode]) }}
                            class="px-4 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-700 
                                   hover:bg-gray-100 text-sm shadow-sm transition">
                             Batal

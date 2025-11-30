@@ -5,7 +5,7 @@
         <h2 class="text-xl font-bold text-gray-800">Stok di Gudang</h2>
 
         <x-add-button 
-            href="/{{ $companyCode }}/gudang/{{ $warehouse->id }}/stock/create"
+            href="/company/{{ $companyCode }}/gudang/{{ $warehouse->id }}/stock/create"
             text="+ Tambah Stok Masuk"
             variant="primary"
         />

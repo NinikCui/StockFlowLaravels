@@ -10,7 +10,7 @@
                 <p class="text-gray-600">Isi informasi berikut untuk menambahkan pegawai ke sistem.</p>
             </div>
 
-            <a href="/{{ $companyCode }}/pegawai"
+               <a href={{ route('pegawai.index', ['companyCode' => $companyCode]) }}
                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 
                       hover:bg-gray-50 hover:border-gray-300 shadow-sm transition">
                 ← Kembali
@@ -150,7 +150,8 @@
                 ACTION
             ============================ --}}
             <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
-                <a href="/{{ $companyCode }}/pegawai"
+                   <a href={{ route('pegawai.index', ['companyCode' => $companyCode]) }}
+
                    class="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50">
                     Batal
                 </a>

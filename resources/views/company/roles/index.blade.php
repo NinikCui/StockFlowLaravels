@@ -55,11 +55,14 @@
 
                     {{-- AKSI --}}
                     <td class="px-6 py-4 text-right">
-                        <a href="/{{ $companyCode }}/roles/{{ $r->code }}"
+                        
+                        <a href={{ route('roles.show', ['companyCode' => $companyCode,"code" => $r->code ]) }}
+
                             class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg
                                    hover:bg-emerald-100 transition-colors duration-150 font-medium text-sm">
                             👁️ Detail
                         </a>
+                        
                     </td>
 
                 </tr>

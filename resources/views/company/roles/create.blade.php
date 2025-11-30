@@ -5,7 +5,7 @@
 
         {{-- HEADER --}}
         <div class="flex items-center gap-4 mb-8">
-            <a href="/{{ $companyCode }}/roles"
+            <a href={{ route('roles.index', ['companyCode' => $companyCode]) }}
                 class="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm">
                 ←
             </a>
@@ -104,10 +104,7 @@
 
             {{-- FOOTER --}}
             <div class="flex justify-between items-center pt-6 border-t border-gray-200">
-                <a href="/{{ $companyCode }}/pegawai?tab=roles"
-                    class="px-6 py-3 rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50">
-                    Batal
-                </a>
+
 
                 <button type="submit"
                     class="px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 shadow-lg">

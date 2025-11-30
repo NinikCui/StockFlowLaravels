@@ -4,9 +4,7 @@
     {{-- HEADER --}}
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Warehouse</h1>
-        <a href="/{{ $companyCode }}/dashboard" class="text-sm text-gray-500 hover:text-gray-700">
-            ← Kembali
-        </a>
+        
     </div>
 
     {{-- TAB MENU --}}

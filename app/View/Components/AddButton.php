@@ -2,16 +2,18 @@
 
 namespace App\View\Components;
 
-use Closure;
-use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
 
 class AddButton extends Component
 {
     public $href;
+
     public $text;
+
     public $variant;
+
     public $size;
+
     public $icon;
 
     public function __construct(
@@ -22,10 +24,6 @@ class AddButton extends Component
         $icon = null,
     ) {
         $prefix = strtolower(session('role.branch.code') ?? session('role.company.code'));
-
-        if (!str_starts_with($href, "/$prefix")) {
-            $href = "/$prefix/" . ltrim($href, '/');
-        }
 
         $this->href = $href;
         $this->text = $text;

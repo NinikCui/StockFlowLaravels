@@ -12,7 +12,8 @@
             <p class="text-sm text-gray-500 mt-1">Informasi lengkap pemasok.</p>
         </div>
 
-        <a href="/{{ $companyCode }}/supplier"
+        <a href={{ route('supplier.index', ['companyCode' => $companyCode]) }}
+
             class="text-sm text-gray-600 hover:text-gray-900">
             ← Kembali
         </a>

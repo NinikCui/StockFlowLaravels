@@ -7,7 +7,7 @@
 
             {{-- Back --}}
             <div class="flex items-center gap-4">
-                <a href="/{{ $companyCode }}/roles"
+                <a href={{ route('roles.index', ['companyCode' => $companyCode]) }}
                    class="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm">
                     ←
                 </a>

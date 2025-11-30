@@ -104,11 +104,11 @@
                         Segarkan
                     </a>
 
-                    <a href="/{{ strtolower($companyCode) }}/cabang/tambah"
-                       class="px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 
-                              text-sm shadow transition">
-                        + Tambah Cabang  
-                    </a>
+                    <x-crud-add 
+                        resource="cabang"
+                        :companyCode="$companyCode"
+                        permissionPrefix="branch"
+                    />
                 </div>
 
             </div>
@@ -170,7 +170,8 @@
 
                     {{-- DETAIL BUTTON --}}
                     <div class="mt-6 flex justify-end">
-                        <a href="/{{ strtolower($companyCode) }}/cabang/{{ $b->code }}"
+                        
+                       <a href={{ route('cabang.detail', ['companyCode' => $companyCode, "code" => $b->code]) }}
                            class="px-4 py-2 text-sm rounded-lg border border-gray-300 bg-white 
                                   hover:bg-emerald-50 hover:border-emerald-300 
                                   text-gray-700 shadow-sm transition">

@@ -14,7 +14,7 @@
                     <p class="text-gray-600">Perbarui informasi pegawai {{ $pegawai->username }}</p>
                 </div>
 
-                <a href="/{{ strtolower($companyCode) }}/pegawai"
+                   <a href={{ route('pegawai.index', ['companyCode' => $companyCode]) }}
                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm transition-all duration-200">
                     ← <span>Kembali</span>
                 </a>
@@ -198,11 +198,11 @@
 
                 {{-- ===================== ACTION BUTTONS ===================== --}}
                 <div class="flex justify-end gap-3 pt-6 border-t border-gray-200">
-                    <a href="/{{ strtolower($companyCode) }}/pegawai"
+                   <a href={{ route('pegawai.index', ['companyCode' => $companyCode]) }}
                         class="px-6 py-3 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50">
                         Batal
                     </a>
-
+                    
                     <button type="submit"
                         class="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white text-sm font-semibold hover:from-emerald-700 hover:to-emerald-800 shadow-lg">
                         💾 Simpan Perubahan
