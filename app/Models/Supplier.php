@@ -10,6 +10,7 @@ class Supplier extends Model
 
     protected $fillable = [
         'company_id',
+        'cabang_resto_id',
         'name',
         'contact_name',
         'phone',
@@ -42,6 +43,11 @@ class Supplier extends Model
         return $this->belongsToMany(Item::class, 'suppliers_item', 'suppliers_id', 'items_id')
             ->withPivot(['price', 'min_order_qty', 'last_price_update'])
             ->withTimestamps();
+    }
+
+    public function cabangResto()
+    {
+        return $this->belongsTo(CabangResto::class, 'cabang_resto_id');
     }
 
     public function items()

@@ -45,6 +45,7 @@ class SupplierController extends Controller
         $sort = request('sort');
 
         $suppliers = Supplier::where('company_id', $company->id)
+            ->with('cabangResto:id,name,code')
             ->when($itemFilter, function ($q) use ($itemFilter) {
                 $q->whereHas('suppliedItems', function ($i) use ($itemFilter) {
                     $i->where('items.id', $itemFilter);

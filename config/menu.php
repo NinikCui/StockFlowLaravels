@@ -119,25 +119,6 @@ return [
         ],
 
         // =========================
-        // 4. PRODUK & ITEM
-        // =========================
-        [
-            'label' => 'Produk',
-            'icon' => 'box',
-            'children' => [
-
-                [
-                    'label' => 'Barang Baku',
-                    'href' => 'items',
-                    'permission' => 'items.view',
-                ],
-
-                // (Opsional nanti)
-                // ['label' => 'Resep / BOM', 'href' => 'bom', 'permission' => 'bom.view'],
-            ],
-        ],
-
-        // =========================
         // 5. PEGAWAI CABANG
         // =========================
         [

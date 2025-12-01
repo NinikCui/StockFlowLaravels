@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Branch\BranchDashboardController;
 use App\Http\Controllers\Branch\BranchStockController;
+use App\Http\Controllers\Branch\BranchSupplierController;
 use App\Http\Controllers\Branch\BranchWarehouseController;
 use App\Http\Controllers\Company\CabangController;
 use App\Http\Controllers\Company\CategoriesIssuesController;
@@ -318,6 +319,46 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             // DELETE
             Route::delete('/{warehouse}/delete', [BranchWarehouseController::class, 'destroy'])
                 ->name('branch.warehouse.destroy');
+        });
+
+        Route::prefix('supplier')->name('branch.supplier.')->group(function () {
+
+            Route::get('/', [BranchSupplierController::class, 'index'])
+                ->name('index');
+
+            Route::get('/create', [BranchSupplierController::class, 'create'])
+                ->name('create');
+
+            Route::post('/store', [BranchSupplierController::class, 'store'])
+                ->name('store');
+
+            Route::get('/{id}/edit', [BranchSupplierController::class, 'edit'])
+                ->name('edit');
+
+            Route::put('/{id}', [BranchSupplierController::class, 'update'])
+                ->name('update');
+
+            Route::delete('/{id}/delete', [BranchSupplierController::class, 'destroy'])
+                ->name('destroy');
+
+            Route::post('/{supplier}/item', [BranchSupplierController::class, 'itemStore'])
+                ->name('item.store');
+
+            Route::put('/{supplier}/item/{itemId}', [BranchSupplierController::class, 'itemUpdate'])
+                ->name('item.update');
+
+            Route::delete('/{supplier}/item/{itemId}', [BranchSupplierController::class, 'itemDestroy'])
+                ->name('item.delete');
+
+            Route::post('/{id}/score/generate', [BranchSupplierController::class, 'generateScore'])
+                ->name('score.generate');
+
+            Route::post('/{id}/score/period', [BranchSupplierController::class, 'generateScoreWithPeriod'])
+                ->name('score.period');
+
+            Route::get('/{id}', [BranchSupplierController::class, 'show'])
+                ->name('show');
+
         });
     });
 

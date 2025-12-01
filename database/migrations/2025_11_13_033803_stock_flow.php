@@ -166,6 +166,8 @@ return new class extends Migration
             $table->id();
 
             $table->unsignedBigInteger('company_id');
+
+            $table->unsignedBigInteger('cabang_resto_id');
             $table->string('name', 100);
             $table->string('contact_name', 100)->nullable();
             $table->string('phone', 50)->nullable();
@@ -180,6 +182,10 @@ return new class extends Migration
 
             $table->foreign('company_id')
                 ->references('id')->on('companies')
+                ->cascadeOnDelete();
+
+            $table->foreign('cabang_resto_id')
+                ->references('id')->on('cabang_resto')
                 ->cascadeOnDelete();
         });
 
