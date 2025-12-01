@@ -1,9 +1,9 @@
-<x-app-layout>
+<x-app-layout :branchCode="$branchCode">
+
 <div class="max-w-5xl mx-auto px-6 py-8">
 
     <h1 class="text-2xl font-bold text-gray-900 mb-6">Buat Purchase Order</h1>
 
-    {{-- ERROR ALERT --}}
     @if ($errors->any())
         <div class="mb-6 p-4 bg-red-100 text-red-700 rounded-xl shadow-sm">
             <ul class="list-disc list-inside text-sm">
@@ -14,35 +14,31 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('po.store', $companyCode) }}" id="poForm">
+    <form method="POST"
+          action="{{ route('branch.po.store', $branchCode) }}"
+          id="poForm">
+
         @csrf
 
         {{-- ========================== --}}
         {{-- INFORMASI PO --}}
         {{-- ========================== --}}
         <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Informasi PO</h2>
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">
+                Informasi Purchase Order Cabang {{ $branch->name }}
+            </h2>
 
             <div class="grid grid-cols-3 gap-4">
-
-                {{-- CABANG --}}
-                <div>
-                    <label class="text-sm font-medium">Cabang</label>
-                    <select name="cabang_resto_id" id="branchSelect"
-                        class="w-full mt-1 p-2 border rounded-lg">
-                        <option value="">-- Pilih Cabang --</option>
-                        @foreach($cabangs as $c)
-                            <option value="{{ $c->id }}">{{ $c->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
 
                 {{-- WAREHOUSE --}}
                 <div>
                     <label class="text-sm font-medium">Gudang</label>
-                    <select name="warehouse_id" id="warehouseSelect"
+                    <select name="warehouse_id"
                         class="w-full mt-1 p-2 border rounded-lg">
-                        <option value="">-- Pilih Cabang Terlebih Dahulu --</option>
+                        <option value="">-- Pilih Gudang --</option>
+                        @foreach($warehouses as $w)
+                            <option value="{{ $w->id }}">{{ $w->name }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -51,7 +47,10 @@
                     <label class="text-sm font-medium">Supplier</label>
                     <select name="suppliers_id" id="supplierSelect"
                         class="w-full mt-1 p-2 border rounded-lg">
-                        <option value="">-- Pilih Cabang Terlebih Dahulu --</option>
+                        <option value="">-- Pilih Supplier --</option>
+                        @foreach($suppliers as $s)
+                            <option value="{{ $s->id }}">{{ $s->name }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -114,99 +113,60 @@
     </form>
 </div>
 
-{{-- ========================== --}}
-{{-- JAVASCRIPT (jQuery AJAX) --}}
-{{-- ========================== --}}
 
+{{-- ========================== --}}
+{{-- JAVASCRIPT --}}
+{{-- ========================== --}}
 <script>
-let supplierItems = {};      // items berdasarkan supplier
-let usedItems = [];          // supaya tidak duplicate
+let supplierItems = [];
+let usedItems = [];
 let rowIndex = 0;
 
-// DEFAULT DATE SETUP
 const today = new Date().toISOString().split("T")[0];
 $("#poDate").val(today).attr("max", today);
 $("#expectedDate").attr("min", today);
 
-
-$("#branchSelect").on("change", function() {
-    const branchId = $(this).val();
-    $("#itemTable").html("");
-    usedItems = [];
-    rowIndex = 0;
-
-    if (!branchId) {
-        $("#supplierSelect").html('<option value="">-- Pilih Cabang Terlebih Dahulu --</option>');
-        $("#warehouseSelect").html('<option value="">-- Pilih Cabang Terlebih Dahulu --</option>');
-        return;
-    }
-
-    // LOAD SUPPLIER (AJAX CORRECTED URL)
-    $.ajax({
-        url: `/company/{{ $companyCode }}/purchase-order/ajax/suppliers/${branchId}`,
-        method: "GET",
-        success: function(res) {
-            let html = '<option value="">-- Pilih Supplier --</option>';
-            res.forEach(s => {
-                html += `<option value="${s.id}">${s.name}</option>`;
-            });
-            $("#supplierSelect").html(html);
-        }
-    });
-
-    // LOAD WAREHOUSES
-    const warehouses = @json($warehouses);
-
-    let warehouseHTML = '<option value="">-- Pilih Gudang --</option>';
-    warehouses.filter(w => w.cabang_resto_id == branchId)
-              .forEach(w => {
-                  warehouseHTML += `<option value="${w.id}">${w.name}</option>`;
-              });
-
-    $("#warehouseSelect").html(warehouseHTML);
-});
-
-
-// ===============================
-// LOAD ITEMS FROM SUPPLIER
-// ===============================
+// LOAD ITEMS BY SUPPLIER
 $("#supplierSelect").on("change", function() {
+    const supplierId = $(this).val();
     usedItems = [];
     $("#itemTable").html("");
     rowIndex = 0;
 
-    const supplierId = $(this).val();
-    console.log("Selected Supplier ID:", supplierId); // DEBUG
-    
     if (!supplierId) return;
+
+    // 🔍 DEBUG: cek URL final yang dipanggil
+    let ajaxUrl = "{{ route('branch.po.ajax.supplier.items', [$branchCode, ':id']) }}"
+                    .replace(':id', supplierId);
+
+    console.log("🔗 AJAX URL:", ajaxUrl);
+    console.log("📦 Fetching items for supplier ID:", supplierId);
     $.ajax({
-        url: "{{ route('ajax.supplier.items', ['companyCode' => $companyCode, 'supplierId' => ':supplierId']) }}".replace(':supplierId', supplierId),
+        url: ajaxUrl,
         method: "GET",
         success: function(items) {
-            console.log("ITEMS LOADED:", items); // Sudah ada
-            console.log("Items length:", items.length); // TAMBAH INI
-            console.log("Items type:", typeof items); // TAMBAH INI
+            console.log("✅ ITEMS LOADED:", items);
             supplierItems = items;
         },
         error: function(xhr) {
-            console.error("AJAX ERROR:", xhr.responseText);
-            console.error("Status:", xhr.status); // TAMBAH detail
-            console.error("URL called:", this.url); // TAMBAH URL
-            alert("ERROR loading supplier items: " + xhr.status);
+            console.error("❌ AJAX ERROR");
+            console.error("Status:", xhr.status);
+            console.error("Response:", xhr.responseText);
+
+            alert("Request gagal! Cek console.");
         }
     });
 });
-// ===============================
-// TAMBAH ROW ITEM
-// ===============================
+
+
+// ADD ITEM ROW
 $("#btnAddItem").on("click", function() {
     if (!supplierItems.length) {
-        alert("Pilih supplier dulu.");
+        alert("Pilih supplier terlebih dahulu!");
         return;
     }
 
     const available = supplierItems.filter(i => !usedItems.includes(i.id));
-
     if (!available.length) {
         alert("Semua item sudah ditambahkan.");
         return;
@@ -216,45 +176,44 @@ $("#btnAddItem").on("click", function() {
     usedItems.push(item.id);
 
     let row = `
-        <tr class="border-b" data-row="${rowIndex}">
+        <tr class="border-b">
             <td class="p-2">
-                <select class="w-full border rounded-lg p-2 itemSelect"
-                        name="items[${rowIndex}][item_id]"
-                        data-row="${rowIndex}">
+                <select class="w-full p-2 border rounded-lg"
+                        name="items[${rowIndex}][item_id]">
                     ${supplierItems.map(i => `
                         <option value="${i.id}"
-                            data-price="${i.price}"
-                            data-moq="${i.min_order_qty}"
-                            ${i.id === item.id ? 'selected' : ''}>
+                                data-price="${i.price}"
+                                data-moq="${i.min_order_qty}"
+                                ${i.id === item.id ? 'selected' : ''}>
                             ${i.name}
                         </option>
                     `).join("")}
                 </select>
             </td>
+
             <td class="p-2">
                 <input type="number" min="1"
                     name="items[${rowIndex}][qty_ordered]"
-                    class="w-full border rounded-lg p-2 qty-input"
+                    class="w-full p-2 border rounded-lg"
                     value="${item.min_order_qty}">
             </td>
+
             <td class="p-2">
                 <input type="number" min="0"
                     name="items[${rowIndex}][unit_price]"
-                    class="w-full border rounded-lg p-2 price-input"
+                    class="w-full p-2 border rounded-lg"
                     value="${item.price}">
             </td>
+
             <td class="p-2">
                 <input type="number" min="0" max="100"
                     name="items[${rowIndex}][discount_pct]"
-                    class="w-full border rounded-lg p-2"
+                    class="w-full p-2 border rounded-lg"
                     value="0">
             </td>
+
             <td class="p-2 text-center">
-                <button type="button"
-                        class="text-red-600 hover:underline btnRemove"
-                        data-id="${item.id}">
-                    Hapus
-                </button>
+                <button type="button" class="text-red-600 btnRemove">Hapus</button>
             </td>
         </tr>
     `;
@@ -263,26 +222,8 @@ $("#btnAddItem").on("click", function() {
     rowIndex++;
 });
 
-// ===============================
-// CHANGE ITEM (ganti harga & MOQ)
-// ===============================
-$(document).on("change", ".itemSelect", function() {
-    const row = $(this).data("row");
-    const option = $(this).find(":selected");
-
-    const price = option.data("price");
-    const moq = option.data("moq");
-
-    $(`[name="items[${row}][qty_ordered]"]`).val(moq);
-    $(`[name="items[${row}][unit_price]"]`).val(price);
-});
-
-// ===============================
 // HAPUS ROW
-// ===============================
 $(document).on("click", ".btnRemove", function() {
-    const id = $(this).data("id");
-    usedItems = usedItems.filter(i => i !== id);
     $(this).closest("tr").remove();
 });
 </script>

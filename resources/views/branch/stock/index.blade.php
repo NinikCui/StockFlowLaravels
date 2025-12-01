@@ -130,8 +130,7 @@
                                         {{ $stock->qty }},
                                         '{{ $stock->item->satuan->name }}'
                                     )">
-                                    {{ number_format($stock->qty, 0, ',', '.') }}
-
+                                        {{ $stock->qty }}
 
                                     <span class="text-gray-400">{{ $stock->item->satuan->name }}</span>
                                 </button>

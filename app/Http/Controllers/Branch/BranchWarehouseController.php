@@ -78,12 +78,15 @@ class BranchWarehouseController extends Controller
     public function create($branchCode)
     {
         $companyId = session('role.company.id');
-
+        $cabang = CabangResto::where('company_id', $companyId)
+            ->where('code', $branchCode)
+            ->firstOrFail();
         $types = WarehouseType::where('company_id', $companyId)
             ->orderBy('name')
             ->get();
 
         return view('branch.warehouse.create', [
+            'branch' => $cabang,
             'branchCode' => $branchCode,
             'types' => $types,
         ]);
@@ -98,7 +101,7 @@ class BranchWarehouseController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|string|max:100|unique:warehouses,code',
+            'code' => 'required|string|max:100|unique:warehouse,code',
             'warehouse_type_id' => 'required|exists:warehouse_types,id',
         ]);
 

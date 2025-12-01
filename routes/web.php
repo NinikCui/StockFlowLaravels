@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Branch\BranchDashboardController;
+use App\Http\Controllers\Branch\BranchPurchaseOrderController;
 use App\Http\Controllers\Branch\BranchStockController;
 use App\Http\Controllers\Branch\BranchSupplierController;
 use App\Http\Controllers\Branch\BranchWarehouseController;
@@ -211,6 +212,13 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         });
 
         Route::prefix('purchase-order')->group(function () {
+            Route::get('/ajax/suppliers/{branchId}',
+                [PurchaseOrderController::class, 'ajaxSuppliers']
+            )->name('ajax.suppliers');
+
+            Route::get('/ajax/suppliers/items/{supplierId}',
+                [PurchaseOrderController::class, 'ajaxSupplierItems']
+            )->name('ajax.supplier.items');
 
             // LIST PO
             Route::get('/', [PurchaseOrderController::class, 'index'])
@@ -253,6 +261,7 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
 
             Route::delete('/{id}', [PurchaseOrderController::class, 'destroy'])->name('po.destroy');
             Route::patch('/{id}/status', [PurchaseOrderController::class, 'updateStatus'])->name('po.updateStatus');
+
         });
 
         Route::prefix('request-cabang')->group(function () {
@@ -320,7 +329,56 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             Route::delete('/{warehouse}/delete', [BranchWarehouseController::class, 'destroy'])
                 ->name('branch.warehouse.destroy');
         });
+        Route::prefix('purchase-order')->name('branch.po.')->group(function () {
 
+            Route::get('/', [BranchPurchaseOrderController::class, 'index'])
+                ->name('index');
+
+            Route::get('/create', [BranchPurchaseOrderController::class, 'create'])
+                ->name('create');
+
+            Route::post('/store', [BranchPurchaseOrderController::class, 'store'])
+                ->name('store');
+
+            Route::get('/ajax/supplier-items/{supplierId}',
+                [BranchPurchaseOrderController::class, 'ajaxSupplierItems']
+            )->name('ajax.supplier.items');
+
+            // SHOW DETAIL
+            Route::get('/{id}', [BranchPurchaseOrderController::class, 'show'])
+                ->name('show'); // EDIT PO (hanya untuk DRAFT)
+            Route::get('/{id}/edit', [BranchPurchaseOrderController::class, 'edit'])
+                ->name('edit');
+
+            // UPDATE PO
+            Route::put('/{id}', [BranchPurchaseOrderController::class, 'update'])
+                ->name('update');
+
+            // APPROVE (status → APPROVED)
+            Route::post('/{id}/approve', [BranchPurchaseOrderController::class, 'approve'])
+                ->name('approve');
+
+            // CANCEL (status → CANCELLED)
+            Route::post('/{id}/cancel', [BranchPurchaseOrderController::class, 'cancel'])
+                ->name('cancel');
+
+            // RECEIVE FORM
+            Route::get('/{id}/receive', [BranchPurchaseOrderController::class, 'showReceiveForm'])
+                ->name('receive.show');
+
+            // PROCESS RECEIVE
+            Route::post('/{id}/receive', [BranchPurchaseOrderController::class, 'processReceive'])
+                ->name('receive.process');
+
+            // DELETE PO
+            Route::delete('/{id}', [BranchPurchaseOrderController::class, 'destroy'])
+                ->name('destroy');
+
+            // UPDATE STATUS (PATCH)
+            Route::patch('/{id}/status', [BranchPurchaseOrderController::class, 'updateStatus'])
+                ->name('updateStatus');
+
+        });
         Route::prefix('supplier')->name('branch.supplier.')->group(function () {
 
             Route::get('/', [BranchSupplierController::class, 'index'])
@@ -360,6 +418,7 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
                 ->name('show');
 
         });
+
     });
 
 });

@@ -14,6 +14,7 @@ use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PurchaseOrderController extends Controller
 {
@@ -71,38 +72,20 @@ class PurchaseOrderController extends Controller
         $company = Company::where('code', $companyCode)->firstOrFail();
         $companyId = $company->id;
 
-        // Ambil semua supplier milik perusahaan ini
-        $suppliers = Supplier::with(['supplierItems.item'])
-            ->where('company_id', $companyId)
-            ->get();
-
-        // Ambil semua cabang milik perusahaan
+        // Semua cabang perusahaan
         $cabangs = CabangResto::where('company_id', $companyId)->get();
 
-        // Ambil gudang milik cabang perusahaan
+        // Warehouse milik cabang perusahaan
         $warehouses = Warehouse::with('cabangResto')
             ->whereHas('cabangResto', fn ($q) => $q->where('company_id', $companyId))
             ->get();
 
-        // Supplier → Items mapping
-        $supplierItems = [];
-        foreach ($suppliers as $s) {
-            $supplierItems[$s->id] = $s->supplierItems->map(function ($si) {
-                return [
-                    'id' => $si->items_id,
-                    'name' => $si->item->name,
-                    'price' => $si->price,
-                    'min_order_qty' => $si->min_order_qty,
-                ];
-            });
-        }
+        // Mapping Supplier → Items
 
         return view('company.purchase_order.create', [
             'companyCode' => $companyCode,
-            'suppliers' => $suppliers,
             'cabangs' => $cabangs,
             'warehouses' => $warehouses,
-            'supplierItems' => $supplierItems,
         ]);
     }
 
@@ -483,5 +466,37 @@ class PurchaseOrderController extends Controller
         return redirect()
             ->route('po.show', [$companyCode, $po->id])
             ->with('success', 'Penerimaan PO berhasil disimpan.');
+    }
+
+    public function ajaxSuppliers($companyCode, $branchId)
+    {
+        $company = Company::where('code', $companyCode)->firstOrFail();
+        $companyId = $company->id;
+
+        $suppliers = Supplier::where('company_id', $companyId)
+            ->where(function ($q) use ($branchId) {
+                $q->whereNull('cabang_resto_id')
+                    ->orWhere('cabang_resto_id', $branchId);
+            })
+            ->get(['id', 'name']);
+
+        return response()->json($suppliers);
+    }
+
+    public function ajaxSupplierItems($companyCode, $supplierId)
+    {
+
+        $supplier = Supplier::with(['supplierItems.item'])->findOrFail($supplierId);
+        Log::info('Supplier Items: ', ['items' => $supplier->supplierItems]);
+        $items = $supplier->supplierItems->map(function ($si) {
+            return [
+                'id' => $si->items_id,
+                'name' => $si->item->name,
+                'price' => $si->price,
+                'min_order_qty' => $si->min_order_qty,
+            ];
+        });
+
+        return response()->json($items);
     }
 }

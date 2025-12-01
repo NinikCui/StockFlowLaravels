@@ -15,6 +15,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css" />
         <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
+        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
         <script>
             document.addEventListener("DOMContentLoaded", () => {
                 AOS.init({

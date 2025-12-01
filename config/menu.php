@@ -115,6 +115,11 @@ return [
                     'href' => 'supplier',
                     'permission' => 'supplier.view',
                 ],
+                [
+                    'label' => 'Purchase Order',
+                    'href' => 'purchase-order',
+                    'permission' => 'purchase.view',
+                ],
             ],
         ],
 
