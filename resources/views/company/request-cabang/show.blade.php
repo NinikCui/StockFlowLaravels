@@ -144,12 +144,6 @@
                             </div>
                         </div>
 
-                        <div class="pl-13">
-                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                <p class="text-xs font-medium text-blue-700 mb-1">Gudang Pengirim</p>
-                                <p class="text-sm font-semibold text-blue-900">{{ $req->cabangFrom->name }}</p>
-                            </div>
-                        </div>
                     </div>
 
                     {{-- Cabang Tujuan --}}
@@ -171,12 +165,6 @@
                             </div>
                         </div>
 
-                        <div class="pl-13">
-                            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                <p class="text-xs font-medium text-emerald-700 mb-1">Gudang Penerima</p>
-                                <p class="text-sm font-semibold text-emerald-900">{{ $req->cabangTo->name }}</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

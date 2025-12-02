@@ -176,50 +176,41 @@ class MaterialRequestController extends Controller
             'details.item.satuan',
         ])->findOrFail($id);
 
-        // Tidak boleh edit jika bukan REQUESTED
+        // Tidak boleh edit jika status bukan REQUESTED
         if ($req->status !== 'REQUESTED') {
             return redirect()
                 ->route('request.show', [$companyCode, $id])
                 ->with('error', 'Request ini sudah tidak dapat diedit.');
         }
 
-        // Ambil semua cabang milik perusahaan
+        // Ambil semua cabang perusahaan
         $branches = CabangResto::where('company_id', $company->id)->get();
 
-        // Ambil semua warehouse milik cabang tsb
+        // Ambil semua warehouse
         $warehouses = Warehouse::whereIn('cabang_resto_id', $branches->pluck('id'))->get();
 
-        // Ambil semua stok dari warehouse tersebut (sesuai DB)
-        $stocks = Stock::with(['item.satuan'])
+        // Ambil stok milik semua warehouse
+        $stocks = Stock::with(['item.satuan', 'warehouse'])
             ->whereIn('warehouse_id', $warehouses->pluck('id'))
             ->get();
 
-        // Grup item per cabang
+        // === GRUP ITEM PER CABANG ===
         $itemsPerBranch = [];
 
-        foreach ($warehouses as $w) {
+        $stocks->groupBy(fn ($s) => $s->warehouse->cabang_resto_id)
+            ->each(function ($group, $branchId) use (&$itemsPerBranch) {
 
-            if (! isset($itemsPerBranch[$w->cabang_resto_id])) {
-                $itemsPerBranch[$w->cabang_resto_id] = [];
-            }
-
-            $added = []; // mencegah duplikasi item
-
-            foreach ($stocks->where('warehouse_id', $w->id) as $s) {
-
-                if (in_array($s->item_id, $added)) {
-                    continue;
-                }
-
-                $added[] = $s->item_id;
-
-                $itemsPerBranch[$w->cabang_resto_id][] = [
-                    'id' => $s->item->id,
-                    'name' => $s->item->name,
-                    'satuan' => $s->item->satuan->code,
-                ];
-            }
-        }
+                // Ambil item unik per cabang
+                $itemsPerBranch[$branchId] = $group
+                    ->unique('item_id')
+                    ->map(fn ($s) => [
+                        'id' => $s->item->id,
+                        'name' => $s->item->name,
+                        'satuan' => $s->item->satuan->code ?? '-',
+                    ])
+                    ->values()
+                    ->toArray();
+            });
 
         return view('company.request-cabang.edit', [
             'companyCode' => $companyCode,

@@ -43,7 +43,7 @@
                 :class="tab === 'receiver'
                     ? 'text-emerald-600 border-b-2 border-emerald-600'
                     : 'text-gray-500'"
-                @click="tab = 'receiver'">
+                @click="tab = 'receiver'; updateUrlTab('receiver')">
                 Sebagai Penerima
             </button>
 
@@ -51,17 +51,19 @@
                 :class="tab === 'sender'
                     ? 'text-emerald-600 border-b-2 border-emerald-600'
                     : 'text-gray-500'"
-                @click="tab = 'sender'">
+                @click="tab = 'sender'; updateUrlTab('sender')">
                 Sebagai Pengirim
             </button>
 
         </div>
 
-        {{-- FILTERS --}}
-        @include('branch.request-cabang.partials.filters', [
-    'branches' => $branches,
-    'branch' => $branch
-])
+        {{-- FILTERS 
+        <div x-data>
+            @include('branch.request-cabang.partials.filters', [
+                'branches' => $branches,
+                'branch' => $branch
+            ])
+        </div>--}}
 
         {{-- TABLES --}}
         <div x-show="tab === 'receiver'">
@@ -81,5 +83,13 @@
     </div>
 
 </div>
+
+<script>
+    function updateUrlTab(tabName) {
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabName);
+        window.history.pushState({}, '', url);
+    }
+</script>
 
 </x-app-layout>

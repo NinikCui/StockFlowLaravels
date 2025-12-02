@@ -17,13 +17,11 @@ class BranchDashboardCacheService
     {
         $cacheKey = "branch_dashboard_{$branch->id}";
 
-        // Cache 60 detik
         return Cache::remember($cacheKey, 60, function () use ($branch, $warehouseIds) {
 
             $start = Carbon::now()->startOfMonth();
             $end = Carbon::now()->endOfMonth();
 
-            /* KPI STOCK */
             $totalItemsInBranch = Stock::whereIn('warehouse_id', $warehouseIds)
                 ->distinct('item_id')
                 ->count();
@@ -38,16 +36,14 @@ class BranchDashboardCacheService
                 ->whereColumn('stocks.qty', '<=', 'items.min_stock')
                 ->count();
 
-            /* KPI REQUEST */
-            $incoming = InventoryTrans::whereIn('warehouse_id_to', $warehouseIds)
+            $incoming = InventoryTrans::where('cabang_id_to', $branch->id)
                 ->whereBetween('trans_date', [$start, $end])
                 ->count();
 
-            $outgoing = InventoryTrans::whereIn('warehouse_id_from', $warehouseIds)
+            $outgoing = InventoryTrans::where('cabang_id_from', $branch->id)
                 ->whereBetween('trans_date', [$start, $end])
                 ->count();
 
-            /* KPI PO */
             $purchaseOrders = PurchaseOrder::where('cabang_resto_id', $branch->id)
                 ->whereBetween('po_date', [$start, $end])
                 ->count();
@@ -58,10 +54,9 @@ class BranchDashboardCacheService
                 ->whereBetween('received_at', [$start, $end])
                 ->count();
 
-            /* TOP ITEMS */
             $topItems = InvenTransDetail::selectRaw('items_id, SUM(qty) AS total')
-                ->whereHas('header', function ($q) use ($warehouseIds) {
-                    $q->whereIn('warehouse_id_from', $warehouseIds);
+                ->whereHas('header', function ($q) use ($branch) {
+                    $q->where('cabang_id_from', $branch->id);
                 })
                 ->groupBy('items_id')
                 ->orderByDesc('total')
@@ -77,21 +72,18 @@ class BranchDashboardCacheService
                     ];
                 });
 
-            /* RECENT ACTIVITIES */
-            $recentActivities = InventoryTrans::where(function ($q) use ($warehouseIds) {
-                $q->whereIn('warehouse_id_from', $warehouseIds)
-                    ->orWhereIn('warehouse_id_to', $warehouseIds);
+            $recentActivities = InventoryTrans::where(function ($q) use ($branch) {
+                $q->where('cabang_id_from', $branch->id)
+                    ->orWhere('cabang_id_to', $branch->id);
             })
                 ->orderByDesc('id')
                 ->limit(10)
                 ->get()
-                ->map(function ($row) use ($warehouseIds) {
+                ->map(function ($row) use ($branch) {
+
                     $type =
-                        in_array($row->warehouse_id_to, $warehouseIds->toArray())
-                            ? 'in'
-                            : (in_array($row->warehouse_id_from, $warehouseIds->toArray())
-                                ? 'out'
-                                : 'other');
+                        $row->cabang_id_to == $branch->id ? 'in' :
+                        ($row->cabang_id_from == $branch->id ? 'out' : 'other');
 
                     return [
                         'type' => $type,
@@ -100,11 +92,10 @@ class BranchDashboardCacheService
                     ];
                 });
 
-            /* STOCK TREND (6 BULAN) */
             $stockTrend = Stock::selectRaw("
-                    DATE_FORMAT(created_at, '%Y-%m') AS month,
-                    SUM(qty) AS total
-                ")
+                DATE_FORMAT(created_at, '%Y-%m') AS month,
+                SUM(qty) AS total
+            ")
                 ->whereIn('warehouse_id', $warehouseIds)
                 ->groupBy('month')
                 ->orderBy('month')
@@ -114,12 +105,11 @@ class BranchDashboardCacheService
             $stockTrendLabels = $stockTrend->pluck('month');
             $stockTrendData = $stockTrend->pluck('total');
 
-            /* REQUEST TREND (12 BULAN) */
             $requestTrend = InventoryTrans::selectRaw("
-                    DATE_FORMAT(trans_date, '%Y-%m') AS month,
-                    SUM(CASE WHEN warehouse_id_to IN (".$warehouseIds->implode(',').') THEN 1 END) AS incoming,
-                    SUM(CASE WHEN warehouse_id_from IN ('.$warehouseIds->implode(',').') THEN 1 END) AS outgoing
-                ')
+                DATE_FORMAT(trans_date, '%Y-%m') AS month,
+                SUM(CASE WHEN cabang_id_to = {$branch->id} THEN 1 END) AS incoming,
+                SUM(CASE WHEN cabang_id_from = {$branch->id} THEN 1 END) AS outgoing
+            ")
                 ->groupBy('month')
                 ->orderBy('month')
                 ->limit(12)

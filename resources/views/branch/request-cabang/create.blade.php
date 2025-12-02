@@ -195,40 +195,39 @@
 
     </form>
 </div>
-
-{{-- SCRIPT --}}
 <script>
     const cabangFrom = document.getElementById('cabang_from');
     const itemsPerBranch = @json($itemsPerBranch);
     let rowIndex = 1;
 
+    // Isi dropdown item sesuai cabang
     function fillItemSelects() {
         const branchId = cabangFrom.value;
 
         document.querySelectorAll('.item-select').forEach(sel => {
-            sel.innerHTML = '';
 
             if (!branchId || !itemsPerBranch[branchId]) {
                 sel.innerHTML = `<option value="">-- Pilih Cabang Asal Dulu --</option>`;
                 return;
             }
 
-            let options = `<option value="">-- Pilih Item --</option>`;
+            let opts = `<option value="">-- Pilih Item --</option>`;
 
             itemsPerBranch[branchId].forEach(i => {
-                options += `<option value="${i.id}">${i.name} (${i.satuan})</option>`;
+                opts += `<option value="${i.id}">${i.name} (${i.satuan})</option>`;
             });
 
-            sel.innerHTML = options;
+            sel.innerHTML = opts;
         });
     }
 
+    // Event ganti cabang
     cabangFrom.addEventListener('change', () => {
-        // reset semua item ketika cabang asal berubah
         document.querySelectorAll('.item-select').forEach(sel => sel.value = '');
         fillItemSelects();
     });
 
+    // Tambah Row
     document.getElementById('addRow').addEventListener('click', () => {
         const tbody = document.querySelector('#itemsTable tbody');
 
@@ -260,20 +259,22 @@
         `;
 
         tbody.appendChild(row);
+
         rowIndex++;
 
-        // isi dropdown item untuk row baru
         fillItemSelects();
     });
 
+    // Hapus row
     document.addEventListener('click', e => {
         if (e.target.closest('.removeRow')) {
             e.target.closest('tr').remove();
         }
     });
 
-    // inisialisasi awal
+    // Init default
     fillItemSelects();
 </script>
+
 
 </x-app-layout>

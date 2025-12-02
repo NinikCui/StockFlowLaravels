@@ -432,12 +432,19 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
 
             Route::get('/{id}', [BranchMaterialRequestController::class, 'show'])->name('branch.request.show');
 
-            Route::get('/{id}/edit',
-                [BranchMaterialRequestController::class, 'edit'])->name('branch.request.edit');
+            // ACTION OLEH PENGIRIM (cabang_from)
+            Route::post('/{id}/approve', [BranchMaterialRequestController::class, 'approve'])
+                ->name('branch.request.approve');
+            Route::post('/{id}/reject', [BranchMaterialRequestController::class, 'reject'])
+                ->name('branch.request.reject');
 
-            Route::put('/{id}', [BranchMaterialRequestController::class, 'update'])->name('branch.request.update');
-
-            Route::delete('/{id}', [BranchMaterialRequestController::class, 'destroy'])->name('branch.request.destroy');
+            // HAPUS / EDIT (oleh penerima cabang_to)
+            Route::delete('/{id}', [BranchMaterialRequestController::class, 'destroy'])
+                ->name('branch.request.destroy');
+            Route::get('/{id}/edit', [BranchMaterialRequestController::class, 'edit'])
+                ->name('branch.request.edit');
+            Route::put('/{id}', [BranchMaterialRequestController::class, 'update'])
+                ->name('branch.request.update');
         });
 
     });

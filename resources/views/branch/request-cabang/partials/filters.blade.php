@@ -1,69 +1,48 @@
 <form method="GET" 
       class="bg-white border rounded-xl shadow-sm p-4 mb-6"
       x-data="{
-            tab: @js(request('tab') ?? 'receiver'),
-            branchId: {{ $branch->id }}
+            get currentTab() {
+                // Ambil dari URL parameter atau default ke receiver
+                const urlParams = new URLSearchParams(window.location.search);
+                return urlParams.get('tab') || 'receiver';
+            }
       }">
 
-    <input type="hidden" name="tab" x-model="tab">
+    {{-- Hidden input tab menggunakan getter --}}
+    <input type="hidden" name="tab" :value="currentTab">
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-        {{-- CABANG ASAL --}}
-        <div>
+        {{-- CABANG ASAL - Hanya muncul di tab RECEIVER --}}
+        <div x-show="currentTab === 'receiver'" x-transition>
             <label class="text-xs font-semibold text-gray-600">Cabang Asal</label>
 
-            <select name="from" class="input-select w-full"
-                :disabled="tab === 'sender'">
-
-                {{-- LOOP BLADE --}}
+            <select name="from" class="input-select w-full">
+                <option value="">Semua Cabang</option>
                 @foreach ($branches as $b)
-
-                    {{-- JIKA RECEIVER: hide cabang ini --}}
-                    <option value="{{ $b->id }}"
-                        x-show="tab === 'sender' || (tab === 'receiver' && {{ $b->id }} != branchId)"
-
-                        {{-- jika sender → selected = cabang ini --}}
-                        x-bind:selected="tab === 'sender' && {{ $b->id }} == branchId"
-
-                        {{-- jika receiver → gunakan request --}}
-                        @if(request('from') == $b->id) selected @endif
-                    >
-                        {{ $b->name }}
-                        @if ($b->id == $branch->id)
-                            (CABANG INI)
-                        @endif
-                    </option>
-
+                    @if ($b->id != $branch->id)
+                        <option value="{{ $b->id }}"
+                            {{ request('from') == $b->id ? 'selected' : '' }}>
+                            {{ $b->name }}
+                        </option>
+                    @endif
                 @endforeach
             </select>
         </div>
 
-        {{-- CABANG TUJUAN --}}
-        <div>
+        {{-- CABANG TUJUAN - Hanya muncul di tab SENDER --}}
+        <div x-show="currentTab === 'sender'" x-transition>
             <label class="text-xs font-semibold text-gray-600">Cabang Tujuan</label>
 
-            <select name="to" class="input-select w-full"
-                :disabled="tab === 'receiver'">
-
+            <select name="to" class="input-select w-full">
+                <option value="">Semua Cabang</option>
                 @foreach ($branches as $b)
-
-                    {{-- JIKA SENDER: hide cabang ini --}}
-                    <option value="{{ $b->id }}"
-                        x-show="tab === 'receiver' || (tab === 'sender' && {{ $b->id }} != branchId)"
-
-                        {{-- jika receiver → selected = cabang ini --}}
-                        x-bind:selected="tab === 'receiver' && {{ $b->id }} == branchId"
-
-                        {{-- jika sender → gunakan request --}}
-                        @if(request('to') == $b->id) selected @endif
-                    >
-                        {{ $b->name }}
-                        @if ($b->id == $branch->id)
-                            (CABANG INI)
-                        @endif
-                    </option>
-
+                    @if ($b->id != $branch->id)
+                        <option value="{{ $b->id }}"
+                            {{ request('to') == $b->id ? 'selected' : '' }}>
+                            {{ $b->name }}
+                        </option>
+                    @endif
                 @endforeach
             </select>
         </div>
@@ -72,7 +51,7 @@
         <div>
             <label class="text-xs font-semibold text-gray-600">Status</label>
             <select name="status" class="input-select w-full">
-                <option value="">Semua</option>
+                <option value="">Semua Status</option>
                 <option value="REQUESTED" {{ request('status')=='REQUESTED'?'selected':'' }}>REQUESTED</option>
                 <option value="APPROVED" {{ request('status')=='APPROVED'?'selected':'' }}>APPROVED</option>
                 <option value="IN_TRANSIT" {{ request('status')=='IN_TRANSIT'?'selected':'' }}>IN TRANSIT</option>
@@ -90,8 +69,16 @@
 
     </div>
 
-    <div class="flex justify-end mt-4">
-        <button class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-black">
+    <div class="flex justify-end gap-3 mt-4">
+        {{-- Reset Button --}}
+        <a href="{{ route('branch.request.index', $branchCode) }}?tab={{ request('tab') ?? 'receiver' }}" 
+           class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm hover:bg-gray-300">
+            Reset Filter
+        </a>
+
+        {{-- Apply Filter Button --}}
+        <button type="submit" 
+                class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm hover:bg-black">
             Terapkan Filter
         </button>
     </div>
