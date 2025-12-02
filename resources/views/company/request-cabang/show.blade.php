@@ -136,10 +136,10 @@
                             <div class="flex-1">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Cabang Asal</p>
                                 <p class="font-semibold text-gray-900 text-lg">
-                                    {{ $req->warehouseFrom->cabangResto->name }}
+                                    {{ $req->cabangFrom->name }}
                                 </p>
                                 <p class="text-sm text-gray-600 mt-0.5">
-                                    Kode: <span class="font-medium">{{ $req->warehouseFrom->cabangResto->code }}</span>
+                                    Kode: <span class="font-medium">{{ $req->cabangFrom->code }}</span>
                                 </p>
                             </div>
                         </div>
@@ -147,7 +147,7 @@
                         <div class="pl-13">
                             <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                 <p class="text-xs font-medium text-blue-700 mb-1">Gudang Pengirim</p>
-                                <p class="text-sm font-semibold text-blue-900">{{ $req->warehouseFrom->name }}</p>
+                                <p class="text-sm font-semibold text-blue-900">{{ $req->cabangFrom->name }}</p>
                             </div>
                         </div>
                     </div>
@@ -163,10 +163,10 @@
                             <div class="flex-1">
                                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Cabang Tujuan</p>
                                 <p class="font-semibold text-gray-900 text-lg">
-                                    {{ $req->warehouseTo->cabangResto->name }}
+                                    {{ $req->cabangTo->name }}
                                 </p>
                                 <p class="text-sm text-gray-600 mt-0.5">
-                                    Kode: <span class="font-medium">{{ $req->warehouseTo->cabangResto->code }}</span>
+                                    Kode: <span class="font-medium">{{ $req->cabangTo->code }}</span>
                                 </p>
                             </div>
                         </div>
@@ -174,7 +174,7 @@
                         <div class="pl-13">
                             <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                                 <p class="text-xs font-medium text-emerald-700 mb-1">Gudang Penerima</p>
-                                <p class="text-sm font-semibold text-emerald-900">{{ $req->warehouseTo->name }}</p>
+                                <p class="text-sm font-semibold text-emerald-900">{{ $req->cabangTo->name }}</p>
                             </div>
                         </div>
                     </div>

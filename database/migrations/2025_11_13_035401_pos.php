@@ -134,8 +134,8 @@ return new class extends Migration
         Schema::create('inven_trans', function (Blueprint $table) {
             $table->id();
 
-            $table->unsignedBigInteger('warehouse_id_to')->nullable();
-            $table->unsignedBigInteger('warehouse_id_from')->nullable();
+            $table->unsignedBigInteger('cabang_id_to')->nullable();
+            $table->unsignedBigInteger('cabang_id_from')->nullable();
 
             $table->string('trans_number', 45);
             $table->date('trans_date');
@@ -165,8 +165,8 @@ return new class extends Migration
                 ->onDelete('cascade');
 
             // index
-            $table->index('warehouse_id_from', 'fk_inventory_trans_warehouse2_idx');
-            $table->index('warehouse_id_to', 'fk_inventory_trans_warehouse1_idx');
+            $table->index('cabang_id_from', 'fk_inventory_trans_cabang2_idx');
+            $table->index('cabang_id_to', 'fk_inventory_trans_cabang1_idx');
         });
 
         Schema::create('inven_trans_detail', function (Blueprint $table) {

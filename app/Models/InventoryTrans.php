@@ -9,8 +9,8 @@ class InventoryTrans extends Model
     protected $table = 'inven_trans';
 
     protected $fillable = [
-        'warehouse_id_to',
-        'warehouse_id_from',
+        'cabang_id_to',
+        'cabang_id_from',
         'trans_number',
         'trans_date',
         'status',
@@ -27,14 +27,14 @@ class InventoryTrans extends Model
 
     public $timestamps = false;
 
-    public function warehouseFrom()
+    public function cabangFrom()
     {
-        return $this->belongsTo(Warehouse::class, 'warehouse_id_from');
+        return $this->belongsTo(CabangResto::class, 'cabang_id_from');
     }
 
-    public function warehouseTo()
+    public function cabangTo()
     {
-        return $this->belongsTo(Warehouse::class, 'warehouse_id_to');
+        return $this->belongsTo(CabangResto::class, 'cabang_id_to');
     }
 
     public function createdByUser()

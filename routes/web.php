@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Branch\BranchDashboardController;
+use App\Http\Controllers\Branch\BranchMaterialRequestController;
 use App\Http\Controllers\Branch\BranchPurchaseOrderController;
 use App\Http\Controllers\Branch\BranchStockController;
 use App\Http\Controllers\Branch\BranchSupplierController;
@@ -417,6 +418,26 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             Route::get('/{id}', [BranchSupplierController::class, 'show'])
                 ->name('show');
 
+        });
+
+        Route::prefix('request-cabang')->group(function () {
+
+            Route::get('/', [BranchMaterialRequestController::class, 'index'])->name('branch.request.index');
+
+            Route::get('/create', [BranchMaterialRequestController::class, 'create'])->name('branch.request.create');
+
+            Route::post('/', [BranchMaterialRequestController::class, 'store'])->name('branch.request.store');
+
+            Route::get('/items/{branchId}', [BranchMaterialRequestController::class, 'loadItems'])->name('branch.request.load.items');
+
+            Route::get('/{id}', [BranchMaterialRequestController::class, 'show'])->name('branch.request.show');
+
+            Route::get('/{id}/edit',
+                [BranchMaterialRequestController::class, 'edit'])->name('branch.request.edit');
+
+            Route::put('/{id}', [BranchMaterialRequestController::class, 'update'])->name('branch.request.update');
+
+            Route::delete('/{id}', [BranchMaterialRequestController::class, 'destroy'])->name('branch.request.destroy');
         });
 
     });

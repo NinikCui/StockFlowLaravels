@@ -74,7 +74,7 @@
                                     </svg>
                                 </div>
                                 <span class="text-gray-900">
-                                    {{ $req->warehouseFrom?->cabangResto?->name ?? '-' }}
+                                    {{ $req->cabangFrom?->name ?? '-' }}
                                 </span>
                             </div>
                         </td>
@@ -89,7 +89,7 @@
                                     </svg>
                                 </div>
                                 <span class="text-gray-900">
-                                    {{ $req->warehouseTo?->cabangResto?->name ?? '-' }}
+                                    {{ $req->cabangTo?->name ?? '-' }}
                                 </span>
                             </div>
                         </td>

@@ -93,19 +93,13 @@ return [
                     'href' => 'stock',
                     'permission' => 'warehouse.view',
                 ],
-
-                // Analytics Perpindahan Bahan (Opsional)
                 [
-                    'label' => 'Analytics',
-                    'href' => 'request-cabang/analytics/cabang',
-                    'permission' => 'analytics.view',
+                    'label' => 'Request Barang',
+                    'href' => 'request-cabang',
+                    'permission' => 'inventory.transfer',
                 ],
             ],
         ],
-
-        // =========================
-        // 3. SUPPLIER
-        // =========================
         [
             'label' => 'Supplier',
             'icon' => 'truck',
@@ -122,10 +116,6 @@ return [
                 ],
             ],
         ],
-
-        // =========================
-        // 5. PEGAWAI CABANG
-        // =========================
         [
             'label' => 'Pegawai Cabang',
             'icon' => 'users',
@@ -144,10 +134,6 @@ return [
                 ],
             ],
         ],
-
-        // =========================
-        // 6. LAPORAN / REPORTING
-        // =========================
         [
             'label' => 'Laporan',
             'icon' => 'bar-chart',

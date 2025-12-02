@@ -24,32 +24,32 @@ class MaterialRequestController extends Controller
         // Ambil semua cabang perusahaan
         $branches = CabangResto::where('company_id', $companyId)->get();
 
-        // Ambil semua warehouse
-        $warehouseIds = Warehouse::whereIn('cabang_resto_id', $branches->pluck('id'))->pluck('id');
-
+        // Query dasar (langsung filter berdasarkan cabang tujuan)
         $query = InventoryTrans::with([
-            'warehouseFrom.cabangResto',
-            'warehouseTo.cabangResto',
+            'cabangFrom',
+            'cabangTo',
             'details.item',
         ])
-            ->whereIn('warehouse_id_to', $warehouseIds);
+            ->whereIn('cabang_id_to', $branches->pluck('id'));
 
-        // ==== FILTERS ====
-
-        if (request('from')) {
-            $query->where('warehouse_id_from', request('from'));
+        // Cabang Asal
+        if ($from = request('from')) {
+            $query->where('cabang_id_from', $from);
         }
 
-        if (request('to')) {
-            $query->where('warehouse_id_to', request('to'));
+        // Cabang Tujuan
+        if ($to = request('to')) {
+            $query->where('cabang_id_to', $to);
         }
 
-        if (request('status')) {
-            $query->where('status', request('status'));
+        // Status
+        if ($status = request('status')) {
+            $query->where('status', $status);
         }
 
-        if (request('date')) {
-            $query->whereDate('trans_date', request('date'));
+        // Tanggal
+        if ($date = request('date')) {
+            $query->whereDate('trans_date', $date);
         }
 
         $requests = $query->orderByDesc('id')->get();
@@ -121,12 +121,9 @@ class MaterialRequestController extends Controller
             'note' => 'nullable|string',
         ]);
 
-        $warehouseFrom = Warehouse::where('cabang_resto_id', $validated['cabang_from_id'])->firstOrFail();
-        $warehouseTo = Warehouse::where('cabang_resto_id', $validated['cabang_to_id'])->firstOrFail();
-
         $trans = InventoryTrans::create([
-            'warehouse_id_from' => $warehouseFrom->id,
-            'warehouse_id_to' => $warehouseTo->id,
+            'cabang_id_from' => $validated['cabang_from_id'],
+            'cabang_id_to' => $validated['cabang_to_id'],
             'trans_number' => 'MR-'.now()->format('YmdHis'),
             'trans_date' => today(),
             'status' => 'REQUESTED',
@@ -155,8 +152,8 @@ class MaterialRequestController extends Controller
     public function show($companyCode, $id)
     {
         $requestTrans = InventoryTrans::with([
-            'warehouseFrom.cabangResto',
-            'warehouseTo.cabangResto',
+            'cabangFrom',
+            'cabangTo',
             'details.item.satuan',
         ])
             ->where('id', $id)
@@ -170,39 +167,51 @@ class MaterialRequestController extends Controller
 
     public function edit($companyCode, $id)
     {
-        $companyId = session('role.company.id');
+        $company = Company::where('code', $companyCode)->firstOrFail();
 
+        // Load header + relasi
         $req = InventoryTrans::with([
-            'warehouseFrom.cabangResto',
-            'warehouseTo.cabangResto',
+            'cabangFrom',
+            'cabangTo',
             'details.item.satuan',
         ])->findOrFail($id);
 
+        // Tidak boleh edit jika bukan REQUESTED
         if ($req->status !== 'REQUESTED') {
             return redirect()
                 ->route('request.show', [$companyCode, $id])
                 ->with('error', 'Request ini sudah tidak dapat diedit.');
         }
 
-        $branches = CabangResto::where('company_id', $companyId)->get();
+        // Ambil semua cabang milik perusahaan
+        $branches = CabangResto::where('company_id', $company->id)->get();
 
-        // Load item per cabang (seperti create)
-        $stocks = Stock::with(['item.satuan'])->get();
-        $warehouses = Warehouse::all();
+        // Ambil semua warehouse milik cabang tsb
+        $warehouses = Warehouse::whereIn('cabang_resto_id', $branches->pluck('id'))->get();
+
+        // Ambil semua stok dari warehouse tersebut (sesuai DB)
+        $stocks = Stock::with(['item.satuan'])
+            ->whereIn('warehouse_id', $warehouses->pluck('id'))
+            ->get();
+
+        // Grup item per cabang
         $itemsPerBranch = [];
 
         foreach ($warehouses as $w) {
+
             if (! isset($itemsPerBranch[$w->cabang_resto_id])) {
                 $itemsPerBranch[$w->cabang_resto_id] = [];
             }
 
-            $added = [];
+            $added = []; // mencegah duplikasi item
 
             foreach ($stocks->where('warehouse_id', $w->id) as $s) {
-                if (in_array($s->item->id, $added)) {
+
+                if (in_array($s->item_id, $added)) {
                     continue;
                 }
-                $added[] = $s->item->id;
+
+                $added[] = $s->item_id;
 
                 $itemsPerBranch[$w->cabang_resto_id][] = [
                     'id' => $s->item->id,
@@ -223,8 +232,8 @@ class MaterialRequestController extends Controller
     public function update(Request $request, $companyCode, $id)
     {
         $validated = $request->validate([
-            'cabang_from_id' => 'required|exists:cabang_resto,id',
-            'cabang_to_id' => 'required|exists:cabang_resto,id|different:cabang_from_id',
+            'cabang_id_from' => 'required|exists:cabang_resto,id',
+            'cabang_id_to' => 'required|exists:cabang_resto,id|different:cabang_id_from',
             'items' => 'required|array|min:1',
             'items.*.item_id' => 'required|exists:items,id',
             'items.*.qty' => 'required|numeric|min:0.01',
@@ -233,23 +242,25 @@ class MaterialRequestController extends Controller
 
         $req = InventoryTrans::findOrFail($id);
 
+        // Cuma REQUESTED yang bisa di-update
         if ($req->status !== 'REQUESTED') {
             return redirect()
                 ->route('request.show', [$companyCode, $id])
                 ->with('error', 'Tidak dapat mengedit request ini.');
         }
 
-        // Update header
-        $warehouseFrom = Warehouse::where('cabang_resto_id', $validated['cabang_from_id'])->first();
-        $warehouseTo = Warehouse::where('cabang_resto_id', $validated['cabang_to_id'])->first();
-
+        // ======================
+        //   UPDATE HEADER
+        // ======================
         $req->update([
-            'warehouse_id_from' => $warehouseFrom->id,
-            'warehouse_id_to' => $warehouseTo->id,
+            'cabang_id_from' => $validated['cabang_id_from'],
+            'cabang_id_to' => $validated['cabang_id_to'],
             'note' => $validated['note'],
         ]);
 
-        // Reset detail
+        // ======================
+        //   UPDATE DETAILS
+        // ======================
         $req->details()->delete();
 
         foreach ($validated['items'] as $row) {
