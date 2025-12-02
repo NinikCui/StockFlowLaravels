@@ -445,6 +445,12 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
                 ->name('branch.request.edit');
             Route::put('/{id}', [BranchMaterialRequestController::class, 'update'])
                 ->name('branch.request.update');
+            Route::post('/request/{id}/send',
+                [BranchMaterialRequestController::class, 'send'])
+                ->name('branch.request.send');
+            Route::post('/request/{id}/receive',
+                [BranchMaterialRequestController::class, 'receive'])
+                ->name('branch.request.receive');
         });
 
     });

@@ -141,7 +141,7 @@ return new class extends Migration
             $table->date('trans_date');
 
             $table->enum('status', [
-                'REQUESTED', 'APPROVED', 'IN_TRANSIT', 'RECEIVED', 'CANCELLED', 'DRAFT',
+                'REQUESTED', 'APPROVED', 'IN_TRANSIT', 'RECEIVED', 'CANCELLED', 'DRAFT', 'REJECTED',
             ])->default('DRAFT');
 
             $table->text('note')->nullable();

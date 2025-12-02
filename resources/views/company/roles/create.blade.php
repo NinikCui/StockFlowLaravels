@@ -34,7 +34,7 @@
         @endif
 
         {{-- FORM --}}
-        <form method="POST" action="/{{ $companyCode }}/pegawai/roles"
+        <form method="POST" action="{{ route("roles.store",[$companyCode])}}"
               class="space-y-6 bg-white rounded-2xl border border-gray-200 shadow-lg p-8">
             @csrf
 

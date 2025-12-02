@@ -33,25 +33,15 @@
         ? "company/$code"
         : "branch/$code";
 
-    // ========== DEBUG: LOG SEMUA INPUT ==========
-    \Log::info('tenantHref() CALLED', [
-        'href_input' => $href,
-        'prefix' => $prefix,
-        'url_sekarang' => request()->path(),
-    ]);
 
     // ========== ANTIDUP PREFIX ==========
     if (\Illuminate\Support\Str::startsWith($href, $prefix)) {
-        \Log::info('PREFIX MATCH -> RETURN ORIGINAL', [
-            'returned' => '/' . trim($href, '/'),
-        ]);
+        
         return '/' . trim($href, '/');
     }
 
     if (\Illuminate\Support\Str::startsWith($href, '/'.$prefix)) {
-        \Log::info('PREFIX MATCH (with /) -> RETURN ORIGINAL', [
-            'returned' => '/' . trim($href, '/'),
-        ]);
+        
         return '/' . trim($href, '/');
     }
 
@@ -61,16 +51,13 @@
             ? "/company/$code/dashboard"
             : "/branch/$code/dashboard";
 
-        \Log::info('DASHBOARD SPECIAL', ['returned' => $res]);
         return $res;
     }
 
     // ========== NORMAL CASE ==========
     $final = "/$prefix/" . trim($href, '/');
 
-    \Log::info('NORMAL PREFIX APPLY', [
-        'returned' => $final,
-    ]);
+
 
     return $final;
 }
@@ -86,11 +73,7 @@
 {
     $final = tenantHref($href);
 
-    \Log::info("isActive() check", [
-        'href' => $href,
-        'final' => $final,
-        'path' => request()->path(),
-    ]);
+   
 
     return request()->is(ltrim($final, '/'))
         || request()->is(ltrim($final, '/').'/*');
@@ -106,9 +89,7 @@
 {
     foreach ($children as $c) {
 
-        \Log::info("anyChildActive: checking child", [
-            'href' => $c['href']
-        ]);
+       
 
         if (isActive($c['href'])) return true;
     }

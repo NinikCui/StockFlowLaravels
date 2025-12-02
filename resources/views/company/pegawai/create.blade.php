@@ -18,7 +18,7 @@
         </div>
 
         {{-- FORM --}}
-        <form method="POST" action="/{{ $companyCode }}/pegawai"
+        <form method="POST" action="/company/{{ $companyCode }}/pegawai"
               class="space-y-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-lg">
 
             @csrf
@@ -192,7 +192,7 @@ function loadRoles() {
         ? "universal=true"
         : `cabangId=${branch}`;
 
-    fetch(`/{{ $companyCode }}/pegawai/roles-json?${query}`)
+    fetch(`/company/{{ $companyCode }}/pegawai/roles-json?${query}`)
         .then(res => res.json())
         .then(res => {
             if (res.ok) {

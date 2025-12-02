@@ -10,6 +10,7 @@ use App\Models\Stock;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class BranchMaterialRequestController extends Controller
 {
@@ -181,35 +182,153 @@ class BranchMaterialRequestController extends Controller
         ]);
     }
 
-    public function approve($branchCode, $id)
+    public function approve(Request $request, $branchCode, $id)
     {
-        $requestTrans = InventoryTrans::findOrFail($id);
+        $req = InventoryTrans::with(['details.item'])->findOrFail($id);
 
-        // pastikan user login adalah cabang pengirim
-        if ($requestTrans->cabang_id_from != session('role.branch.id')) {
+        // hanya cabang pengirim yang boleh approve
+        if ($req->cabang_id_from != session('role.branch.id')) {
             abort(403, 'Tidak punya akses.');
         }
 
-        $requestTrans->update([
-            'status' => 'APPROVED',
+        $request->validate([
+            'alloc' => 'required|array',
+            'alloc.*' => 'required|array',
         ]);
 
-        return back()->with('success', 'Request berhasil disetujui.');
+        DB::beginTransaction();
+
+        try {
+
+            Log::info("=== APPROVE REQUEST {$req->id} DIMULAI ===");
+
+            foreach ($req->details as $detail) {
+
+                // FIX PALING PENTING:
+                $itemId = $detail->item->id;   // gunakan relasi, bukan item_id
+
+                $needed = $detail->qty;
+
+                Log::info('ITEM PROCESS START', [
+                    'item_id' => $itemId,
+                    'item_name' => $detail->item->name,
+                    'needed' => $needed,
+                ]);
+
+                // ambil alokasi untuk item ini
+                $alloc = $request->alloc[$itemId] ?? null;
+
+                Log::info('ALLOC RECEIVED', [
+                    'item_id' => $itemId,
+                    'alloc' => $alloc,
+                ]);
+
+                if (! $alloc) {
+                    DB::rollBack();
+                    Log::error('ALLOC TIDAK DITEMUKAN', ['item_id' => $itemId]);
+
+                    return back()->withErrors("Alokasi stok untuk item {$detail->item->name} tidak ditemukan.");
+                }
+
+                $totalAlloc = array_sum($alloc);
+
+                if ($totalAlloc != $needed) {
+                    DB::rollBack();
+
+                    Log::error('ALLOC != NEEDED', [
+                        'item_id' => $itemId,
+                        'needed' => $needed,
+                        'total_alloc' => $totalAlloc,
+                    ]);
+
+                    return back()->withErrors("Total alokasi item {$detail->item->name} harus tepat {$needed}.");
+                }
+
+                // kurangi stok per warehouse
+                foreach ($alloc as $stockId => $qty) {
+
+                    Log::info('CEK STOCK RECORD', [
+                        'stock_id' => $stockId,
+                        'alloc_qty' => $qty,
+                    ]);
+
+                    $stock = Stock::where('id', $stockId)
+                        ->where('item_id', $itemId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $stock) {
+                        DB::rollBack();
+
+                        return back()->withErrors("Stock ID {$stockId} tidak ditemukan untuk item {$detail->item->name}.");
+                    }
+
+                    if ($stock->qty < $qty) {
+                        DB::rollBack();
+
+                        return back()->withErrors("Stok (code: {$stock->code}) tidak cukup. Punya {$stock->qty}, butuh {$qty}.");
+                    }
+
+                    $stock->qty -= $qty;
+                    $stock->save();
+
+                    Log::info('STOK UPDATE', [
+                        'stock_id' => $stockId,
+                        'before' => $stock->qty + $qty,
+                        'after' => $stock->qty,
+                    ]);
+                }
+
+            }
+
+            // update status
+            $req->update(['status' => 'APPROVED']);
+
+            Log::info('STATUS UPDATED', ['request_id' => $req->id]);
+
+            DB::commit();
+
+            Log::info('=== APPROVE FINISH ===');
+
+            return redirect()
+                ->route('branch.request.show', [$branchCode, $req->id])
+                ->with('success', 'Request berhasil di-approve.');
+
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            Log::error('EXCEPTION', [
+                'msg' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return back()->withErrors($e->getMessage());
+        }
     }
 
-    public function reject($branchCode, $id)
+    public function reject(Request $request, $branchCode, $id)
     {
-        $requestTrans = InventoryTrans::findOrFail($id);
+        $request->validate([
+            'reason' => 'required|string|min:3',
+        ]);
 
-        if ($requestTrans->cabang_id_from != session('role.branch.id')) {
+        $req = InventoryTrans::findOrFail($id);
+
+        // hanya cabang pengirim boleh reject
+        if ($req->cabang_id_from != session('role.branch.id')) {
             abort(403, 'Tidak punya akses.');
         }
 
-        $requestTrans->update([
+        $req->update([
             'status' => 'REJECTED',
+            'reason' => $request->reason,
         ]);
 
-        return back()->with('success', 'Request berhasil ditolak.');
+        return redirect()
+            ->route('branch.request.show', [$branchCode, $id])
+            ->with('success', 'Request berhasil ditolak.');
     }
 
     public function destroy($branchCode, $id)
@@ -287,6 +406,27 @@ class BranchMaterialRequestController extends Controller
         ]);
     }
 
+    public function send($branchCode, $id)
+    {
+        $req = InventoryTrans::findOrFail($id);
+
+        // hanya cabang pengirim
+        if ($req->cabang_id_from != session('role.branch.id')) {
+            abort(403, 'Tidak punya akses.');
+        }
+
+        // hanya boleh kirim jika APPROVED
+        if ($req->status !== 'APPROVED') {
+            return back()->withErrors('Request belum di-approve.');
+        }
+
+        $req->update([
+            'status' => 'IN_TRANSIT',
+        ]);
+
+        return back()->with('success', 'Barang berhasil dikirim (IN TRANSIT).');
+    }
+
     public function update(Request $request, $branchCode, $id)
     {
         $req = InventoryTrans::findOrFail($id);
@@ -329,5 +469,88 @@ class BranchMaterialRequestController extends Controller
         return redirect()
             ->route('branch.request.show', [$branchCode, $id])
             ->with('success', 'Request berhasil diperbarui.');
+    }
+
+    public function receive(Request $request, $branchCode, $id)
+    {
+        $companyId = session('role.company.id');
+        $req = InventoryTrans::with('details.item')->findOrFail($id);
+
+        // hanya cabang tujuan yang boleh menerima barang
+        if ($req->cabang_id_to != session('role.branch.id')) {
+            abort(403, 'Tidak punya akses.');
+        }
+
+        // status harus IN_TRANSIT
+        if ($req->status !== 'IN_TRANSIT') {
+            return back()->withErrors('Barang belum dikirim, tidak dapat diterima.');
+        }
+
+        $data = $request->receive;
+
+        DB::beginTransaction();
+
+        try {
+
+            foreach ($req->details as $detail) {
+
+                $itemId = $detail->item->id;
+
+                // data dari form
+                $warehouseId = $data[$itemId]['warehouse_id'];
+                $qtyReceived = $data[$itemId]['qty'];
+
+                Log::info('RECEIVE ITEM', [
+                    'item_id' => $itemId,
+                    'warehouse_id' => $warehouseId,
+                    'qty_received' => $qtyReceived,
+                ]);
+
+                $newCode = Stock::generateCode($warehouseId);
+
+                Log::info('CREATE NEW STOCK', [
+                    'warehouse_id' => $warehouseId,
+                    'item_id' => $itemId,
+                    'qty' => $qtyReceived,
+                    'code' => $newCode,
+                ]);
+
+                Stock::create([
+                    'company_id' => $companyId,
+                    'warehouse_id' => $warehouseId,
+                    'item_id' => $itemId,
+                    'qty' => $qtyReceived,
+                    'code' => $newCode,
+                ]);
+
+            }
+
+            // UPDATE STATUS MENJADI RECEIVED
+            $req->update([
+                'status' => 'RECEIVED',
+                'received_at' => now(),
+            ]);
+
+            Log::info('REQUEST RECEIVED', [
+                'id' => $req->id,
+                'status' => 'RECEIVED',
+            ]);
+
+            DB::commit();
+
+            return back()->with('success', 'Barang berhasil diterima dan stok telah diperbarui.');
+
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            Log::error('RECEIVE ERROR', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            return back()->withErrors($e->getMessage());
+        }
     }
 }

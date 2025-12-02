@@ -169,6 +169,30 @@
                 </div>
             </div>
         </div>
+{{-- REASON --}}
+@if ($req->reason)
+<div class="bg-white shadow-sm rounded-2xl border border-gray-200 overflow-hidden mb-6">
+
+    <div class="px-6 py-4 bg-gray-50 border-b">
+        <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-3">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 7h10M8 11h6m-6 4h10M5 7h.01M5 11h.01M5 15h.01"/>
+            </svg>
+            Alasan Request
+        </h2>
+    </div>
+
+    <div class="p-6">
+        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <p class="text-sm text-gray-800 whitespace-pre-line">
+                {{ $req->reason }}
+            </p>
+        </div>
+    </div>
+
+</div>
+@endif
 
         {{-- DETAIL ITEM --}}
         <div class="bg-white shadow-sm rounded-2xl border border-gray-200 overflow-hidden mb-6">
