@@ -3,13 +3,20 @@
 <div class="max-w-6xl mx-auto px-6 py-8">
 
     <h1 class="text-2xl font-bold mb-6">Daftar Item Cabang</h1>
+    <x-crud-add 
+                resource="branch.item"
+                :companyCode="$companyCode"
+                permissionPrefix="item"
+            />
 
     <table class="w-full bg-white rounded-xl shadow text-sm">
         <thead class="bg-gray-100">
             <tr>
                 <th class="px-4 py-2 text-left">Item</th>
                 <th class="px-4 py-2 text-center">Total Stok</th>
+                <th class="px-4 py-2 text-center">Detail</th>
                 <th class="px-4 py-2 text-center">Aksi</th>
+
             </tr>
         </thead>
 
@@ -32,6 +39,15 @@
        class="text-blue-600 hover:underline">
         Riwayat
     </a>
+                </td>
+                <td class="px-4 py-3 text-center">
+                   <x-crud 
+                            resource="branch.item"
+                            keyField="id"
+                            :companyCode="$branchCode"
+                            :model="$item"
+                            permissionPrefix="item"
+                        />  
                 </td>
             </tr>
         @endforeach

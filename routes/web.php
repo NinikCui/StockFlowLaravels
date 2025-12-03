@@ -455,8 +455,14 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         });
         Route::prefix('item')->group(function () {
 
-            Route::get('/', [BranchItemController::class, 'index'])
-                ->name('branch.item.index');
+            Route::get('/', [BranchItemController::class, 'index'])->name('branch.item.index');
+            Route::get('/create', [BranchItemController::class, 'create'])->name('branch.item.create');
+            Route::post('/store', [BranchItemController::class, 'store'])->name('branch.item.store');
+
+            Route::get('/{id}/edit', [BranchItemController::class, 'edit'])->name('branch.item.edit');
+            Route::put('/{id}/update', [BranchItemController::class, 'update'])->name('branch.item.update');
+
+            Route::delete('/{id}/delete', [BranchItemController::class, 'destroy'])->name('branch.item.destroy');
 
             Route::get('/{item}', [BranchItemController::class, 'show'])
                 ->name('branch.item.show');
@@ -468,9 +474,11 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             Route::post('/{item}/warehouse/{warehouse}/update',
                 [BranchItemController::class, 'updateStock'])
                 ->name('branch.item.stock.update');
+
             Route::get('/{item}/history',
                 [BranchItemController::class, 'itemHistoryByItem'])
                 ->name('branch.item.history');
+
         });
 
     });

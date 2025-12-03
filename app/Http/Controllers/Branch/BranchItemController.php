@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Branch;
 use app\http\Controllers\Controller;
 use App\Models\CabangResto;
 use App\Models\CategoriesIssues;
+use App\Models\Category;
 use App\Models\Item;
+use App\Models\Satuan;
 use App\Models\Stock;
 use App\Models\StocksAdjustmentDetail;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class BranchItemController extends Controller
 {
@@ -18,14 +21,14 @@ class BranchItemController extends Controller
     {
         $companyId = session('role.company.id');
         $branchId = session('role.branch.id');
-
+        $companyCode = session('role.company.code');
         $warehouseIds = Warehouse::where('cabang_resto_id', $branchId)->pluck('id');
 
         $items = Item::withSum(['stocks as total_qty' => function ($q) use ($warehouseIds) {
             $q->whereIn('warehouse_id', $warehouseIds);
         }], 'qty')->where('company_id', $companyId)->get();
 
-        return view('branch.item.index', compact('items', 'branchCode'));
+        return view('branch.item.index', compact('items', 'branchCode', 'companyCode'));
     }
 
     public function show($branchCode, Item $item)
@@ -48,6 +51,98 @@ class BranchItemController extends Controller
             'stocks',
             'branchCode'
         ));
+    }
+
+    public function create()
+    {
+        $companyId = session('role.company.id');
+        $branchId = session('role.branch.id');
+        $companyCode = session('role.company.code');
+        $branchCode = session('role.branch.code');
+
+        return view('branch.item.create', [
+            'branchCode' => $branchCode,
+            'companyCode' => $companyCode,
+            'kategori' => Category::where('company_id', $companyId)->get(),
+            'satuan' => Satuan::where('company_id', $companyId)->get(),
+        ]);
+
+    }
+
+    public function store(Request $r)
+    {
+        $branchId = session('role.branch.id');
+        $companyId = session('role.company.id');
+        $r->validate([
+            'name' => 'required|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'satuan_id' => 'required|exists:satuan,id',
+        ]);
+
+        Item::create([
+            'company_id' => $companyId,
+            'name' => $r->name,
+            'category_id' => $r->category_id,
+            'satuan_id' => $r->satuan_id,
+        ]);
+
+        return redirect()->route('branch.item.index', $branchId)
+            ->with('success', 'Item berhasil ditambahkan');
+    }
+
+    public function destroy($branchCode, $id)
+    {
+        $companyId = session('role.company.id');
+        $item = Item::where('company_id', $companyId)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $item->delete();
+
+        return redirect()->route('branch.item.index', $branchCode)
+            ->with('success', 'Item berhasil ditambahkan');
+    }
+
+    public function edit($branchCode, $id)
+    {
+        $branchCode = session('role.branch.code');
+        $companyId = session('role.company.id');
+        Log::info($id);
+        $item = Item::where('company_id', $companyId)
+            ->where('id', $id)
+            ->firstOrFail();
+        Log::info($item);
+
+        return view('branch.item.edit', [
+            'branchCode' => $branchCode,
+            'item' => $item,
+            'kategori' => Category::where('company_id', $companyId)->get(),
+            'satuan' => Satuan::where('company_id', $companyId)->get(),
+        ]);
+    }
+
+    public function update(Request $r, $branchCode, $id)
+    {
+        $companyId = session('role.company.id');
+        $branchId = session('role.branch.id');
+        $item = Item::where('company_id', $companyId)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $r->validate([
+            'name' => 'required|max:255',
+            'category_id' => 'required|exists:categories,id',
+            'satuan_id' => 'required|exists:satuan,id',
+        ]);
+
+        $item->update([
+            'name' => $r->name,
+            'category_id' => $r->category_id,
+            'satuan_id' => $r->satuan_id,
+        ]);
+
+        return redirect()->route('branch.item.index', $branchId)
+            ->with('success', 'Item berhasil ditambahkan');
     }
 
     public function editStock($branchCode, Item $item, Warehouse $warehouse)
