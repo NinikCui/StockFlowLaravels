@@ -7,6 +7,7 @@ use App\Http\Controllers\Branch\BranchPurchaseOrderController;
 use App\Http\Controllers\Branch\BranchStockController;
 use App\Http\Controllers\Branch\BranchSupplierController;
 use App\Http\Controllers\Branch\BranchWarehouseController;
+use App\Http\Controllers\Company\BomController;
 use App\Http\Controllers\Company\CabangController;
 use App\Http\Controllers\Company\CategoriesIssuesController;
 use App\Http\Controllers\Company\CompanyDashboardController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\Company\CompanySettingController;
 use App\Http\Controllers\Company\ItemsController;
 use App\Http\Controllers\Company\MaterialRequestController;
 use App\Http\Controllers\Company\PegawaiController;
+use App\Http\Controllers\Company\ProductsController;
 use App\Http\Controllers\Company\PurchaseOrderController;
 use App\Http\Controllers\Company\RoleController;
 use App\Http\Controllers\Company\StockController;
@@ -284,6 +286,40 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             Route::delete('/{id}', [MaterialRequestController::class, 'destroy'])->name('request.destroy');
 
             Route::get('/analytics/cabang', [MaterialRequestController::class, 'cabangAnalytics'])->name('analytics.cabang');
+        });
+
+        Route::prefix('products')->group(function () {
+            Route::get('/', [ProductsController::class, 'index'])
+                ->name('products.index');
+
+            Route::get('/create', [ProductsController::class, 'create'])
+                ->name('products.create');
+
+            Route::post('/store', [ProductsController::class, 'store'])
+                ->name('products.store');
+
+            Route::get('/{product}/edit', [ProductsController::class, 'edit'])
+                ->name('products.edit');
+
+            Route::put('/{product}/update', [ProductsController::class, 'update'])
+                ->name('products.update');
+
+            Route::delete('/{product}/delete', [ProductsController::class, 'destroy'])
+                ->name('products.destroy');
+            Route::get('/{product}/detail', [ProductsController::class, 'show'])
+                ->name('products.show');
+            // BOM ROUTES
+            Route::get('/{product}/bom', [BomController::class, 'index'])
+                ->name('products.bom.index');
+
+            Route::post('/{product}/bom/store', [BomController::class, 'store'])
+                ->name('products.bom.store');
+
+            Route::put('/bom/{bom}/update', [BomController::class, 'update'])
+                ->name('products.bom.update');
+
+            Route::delete('/bom/{bom}/delete', [BomController::class, 'destroy'])
+                ->name('products.bom.delete');
         });
 
     });

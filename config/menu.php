@@ -31,6 +31,7 @@ return [
             'icon' => 'box',
             'children' => [
                 ['label' => 'Barang Baku', 'href' => 'items', 'permission' => 'item.view'],
+                ['label' => 'Product', 'href' => 'products', 'permission' => 'item.view'],
             ],
         ],
 

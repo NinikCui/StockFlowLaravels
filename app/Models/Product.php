@@ -9,28 +9,38 @@ class Product extends Model
     protected $table = 'products';
 
     protected $fillable = [
+        'company_id',
+        'category_id',
         'name',
         'code',
         'base_price',
         'is_active',
-        'created_at',
-        'updated_at'
     ];
 
-    public $timestamps = false;
-
-    public function boms()
-    {
-        return $this->hasMany(Bom::class, 'products_id');
-    }
+    public $timestamps = true;
 
     public function orderDetails()
     {
         return $this->hasMany(OrderDetail::class, 'products_id');
     }
 
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
     public function productionOrders()
     {
         return $this->hasMany(ProductionOrder::class, 'products_id');
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function bomItems()
+    {
+        return $this->hasMany(Boms::class, 'products_id');
     }
 }

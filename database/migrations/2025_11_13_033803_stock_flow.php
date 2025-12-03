@@ -344,31 +344,55 @@ return new class extends Migration
             $table->foreign('items_id')->references('id')->on('items')->cascadeOnDelete();
         });
 
-        // ============================
-        // PRODUCTS
-        // ============================
         Schema::create('products', function (Blueprint $table) {
             $table->id();
+
+            // FK ke company
+            $table->unsignedBigInteger('company_id');
+            $table->unsignedBigInteger('category_id')->nullable();
             $table->string('name', 45);
-            $table->string('code', 45)->unique();
-            $table->decimal('base_price', 16, 2);
-            $table->boolean('is_active');
+            $table->string('code', 45);
+
+            $table->decimal('base_price', 16, 2)->default(0);
+
+            $table->boolean('is_active')->default(true);
+
             $table->timestamps();
+
+            // FK constraints
+            $table->foreign('company_id')
+                ->references('id')->on('companies')
+                ->cascadeOnDelete();
+            $table->foreign('category_id')->references('id')->on('categories')->cascadeOnDelete();
+            // product code harus unik dalam 1 company
+            $table->unique(['company_id', 'code']);
         });
 
-        // ============================
-        // BOM
-        // ============================
         Schema::create('boms', function (Blueprint $table) {
             $table->id();
 
-            $table->unsignedBigInteger('products_id');
-            $table->unsignedBigInteger('items_id');
+            $table->unsignedBigInteger('company_id');
+
+            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('item_id');
 
             $table->decimal('qty_per_unit', 16, 2);
 
-            $table->foreign('products_id')->references('id')->on('products')->cascadeOnDelete();
-            $table->foreign('items_id')->references('id')->on('items')->cascadeOnDelete();
+            // FK
+            $table->foreign('company_id')
+                ->references('id')->on('companies')
+                ->cascadeOnDelete();
+
+            $table->foreign('product_id')
+                ->references('id')->on('products')
+                ->cascadeOnDelete();
+
+            $table->foreign('item_id')
+                ->references('id')->on('items')
+                ->cascadeOnDelete();
+
+            // prevent dupes
+            $table->unique(['product_id', 'item_id']);
         });
 
         // ============================
