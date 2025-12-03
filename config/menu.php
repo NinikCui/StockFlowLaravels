@@ -87,11 +87,15 @@ return [
                     'href' => 'penyimpanan',
                     'permission' => 'warehouse.view',
                 ],
-
+                [
+                    'label' => 'Daftar Item',
+                    'href' => 'item',
+                    'permission' => 'item.view',
+                ],
                 [
                     'label' => 'Daftar Stok',
                     'href' => 'stock',
-                    'permission' => 'warehouse.view',
+                    'permission' => 'item.view',
                 ],
                 [
                     'label' => 'Request Barang',

@@ -51,7 +51,7 @@ class Item extends Model
 
     public function stocks()
     {
-        return $this->hasMany(Stock::class, 'items_id');
+        return $this->hasMany(Stock::class, 'item_id');
     }
 
     public function poDetails()

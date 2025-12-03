@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Branch\BranchDashboardController;
+use App\Http\Controllers\Branch\BranchItemController;
 use App\Http\Controllers\Branch\BranchMaterialRequestController;
 use App\Http\Controllers\Branch\BranchPurchaseOrderController;
 use App\Http\Controllers\Branch\BranchStockController;
@@ -451,6 +452,25 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             Route::post('/request/{id}/receive',
                 [BranchMaterialRequestController::class, 'receive'])
                 ->name('branch.request.receive');
+        });
+        Route::prefix('item')->group(function () {
+
+            Route::get('/', [BranchItemController::class, 'index'])
+                ->name('branch.item.index');
+
+            Route::get('/{item}', [BranchItemController::class, 'show'])
+                ->name('branch.item.show');
+
+            Route::get('/{item}/warehouse/{warehouse}/edit',
+                [BranchItemController::class, 'editStock'])
+                ->name('branch.item.stock.edit');
+
+            Route::post('/{item}/warehouse/{warehouse}/update',
+                [BranchItemController::class, 'updateStock'])
+                ->name('branch.item.stock.update');
+            Route::get('/{item}/history',
+                [BranchItemController::class, 'itemHistoryByItem'])
+                ->name('branch.item.history');
         });
 
     });
