@@ -167,7 +167,7 @@ return new class extends Migration
 
             $table->unsignedBigInteger('company_id');
 
-            $table->unsignedBigInteger('cabang_resto_id');
+            $table->unsignedBigInteger('cabang_resto_id')->nullable();
             $table->string('name', 100);
             $table->string('contact_name', 100)->nullable();
             $table->string('phone', 50)->nullable();

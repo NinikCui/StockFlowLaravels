@@ -152,12 +152,12 @@ return new class extends Migration
             $table->timestamp('updated_at')->nullable();
 
             // FK
-            $table->foreign('warehouse_id_to')
-                ->references('id')->on('warehouse')
+            $table->foreign('cabang_id_to')
+                ->references('id')->on('cabang_resto')
                 ->nullOnDelete();
 
-            $table->foreign('warehouse_id_from')
-                ->references('id')->on('warehouse')
+            $table->foreign('cabang_id_from')
+                ->references('id')->on('cabang_resto')
                 ->nullOnDelete();
 
             $table->foreign('created_by')
@@ -245,7 +245,7 @@ return new class extends Migration
 
             $table->foreign('company_id')
                 ->references('id')->on('companies')
-                ->nullOnDelete();
+                ->onDelete('cascade');
 
         });
         Schema::create('production_issues', function (Blueprint $table) {

@@ -48,7 +48,6 @@ return [
             'icon' => 'layers',
             'children' => [
                 ['label' => 'Request Cabang', 'href' => 'request-cabang',                  'permission' => 'inventory.transfer'],
-                ['label' => 'Analytics',      'href' => 'request-cabang/analytics/cabang', 'permission' => 'analytics.inventory'],
             ],
         ],
         [
