@@ -41,6 +41,6 @@ class Product extends Model
 
     public function bomItems()
     {
-        return $this->hasMany(Boms::class, 'products_id');
+        return $this->hasMany(Boms::class, 'product_id');
     }
 }

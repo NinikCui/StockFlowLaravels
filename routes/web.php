@@ -315,11 +315,11 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             Route::post('/{product}/bom/store', [BomController::class, 'store'])
                 ->name('products.bom.store');
 
-            Route::put('/bom/{bom}/update', [BomController::class, 'update'])
+            Route::put('/{product}/bom/{bom}/update', [BomController::class, 'update'])
                 ->name('products.bom.update');
 
-            Route::delete('/bom/{bom}/delete', [BomController::class, 'destroy'])
-                ->name('products.bom.delete');
+            Route::delete('/{product}/bom/{bom}/delete', [BomController::class, 'destroy'])
+                ->name('products.bom.destroy');
         });
 
     });
