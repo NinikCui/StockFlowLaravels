@@ -77,7 +77,13 @@ return [
             'href' => 'dashboard',
             'always_show' => true,
         ],
-
+        [
+            'label' => 'Pegawai',
+            'icon' => 'users',
+            'children' => [
+                ['label' => 'Daftar Pegawai', 'href' => 'pegawai', 'permission' => 'employee.view'],
+            ],
+        ],
         [
             'label' => 'Stok & Mutasi',
             'icon' => 'layers',
@@ -118,6 +124,13 @@ return [
                     'href' => 'purchase-order',
                     'permission' => 'purchase.view',
                 ],
+            ],
+        ],
+        [
+            'label' => 'Produk',
+            'icon' => 'box',
+            'children' => [
+                ['label' => 'Product', 'href' => 'products', 'permission' => 'item.view'],
             ],
         ],
         [

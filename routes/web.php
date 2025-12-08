@@ -3,6 +3,8 @@
 use App\Http\Controllers\Branch\BranchDashboardController;
 use App\Http\Controllers\Branch\BranchItemController;
 use App\Http\Controllers\Branch\BranchMaterialRequestController;
+use App\Http\Controllers\Branch\BranchPegawaiController;
+use App\Http\Controllers\Branch\BranchProductController;
 use App\Http\Controllers\Branch\BranchPurchaseOrderController;
 use App\Http\Controllers\Branch\BranchStockController;
 use App\Http\Controllers\Branch\BranchSupplierController;
@@ -514,6 +516,48 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             Route::get('/{item}/history',
                 [BranchItemController::class, 'itemHistoryByItem'])
                 ->name('branch.item.history');
+
+        });
+
+        Route::prefix('products')->group(function () {
+            Route::get('/', [BranchProductController::class, 'index'])->name('branch.products.index');
+            Route::get('/{product}/detail',
+                [BranchProductController::class, 'show']
+            )->name('branch.products.show');
+
+        });
+
+        Route::prefix('pegawai')->group(function () {
+
+            // LIST PEGAWAI CABANG
+            Route::get('/',
+                [BranchPegawaiController::class, 'index']
+            )->name('branch.pegawai.index');
+
+            // CREATE PAGE
+            Route::get('/create',
+                [BranchPegawaiController::class, 'create']
+            )->name('branch.pegawai.create');
+
+            // STORE
+            Route::post('/',
+                [BranchPegawaiController::class, 'store']
+            )->name('branch.pegawai.store');
+
+            // EDIT PAGE
+            Route::get('/{id}/edit',
+                [BranchPegawaiController::class, 'edit']
+            )->name('branch.pegawai.edit');
+
+            // UPDATE
+            Route::put('/{id}',
+                [BranchPegawaiController::class, 'update']
+            )->name('branch.pegawai.update');
+
+            // DELETE
+            Route::delete('/{id}',
+                [BranchPegawaiController::class, 'destroy']
+            )->name('branch.pegawai.destroy');
 
         });
 
