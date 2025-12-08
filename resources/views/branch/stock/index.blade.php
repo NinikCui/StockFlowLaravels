@@ -88,6 +88,7 @@
                         <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Kategori</th>
                         <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Gudang</th>
                         <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Stok</th>
+                        <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700">Kadaluarsa</th>
                         <th class="px-4 py-3 text-center text-sm font-semibold text-gray-700 w-40">Aksi</th>
                     </tr>
                 </thead>
@@ -112,7 +113,7 @@
 
                             {{-- CATEGORY --}}
                             <td class="px-4 py-4 text-gray-700">
-                                {{ $stock->item->category->name ?? '-' }}
+                                {{ $stock->item->kategori->name ?? '-' }}
                             </td>
 
                             {{-- WAREHOUSE --}}
@@ -136,7 +137,9 @@
                                 </button>
                                 
                             </td>
-
+<td class="p-3 border-b text-gray-800 font-mono">
+                            {{ $stock->expired_at ? \Carbon\Carbon::parse($stock->expired_at)->translatedFormat('d F Y') : '-' }}
+                        </td>
                             {{-- ACTIONS --}}
                             <td class="px-4 py-4 text-center">
                                 <div class="flex justify-center gap-2">

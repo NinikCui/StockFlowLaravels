@@ -366,8 +366,10 @@ class PurchaseOrderController extends Controller
     public function processReceive(Request $request, $companyCode, PurchaseOrder $po)
     {
         $po->load(['details.item', 'details.receives']);
+
         $receiveQty = $request->input('receive_qty', []);
         $returnQty = $request->input('return_qty', []);
+        $expiredDates = $request->input('expired_at', []);
 
         $warehouse = Warehouse::find($po->warehouse_id);
 
@@ -378,18 +380,28 @@ class PurchaseOrderController extends Controller
 
             $recv = floatval($receiveQty[$detail->id] ?? 0);
             $ret = floatval($returnQty[$detail->id] ?? 0);
-
-            if ($recv < 0 || $ret < 0) {
-                return back()->withErrors(["{$detail->item->name}: nilai tidak boleh negatif"]);
-            }
+            $exp = $expiredDates[$detail->id] ?? null;
 
             if ($recv + $ret != $remaining) {
                 return back()->withErrors([
                     "{$detail->item->name}: total (received + return) harus = {$remaining}",
                 ]);
             }
+
+            if (! $exp) {
+                return back()->withErrors(["{$detail->item->name}: Expired date wajib diisi"]);
+            }
+
+            if (! strtotime($exp)) {
+                return back()->withErrors(["{$detail->item->name}: Format expired date tidak valid"]);
+            }
+
+            if ($exp < date('Y-m-d')) {
+                return back()->withErrors(["{$detail->item->name}: Expired date tidak boleh lewat"]);
+            }
         }
 
+        // Create receive header
         $receiveHeader = PoReceive::create([
             'purchase_order_id' => $po->id,
             'warehouse_id' => $warehouse->id,
@@ -399,13 +411,10 @@ class PurchaseOrderController extends Controller
 
         foreach ($po->details as $detail) {
 
-            $alreadyReceived = $detail->receives->sum('qty_received');
-            $remaining = $detail->qty_ordered - $alreadyReceived;
-
             $recv = floatval($receiveQty[$detail->id] ?? 0);
             $ret = floatval($returnQty[$detail->id] ?? 0);
+            $exp = $expiredDates[$detail->id];
 
-            // save receive detail
             PoReceiveDetail::create([
                 'po_receive_id' => $receiveHeader->id,
                 'po_detail_id' => $detail->id,
@@ -416,10 +425,11 @@ class PurchaseOrderController extends Controller
 
             if ($recv > 0) {
 
-                // generate code
+                // generate stock code
                 $prefix = 'STK-'.strtoupper($warehouse->code).'-';
                 $last = Stock::where('warehouse_id', $warehouse->id)->orderBy('id', 'DESC')->first();
                 $next = $last ? intval(substr($last->code, -4)) + 1 : 1;
+
                 $code = $prefix.str_pad($next, 4, '0', STR_PAD_LEFT);
 
                 $stock = Stock::create([
@@ -428,34 +438,23 @@ class PurchaseOrderController extends Controller
                     'item_id' => $detail->items_id,
                     'qty' => 0,
                     'code' => $code,
+                    'expired_at' => $exp,    // ⬅️ disimpan di stok
                 ]);
-            }
 
-            $stock->increment('qty', $recv);
+                $stock->increment('qty', $recv);
 
-            StockMovement::create([
-                'company_id' => $po->cabangResto->company_id,
-                'warehouse_id' => $warehouse->id,
-                'stock_id' => $stock->id,
-                'item_id' => $detail->items_id,
-                'created_by' => auth()->id(),
-                'type' => 'IN',
-                'qty' => $recv,
-                'reference' => "PO#{$po->po_number}",
-                'notes' => 'Receive PO',
-            ]);
-        }
-
-        /* =====================================================
-         | UPDATE STATUS
-         ===================================================== */
-        $allRemaining = true;
-
-        foreach ($po->details as $detail) {
-            $receivedTotal = $detail->receives->sum('qty_received') + ($receiveQty[$detail->id] ?? 0);
-
-            if ($receivedTotal < $detail->qty_ordered) {
-                $allRemaining = false;
+                StockMovement::create([
+                    'company_id' => $po->cabangResto->company_id,
+                    'warehouse_id' => $warehouse->id,
+                    'stock_id' => $stock->id,
+                    'item_id' => $detail->items_id,
+                    'created_by' => auth()->id(),
+                    'type' => 'IN',
+                    'qty' => $recv,
+                    'expired_at' => $exp,    // ⬅️ disimpan juga di movement
+                    'reference' => "PO#{$po->po_number}",
+                    'notes' => 'Receive PO',
+                ]);
             }
         }
 

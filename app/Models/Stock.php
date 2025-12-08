@@ -13,7 +13,7 @@ class Stock extends Model
         'company_id',
         'warehouse_id',
         'item_id',
-
+        'expired_at',
         'qty',
     ];
 

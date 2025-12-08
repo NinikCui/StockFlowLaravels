@@ -20,6 +20,7 @@
                     <th class="p-3 font-semibold text-left">Item</th>
                     <th class="p-3 font-semibold text-left">Kategori</th>
                     <th class="p-3 font-semibold text-left">Qty</th>
+                    <th class="p-3 font-semibold text-left">Kadaluarsa</th>
                     <th class="p-3 font-semibold text-center w-40">Aksi</th>
                 </tr>
             </thead>
@@ -62,7 +63,9 @@
                                 </span>
                             </button>
                         </td>
-
+                        <td class="p-3 border-b text-gray-800 font-mono">
+                            {{ $s->expired_at ? \Carbon\Carbon::parse($s->expired_at)->translatedFormat('d F Y') : '-' }}
+                        </td>
                         {{-- ACTIONS --}}
                         <td class="p-3 border-b">
                             <div class="flex justify-center">

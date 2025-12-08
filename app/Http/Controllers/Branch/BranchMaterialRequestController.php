@@ -7,6 +7,7 @@ use App\Models\CabangResto;
 use App\Models\InventoryTrans;
 use App\Models\InvenTransDetail;
 use App\Models\Stock;
+use App\Models\StockMovement;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -474,6 +475,7 @@ class BranchMaterialRequestController extends Controller
     public function receive(Request $request, $branchCode, $id)
     {
         $companyId = session('role.company.id');
+
         $req = InventoryTrans::with('details.item')->findOrFail($id);
 
         // hanya cabang tujuan yang boleh menerima barang
@@ -496,16 +498,46 @@ class BranchMaterialRequestController extends Controller
 
                 $itemId = $detail->item->id;
 
-                // data dari form
-                $warehouseId = $data[$itemId]['warehouse_id'];
-                $qtyReceived = $data[$itemId]['qty'];
+                // DATA DARI FORM
+                $warehouseId = $data[$itemId]['warehouse_id'] ?? null;
+                $qtyReceived = $data[$itemId]['qty'] ?? 0;
+                $expiredAt = $data[$itemId]['expired_at'] ?? null;
 
+                // LOGGING
                 Log::info('RECEIVE ITEM', [
                     'item_id' => $itemId,
                     'warehouse_id' => $warehouseId,
                     'qty_received' => $qtyReceived,
+                    'expired_at' => $expiredAt,
                 ]);
 
+                // =============================
+                // VALIDASI DATA PER ITEM
+                // =============================
+                if (! $warehouseId) {
+                    return back()->withErrors("Gudang wajib dipilih untuk item {$detail->item->name}");
+                }
+
+                if ($qtyReceived < 0) {
+                    return back()->withErrors("Qty tidak boleh minus untuk item {$detail->item->name}");
+                }
+
+                // Validasi Expired Date
+                if (! $expiredAt) {
+                    return back()->withErrors("Expired date wajib diisi untuk item {$detail->item->name}");
+                }
+
+                if (! strtotime($expiredAt)) {
+                    return back()->withErrors("Format expired date tidak valid untuk item {$detail->item->name}");
+                }
+
+                if ($expiredAt < date('Y-m-d')) {
+                    return back()->withErrors("Expired date tidak boleh tanggal lewat untuk item {$detail->item->name}");
+                }
+
+                // =============================
+                // BUAT STOK BARU
+                // =============================
                 $newCode = Stock::generateCode($warehouseId);
 
                 Log::info('CREATE NEW STOCK', [
@@ -513,19 +545,38 @@ class BranchMaterialRequestController extends Controller
                     'item_id' => $itemId,
                     'qty' => $qtyReceived,
                     'code' => $newCode,
+                    'expired_at' => $expiredAt,
                 ]);
 
-                Stock::create([
+                $stock = Stock::create([
                     'company_id' => $companyId,
                     'warehouse_id' => $warehouseId,
                     'item_id' => $itemId,
                     'qty' => $qtyReceived,
                     'code' => $newCode,
+                    'expired_at' => $expiredAt,
                 ]);
 
+                // =============================
+                // STOCK MOVEMENT
+                // =============================
+                StockMovement::create([
+                    'company_id' => $companyId,
+                    'warehouse_id' => $warehouseId,
+                    'stock_id' => $stock->id,
+                    'item_id' => $itemId,
+                    'created_by' => auth()->id(),
+                    'type' => 'IN',
+                    'qty' => $qtyReceived,
+                    'expired_at' => $expiredAt,
+                    'reference' => "Transfer Receive #{$req->trans_number}",
+                    'notes' => 'Receive from inter-branch transfer',
+                ]);
             }
 
-            // UPDATE STATUS MENJADI RECEIVED
+            // =============================
+            // UPDATE STATUS REQUEST
+            // =============================
             $req->update([
                 'status' => 'RECEIVED',
                 'received_at' => now(),

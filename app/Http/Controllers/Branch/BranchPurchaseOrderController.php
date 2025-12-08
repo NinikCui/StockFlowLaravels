@@ -432,23 +432,22 @@ class BranchPurchaseOrderController extends Controller
     {
         $companyId = session('role.company.id');
 
-        // Validasi cabang
         $branch = CabangResto::where('company_id', $companyId)
             ->where('code', $branchCode)
             ->firstOrFail();
 
-        // Ambil PO
         $po = PurchaseOrder::where('cabang_resto_id', $branch->id)
             ->with(['details.item', 'details.receives'])
             ->findOrFail($poId);
 
         $receiveQty = $request->input('receive_qty', []);
         $returnQty = $request->input('return_qty', []);
+        $expiredDates = $request->input('expired_at', []);
 
         $warehouse = Warehouse::findOrFail($po->warehouse_id);
 
         /* =============================
-           VALIDASI QTY
+            VALIDASI QTY + EXPIRED DATE
         ============================= */
         foreach ($po->details as $detail) {
 
@@ -457,22 +456,35 @@ class BranchPurchaseOrderController extends Controller
 
             $recv = floatval($receiveQty[$detail->id] ?? 0);
             $ret = floatval($returnQty[$detail->id] ?? 0);
-
-            if ($recv < 0 || $ret < 0) {
-                return back()->withErrors([
-                    "{$detail->item->name}: nilai tidak boleh negatif",
-                ]);
-            }
+            $exp = $expiredDates[$detail->id] ?? null;
 
             if ($recv + $ret != $remaining) {
                 return back()->withErrors([
-                    "{$detail->item->name}: total (received + return) harus = {$remaining}",
+                    "{$detail->item->name}: total received + return harus = {$remaining}",
+                ]);
+            }
+
+            if (! $exp) {
+                return back()->withErrors([
+                    "{$detail->item->name}: Expired date wajib diisi",
+                ]);
+            }
+
+            if (! strtotime($exp)) {
+                return back()->withErrors([
+                    "{$detail->item->name}: Format expired date tidak valid",
+                ]);
+            }
+
+            if ($exp < date('Y-m-d')) {
+                return back()->withErrors([
+                    "{$detail->item->name}: Expired date tidak boleh tanggal lewat",
                 ]);
             }
         }
 
         /* =============================
-           SIMPAN HEADER RECEIVE
+            SIMPAN HEADER
         ============================= */
         $receiveHeader = PoReceive::create([
             'purchase_order_id' => $po->id,
@@ -482,15 +494,13 @@ class BranchPurchaseOrderController extends Controller
         ]);
 
         /* =============================
-           SIMPAN DETAIL RECEIVE
+            SIMPAN STOCK PER ITEM
         ============================= */
         foreach ($po->details as $detail) {
 
-            $alreadyReceived = $detail->receives->sum('qty_received');
-            $remaining = $detail->qty_ordered - $alreadyReceived;
-
             $recv = floatval($receiveQty[$detail->id] ?? 0);
             $ret = floatval($returnQty[$detail->id] ?? 0);
+            $exp = $expiredDates[$detail->id];
 
             PoReceiveDetail::create([
                 'po_receive_id' => $receiveHeader->id,
@@ -500,12 +510,9 @@ class BranchPurchaseOrderController extends Controller
                 'qty_returned' => $ret,
             ]);
 
-            /* ====================================
-               UPDATE STOCK
-            ==================================== */
             if ($recv > 0) {
 
-                // Generate code
+                // Generate stock code
                 $prefix = 'STK-'.strtoupper($warehouse->code).'-';
                 $last = Stock::where('warehouse_id', $warehouse->id)
                     ->orderBy('id', 'DESC')
@@ -514,12 +521,14 @@ class BranchPurchaseOrderController extends Controller
                 $next = $last ? intval(substr($last->code, -4)) + 1 : 1;
                 $code = $prefix.str_pad($next, 4, '0', STR_PAD_LEFT);
 
+                // CREATE STOCK WITH EXPIRED DATE
                 $stock = Stock::create([
                     'company_id' => $branch->company_id,
                     'warehouse_id' => $warehouse->id,
                     'item_id' => $detail->items_id,
                     'qty' => 0,
                     'code' => $code,
+                    'expired_at' => $exp,
                 ]);
 
                 $stock->increment('qty', $recv);
@@ -532,23 +541,10 @@ class BranchPurchaseOrderController extends Controller
                     'created_by' => auth()->id(),
                     'type' => 'IN',
                     'qty' => $recv,
+                    'expired_at' => $exp,
                     'reference' => "PO#{$po->po_number}",
                     'notes' => 'Receive PO',
                 ]);
-            }
-        }
-
-        /* =============================
-           UPDATE STATUS PO
-        ============================= */
-        $allReceived = true;
-
-        foreach ($po->details as $detail) {
-            $receivedTotal = $detail->receives->sum('qty_received')
-                + ($receiveQty[$detail->id] ?? 0);
-
-            if ($receivedTotal < $detail->qty_ordered) {
-                $allReceived = false;
             }
         }
 

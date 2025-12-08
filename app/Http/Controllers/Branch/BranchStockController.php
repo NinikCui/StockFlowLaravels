@@ -294,11 +294,14 @@ class BranchStockController extends Controller
             'warehouse_id' => 'required|exists:warehouse,id',
             'item_id' => 'required|exists:items,id',
             'qty' => 'required|numeric|min:0.01',
+            'expired_at' => 'required|date|after:today',
             'notes' => 'nullable|string|max:255',
         ], [
             'warehouse_id.required' => 'Gudang wajib dipilih.',
             'item_id.required' => 'Item wajib dipilih.',
             'qty.required' => 'Jumlah stok wajib diisi.',
+            'expired_at.required' => 'Expired date wajib diisi.',
+            'expired_at.after' => 'Expired date harus lebih besar dari hari ini.',
         ]);
 
         // Pastikan warehouse milik branch
@@ -326,6 +329,7 @@ class BranchStockController extends Controller
             'item_id' => $data['item_id'],
             'qty' => $data['qty'],
             'code' => $generatedCode,
+            'expired_at' => $data['expired_at'], // ⬅️ TAMBAH
         ]);
 
         // STOCK MOVEMENT
@@ -337,6 +341,7 @@ class BranchStockController extends Controller
             'stock_id' => $stock->id,
             'type' => 'IN',
             'qty' => $data['qty'],
+            'expired_at' => $data['expired_at'], // ⬅️ TAMBAH
             'notes' => $data['notes'],
             'reference' => 'Branch Stock In - '.$generatedCode,
         ]);

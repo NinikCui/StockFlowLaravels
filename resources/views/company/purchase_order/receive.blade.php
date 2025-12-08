@@ -25,11 +25,22 @@
     {{-- FORM RECEIVE --}}
     <form method="POST" action="{{ route('po.receive.process', [$companyCode, $po->id]) }}" class="space-y-6">
         @csrf
-
+        
         @foreach ($po->details as $detail)
 
             <div class="bg-white shadow-sm border border-gray-200 rounded-xl p-6 transition-all">
-
+{{-- EXPIRED DATE --}}
+<div class="mt-3">
+    <label class="block text-sm font-medium text-gray-700">Expired Date</label>
+    <input 
+        type="date"
+        name="expired_at[{{ $detail->id }}]"
+        class="mt-1 w-full border-gray-300 rounded-lg shadow-sm 
+               focus:ring-emerald-500 focus:border-emerald-500"
+        required
+    >
+</div>
+    
                 {{-- ITEM NAME --}}
                 <div class="flex justify-between items-center mb-2">
                     <h2 class="text-lg font-semibold text-gray-900">

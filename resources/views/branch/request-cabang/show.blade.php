@@ -407,6 +407,12 @@
                                step="0.01"
                                class="border rounded px-2 py-1 w-24"
                                required>
+
+                        <label class="text-sm mt-3 block">Expired Date:</label>
+                        <input type="date"
+                            name="receive[{{ $item->id }}][expired_at]"
+                            class="border rounded px-2 py-1 w-full mt-1"
+                            required>
                     </div>
 
                 @endforeach

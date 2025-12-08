@@ -221,6 +221,7 @@ return new class extends Migration
             $table->unsignedBigInteger('warehouse_id');
             $table->unsignedBigInteger('item_id');
             $table->decimal('qty', 14, 2)->default(0);
+            $table->date('expired_at')->nullable();
             $table->timestamps();
 
             $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();
