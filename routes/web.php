@@ -10,6 +10,7 @@ use App\Http\Controllers\Branch\BranchRoleController;
 use App\Http\Controllers\Branch\BranchStockController;
 use App\Http\Controllers\Branch\BranchSupplierController;
 use App\Http\Controllers\Branch\BranchWarehouseController;
+use App\Http\Controllers\Branch\PosOrderController;
 use App\Http\Controllers\Branch\PosShiftController;
 use App\Http\Controllers\Company\BomController;
 use App\Http\Controllers\Company\CabangController;
@@ -607,6 +608,25 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
                 Route::get('/{shift}/close', [PosShiftController::class, 'closeForm'])->name('closeForm');
                 Route::post('/{shift}/close', [PosShiftController::class, 'close'])->name('close');
             });
+        Route::prefix('/pos')
+            ->name('branch.pos.')
+            ->group(function () {
+
+                // CART PAGE
+                Route::get('/order', [PosOrderController::class, 'index'])->name('order.index');
+
+                // ADD ITEM TO CART
+                Route::post('/order/add', [PosOrderController::class, 'add'])->name('order.add');
+
+                // REMOVE ITEM
+                Route::post('/order/remove', [PosOrderController::class, 'remove'])->name('order.remove');
+
+                // CHECKOUT + PAY
+                Route::post('/order/pay', [PosOrderController::class, 'pay'])->name('order.pay');
+                Route::post('/order/note', [PosOrderController::class, 'note'])->name('order.note');
+
+            });
+
     });
 
 });
