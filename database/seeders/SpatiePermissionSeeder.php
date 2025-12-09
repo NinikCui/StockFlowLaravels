@@ -97,6 +97,8 @@ class SpatiePermissionSeeder extends Seeder
             // SETTINGS
             // ============================
             'settings.general',
+
+            'pos.manage',
         ];
 
         foreach ($permissions as $perm) {

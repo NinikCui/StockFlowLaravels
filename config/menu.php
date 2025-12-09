@@ -132,46 +132,15 @@ return [
             'icon' => 'box',
             'children' => [
                 ['label' => 'Product', 'href' => 'products', 'permission' => 'item.view'],
+
             ],
         ],
-        [
-            'label' => 'Pegawai Cabang',
-            'icon' => 'users',
-            'children' => [
 
-                [
-                    'label' => 'Daftar Pegawai',
-                    'href' => 'pegawai',
-                    'permission' => 'employee.branch.view',
-                ],
-
-                [
-                    'label' => 'Roles Cabang',
-                    'href' => 'pegawai/roles',
-                    'permission' => 'permission.branch.view',
-                ],
-            ],
-        ],
         [
-            'label' => 'Laporan',
-            'icon' => 'bar-chart',
-            'children' => [
-                [
-                    'label' => 'Laporan Stok',
-                    'href' => 'laporan/stock',
-                    'permission' => 'report.stock.view',
-                ],
-                [
-                    'label' => 'Laporan Mutasi',
-                    'href' => 'laporan/mutasi',
-                    'permission' => 'report.request.view',
-                ],
-                [
-                    'label' => 'Laporan Supplier',
-                    'href' => 'laporan/supplier',
-                    'permission' => 'report.supplier.view',
-                ],
-            ],
+            'label' => 'POS',
+            'icon' => 'home',
+            'href' => 'pos-shift',
+            'permission' => 'pos.manage',
         ],
 
     ],

@@ -10,6 +10,7 @@ use App\Http\Controllers\Branch\BranchRoleController;
 use App\Http\Controllers\Branch\BranchStockController;
 use App\Http\Controllers\Branch\BranchSupplierController;
 use App\Http\Controllers\Branch\BranchWarehouseController;
+use App\Http\Controllers\Branch\PosShiftController;
 use App\Http\Controllers\Company\BomController;
 use App\Http\Controllers\Company\CabangController;
 use App\Http\Controllers\Company\CategoriesIssuesController;
@@ -594,6 +595,18 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
                     ->name('destroy');
             });
 
+        Route::prefix('/pos-shift')
+            ->name('branch.pos.shift.')
+            ->group(function () {
+
+                Route::get('/', [PosShiftController::class, 'index'])->name('index');
+
+                Route::get('/open', [PosShiftController::class, 'openForm'])->name('openForm');
+                Route::post('/open', [PosShiftController::class, 'open'])->name('open');
+
+                Route::get('/{shift}/close', [PosShiftController::class, 'closeForm'])->name('closeForm');
+                Route::post('/{shift}/close', [PosShiftController::class, 'close'])->name('close');
+            });
     });
 
 });
