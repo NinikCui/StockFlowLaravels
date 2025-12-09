@@ -6,6 +6,7 @@ use App\Http\Controllers\Branch\BranchMaterialRequestController;
 use App\Http\Controllers\Branch\BranchPegawaiController;
 use App\Http\Controllers\Branch\BranchProductController;
 use App\Http\Controllers\Branch\BranchPurchaseOrderController;
+use App\Http\Controllers\Branch\BranchRoleController;
 use App\Http\Controllers\Branch\BranchStockController;
 use App\Http\Controllers\Branch\BranchSupplierController;
 use App\Http\Controllers\Branch\BranchWarehouseController;
@@ -560,6 +561,38 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             )->name('branch.pegawai.destroy');
 
         });
+        Route::prefix('/roles')
+            ->name('branch.roles.')
+            ->group(function () {
+
+                // INDEX
+                Route::get('/', [BranchRoleController::class, 'index'])
+                    ->name('index');
+
+                // CREATE
+                Route::get('/create', [BranchRoleController::class, 'create'])
+                    ->name('create');
+
+                // STORE
+                Route::post('/store', [BranchRoleController::class, 'store'])
+                    ->name('store');
+
+                // SHOW
+                Route::get('/{code}', [BranchRoleController::class, 'show'])
+                    ->name('show');
+
+                // EDIT
+                Route::get('/{code}/edit', [BranchRoleController::class, 'edit'])
+                    ->name('edit');
+
+                // UPDATE
+                Route::put('/{code}', [BranchRoleController::class, 'update'])
+                    ->name('update');
+
+                // DELETE
+                Route::delete('/{code}', [BranchRoleController::class, 'destroy'])
+                    ->name('destroy');
+            });
 
     });
 

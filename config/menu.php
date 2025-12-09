@@ -82,6 +82,7 @@ return [
             'icon' => 'users',
             'children' => [
                 ['label' => 'Daftar Pegawai', 'href' => 'pegawai', 'permission' => 'employee.view'],
+                ['label' => 'Roles',          'href' => 'roles', 'permission' => 'permission.view'],
             ],
         ],
         [
