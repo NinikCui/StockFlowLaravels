@@ -20,8 +20,11 @@ class PosShiftController extends Controller
         $branch = CabangResto::where('company_id', $company->id)
             ->where('code', $branchCode)
             ->firstOrFail();
+        $activeShift = PosShift::where('cabang_resto_id', $branch->id)
+            ->where('status', 'OPEN')
+            ->first();
 
-        return [$company, $branch];
+        return [$company, $branch, $activeShift];
     }
 
     public function index($branchCode)
@@ -146,5 +149,27 @@ class PosShiftController extends Controller
 
         return redirect()->route('branch.pos.shift.index', [$branchCode])
             ->with('success', 'Shift berhasil ditutup.');
+    }
+
+    public function history($branchCode, $shiftId)
+    {
+        $companyCode = session('role.company.code');
+
+        [$company, $branch] = $this->loadBranch($branchCode);
+
+        $shift = PosShift::with([
+            'orders.details.product',
+            'orders.payments',
+        ])
+            ->where('id', $shiftId)
+            ->where('cabang_resto_id', $branch->id)
+            ->firstOrFail();
+
+        return view('branch.pos.shift.history', compact(
+            'companyCode',
+            'branchCode',
+            'branch',
+            'shift'
+        ));
     }
 }

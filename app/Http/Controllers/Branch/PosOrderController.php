@@ -113,9 +113,22 @@ class PosOrderController extends Controller
         return back();
     }
 
-    // ======================================
-    // PAY → CREATE pos_order + order_detail
-    // ======================================
+    public function updateNote(Request $request, $branchCode)
+    {
+        $cart = session()->get('pos_cart', []);
+
+        $productId = $request->product_id;
+        $note = $request->note;
+
+        if (isset($cart[$productId])) {
+            $cart[$productId]['note'] = $note;
+        }
+
+        session()->put('pos_cart', $cart);
+
+        return response()->json(['success' => true]);
+    }
+
     public function pay(Request $request, $branchCode)
     {
         [$company, $branch, $shift] = $this->loadBranch($branchCode);
@@ -130,45 +143,187 @@ class PosOrderController extends Controller
             return back()->with('error', 'Keranjang kosong.');
         }
 
-        $total = collect($cart)->sum('subtotal');
+        // Hitung total
+        $total = collect($cart)->sum(fn ($c) => $c['subtotal']);
+
+        // Validasi cash payment
+        if ($request->payment_method === 'CASH') {
+            $request->validate([
+                'paid_amount' => 'required|numeric|min:0',
+            ]);
+
+            if ($request->paid_amount < $total) {
+                return back()->with('error', 'Uang pelanggan kurang dari total pembayaran.');
+            }
+        }
 
         DB::beginTransaction();
 
-        // Generate nomor order (SBY-2025-000001)
+        // Generate nomor order
         $running = PosOrder::where('cabang_resto_id', $branch->id)->count() + 1;
         $orderNum = strtoupper($branch->code).'-'.date('Y').'-'.str_pad($running, 6, '0', STR_PAD_LEFT);
 
-        // CREATE pos_order
+        // ===============================
+        // 1) Simpan order
+        // ===============================
         $order = PosOrder::create([
             'cabang_resto_id' => $branch->id,
             'order_datetime' => now(),
-            'status' => 'OPEN',
+            'status' => $request->payment_method === 'MIDTRANS' ? 'PENDING' : 'PAID',
             'order_number' => $orderNum,
             'cashier_id' => auth()->id(),
             'pos_shifts_id' => $shift->id,
             'table_no' => $request->table_no ?? null,
         ]);
-        $notes = $request->notes ?? [];
-        // CREATE order_detail
-        foreach ($cart as $item) {
 
+        // ===============================
+        // 2) Simpan detail order
+        // ===============================
+        foreach ($cart as $item) {
             OrderDetail::create([
                 'pos_order_id' => $order->id,
                 'products_id' => $item['id'],
                 'qty' => $item['qty'],
                 'price' => $item['price'],
                 'discount_pct' => 0,
-                'note_line' => $notes[$item['id']] ?? null,
+                'note_line' => $item['note'] ?? null,
             ]);
         }
 
-        // CLEAR CART
+        // ===============================
+        // 3) Simpan pembayaran
+        // ===============================
+        if ($request->payment_method === 'MIDTRANS') {
+
+            $mid = $request->midtrans_result ?? [];
+
+            DB::table('pos_payments')->insert([
+                'pos_order_id' => $order->id,
+                'method' => 'QRIS',
+                'amount' => $total,
+                'status' => 'PENDING',
+                'ref_number' => $mid['transaction_id'] ?? null,
+                'note' => 'QRIS pending approval',
+                'paid_at' => now(),
+            ]);
+
+        } else {
+
+            $change = $request->paid_amount - $total;
+
+            DB::table('pos_payments')->insert([
+                'pos_order_id' => $order->id,
+                'method' => 'CASH',
+                'amount' => $total,
+                'status' => 'SUCCESS',
+                'ref_number' => null,
+                'note' => 'Cash payment; Change: '.$change,
+                'paid_at' => now(),
+            ]);
+        }
+
+        // ===============================
+        // 4) Kurangi stok (FEFO) via BOM
+        // ===============================
+        $this->reduceBomStock($company, $branch, $order, $cart);
+
+        // ===============================
+        // 5) Hapus cart
+        // ===============================
         session()->forget('pos_cart');
 
         DB::commit();
 
         return redirect()
             ->route('branch.pos.order.index', [$branchCode])
-            ->with('success', 'Order berhasil dibuat (status OPEN). Lanjutkan pembayaran!');
+            ->with('success', "Order {$orderNum} berhasil dibuat!");
+    }
+
+    protected function reduceBomStock($company, $branch, $order, $cart)
+    {
+        $warehouseIds = DB::table('warehouse')
+            ->where('cabang_resto_id', $branch->id)
+            ->pluck('id');
+
+        foreach ($cart as $item) {
+
+            $product = Product::with('bomItems')->find($item['id']);
+
+            foreach ($product->bomItems as $bom) {
+
+                $neededQty = $bom->qty_per_unit * $item['qty'];
+
+                $stocks = DB::table('stocks')
+                    ->where('item_id', $bom->item_id)
+                    ->whereIn('warehouse_id', $warehouseIds)
+                    ->where('qty', '>', 0)
+                    ->orderByRaw('expired_at IS NULL ASC')
+                    ->orderBy('expired_at', 'ASC')
+                    ->lockForUpdate()
+                    ->get();
+
+                foreach ($stocks as $s) {
+                    if ($neededQty <= 0) {
+                        break;
+                    }
+
+                    $take = min($s->qty, $neededQty);
+
+                    DB::table('stocks')->where('id', $s->id)->update([
+                        'qty' => $s->qty - $take,
+                    ]);
+
+                    DB::table('stock_movements')->insert([
+                        'company_id' => $company->id,
+                        'warehouse_id' => $s->warehouse_id,
+                        'stock_id' => $s->id,
+                        'item_id' => $bom->item_id,
+                        'created_by' => auth()->id(),
+                        'type' => 'OUT',
+                        'qty' => -$take,
+                        'reference' => $order->order_number,
+                        'notes' => 'POS Sale',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    $neededQty -= $take;
+                }
+
+                if ($neededQty > 0) {
+                    DB::rollBack();
+                    throw new \Exception("Stok bahan {$bom->item->name} tidak mencukupi!");
+                }
+            }
+        }
+    }
+
+    public function createMidtransPayment(Request $request, $branchCode)
+    {
+        [$company, $branch, $shift] = $this->loadBranch($branchCode);
+
+        $cart = session()->get('pos_cart', []);
+        $total = collect($cart)->sum('subtotal');
+
+        \Midtrans\Config::$serverKey = config('midtrans.server_key');
+        \Midtrans\Config::$isProduction = config('midtrans.is_production');
+        \Midtrans\Config::$isSanitized = true;
+        \Midtrans\Config::$is3ds = true;
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => 'POS-'.time(),
+                'gross_amount' => $total,
+            ],
+            'qris' => [
+                'acquirer' => 'gopay',
+            ],
+        ];
+
+        $snapToken = \Midtrans\Snap::getSnapToken($params);
+
+        return response()->json([
+            'snap_token' => $snapToken,
+        ]);
     }
 }

@@ -45,44 +45,47 @@
     @endif
 
 
-{{-- ACTIVE SHIFT CARD --}}
-@if($activeShift)
-<div class="mb-10 p-6 bg-gradient-to-br from-yellow-50 to-white border border-yellow-200 
-            rounded-2xl shadow flex items-center justify-between">
+    {{-- ACTIVE SHIFT CARD --}}
+    @if($activeShift)
+    <div class="mb-10 p-6 bg-gradient-to-br from-yellow-50 to-white border border-yellow-200 
+                rounded-2xl shadow flex items-center justify-between">
 
-    <div>
-        <p class="text-sm text-yellow-700 font-semibold">Shift Sedang Berjalan</p>
-        <h3 class="text-xl font-bold text-gray-900 mt-1">Shift #{{ $activeShift->id }}</h3>
+        <div>
+            <p class="text-sm text-yellow-700 font-semibold">Shift Sedang Berjalan</p>
+            <h3 class="text-xl font-bold text-gray-900 mt-1">Shift #{{ $activeShift->id }}</h3>
 
-        <div class="mt-3 text-gray-700 text-sm space-y-1">
-            <p>👤 Dibuka oleh: 
-                <span class="font-semibold">{{ $activeShift->openedBy->username ?? 'User' }}</span>
-            </p>
-            <p>⏰ Dibuka pada: {{ $activeShift->opened_at }}</p>
-            <p>💵 Modal Kas: 
-                <span class="font-semibold">Rp {{ number_format($activeShift->opening_cash, 0, ',', '.') }}</span>
-            </p>
+            <div class="mt-3 text-gray-700 text-sm space-y-1">
+                <p>👤 Dibuka oleh: 
+                    <span class="font-semibold">{{ $activeShift->openedBy->username ?? 'User' }}</span>
+                </p>
+                <p>⏰ Dibuka pada: {{ $activeShift->opened_at }}</p>
+                <p>💵 Modal Kas: 
+                    <span class="font-semibold">Rp {{ number_format($activeShift->opening_cash, 0, ',', '.') }}</span>
+                </p>
+            </div>
+        </div>
+
+        {{-- BUTTONS --}}
+        <div class="flex flex-col items-end gap-3">
+
+            {{-- 🔥 BUTTON MASUK POS --}}
+            <a href="{{ route('branch.pos.order.index', $branchCode) }}"
+            class="px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition">
+                🛒 Masuk ke POS
+            </a>
+            <a href="{{ route('branch.pos.shift.history', [$branchCode, $activeShift->id]) }}"
+            class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition">
+                📄 Lihat Order Hari Ini
+            </a>
+            {{-- 🔒 BUTTON TUTUP SHIFT --}}
+            <a href="{{ route('branch.pos.shift.closeForm', [ $branchCode, $activeShift->id]) }}"
+            class="px-5 py-3 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition">
+                🔒 Tutup Shift
+            </a>
+
         </div>
     </div>
-
-    {{-- BUTTONS --}}
-    <div class="flex flex-col items-end gap-3">
-
-        {{-- 🔥 BUTTON MASUK POS --}}
-        <a href="{{ route('branch.pos.order.index', $branchCode) }}"
-           class="px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition">
-            🛒 Masuk ke POS
-        </a>
-
-        {{-- 🔒 BUTTON TUTUP SHIFT --}}
-        <a href="{{ route('branch.pos.shift.closeForm', [ $branchCode, $activeShift->id]) }}"
-           class="px-5 py-3 rounded-xl bg-red-600 text-white font-semibold shadow hover:bg-red-700 transition">
-            🔒 Tutup Shift
-        </a>
-
-    </div>
-</div>
-@endif
+    @endif
 
 
 
@@ -154,7 +157,10 @@
                                 Tutup Shift
                             </a>
                         @else
-                            <span class="text-gray-400 text-sm italic">—</span>
+                            <a href="{{ route('branch.pos.shift.history', [$branchCode, $s->id]) }}"
+                            class="text-indigo-600 font-semibold hover:underline">
+                                📜 History
+                            </a>
                         @endif
                     </td>
 

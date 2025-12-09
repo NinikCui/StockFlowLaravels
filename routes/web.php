@@ -623,7 +623,16 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
 
                 // CHECKOUT + PAY
                 Route::post('/order/pay', [PosOrderController::class, 'pay'])->name('order.pay');
-                Route::post('/order/note', [PosOrderController::class, 'note'])->name('order.note');
+                Route::post('/order/note',
+                    [PosOrderController::class, 'updateNote']
+                )->name('order.note');
+                Route::post('/order/midtrans/',
+                    [PosOrderController::class, 'createMidtransPayment']
+                )->name('order.midtrans');
+
+                Route::get('/shift/{shiftId}/history',
+                    [PosShiftController::class, 'history'])
+                    ->name('shift.history');
 
             });
 
