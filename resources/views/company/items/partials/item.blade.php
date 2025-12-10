@@ -8,19 +8,21 @@
             resource="item"
             :companyCode="$companyCode"
             permissionPrefix="item"
-            
         />
-                    
     </div>
 
     {{-- TABLE --}}
-    <div class="overflow-hidden rounded-lg border border-gray-200">
-        <table class="w-full text-sm">
+    <div class="overflow-x-auto rounded-lg border border-gray-200">
+        <table class="w-full text-sm whitespace-nowrap">
             <thead class="bg-gray-50 text-gray-700">
                 <tr>
                     <th class="p-3 border-b text-left font-semibold">Nama Item</th>
                     <th class="p-3 border-b text-left font-semibold">Kategori</th>
                     <th class="p-3 border-b text-left font-semibold">Satuan</th>
+                    <th class="p-3 border-b text-center font-semibold">Mudah Rusak</th>
+                    <th class="p-3 border-b text-center font-semibold">Min Stok</th>
+                    <th class="p-3 border-b text-center font-semibold">Max Stok</th>
+                    <th class="p-3 border-b text-center font-semibold">Forecast</th>
                     <th class="p-3 border-b text-center font-semibold w-32">Aksi</th>
                 </tr>
             </thead>
@@ -29,7 +31,7 @@
                 @forelse ($items as $item)
                     <tr class="hover:bg-gray-50 transition">
 
-                        {{-- ITEM NAME --}}
+                        {{-- NAMA ITEM --}}
                         <td class="p-3 border-b">
                             <span class="font-medium text-gray-800">{{ $item->name }}</span>
                         </td>
@@ -56,10 +58,45 @@
                             @endif
                         </td>
 
+                        {{-- MUDAH RUSAK --}}
+                        <td class="p-3 border-b text-center">
+                            @if ($item->mudah_rusak)
+                                <span class="px-2 py-1 bg-red-50 text-red-600 text-xs rounded-md border border-red-200">
+                                    Ya
+                                </span>
+                            @else
+                                <span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md border border-gray-200">
+                                    Tidak
+                                </span>
+                            @endif
+                        </td>
+
+                        {{-- MIN STOCK --}}
+                        <td class="p-3 border-b text-center">
+                            <span class="font-medium">{{ $item->min_stock }}</span>
+                        </td>
+
+                        {{-- MAX STOCK --}}
+                        <td class="p-3 border-b text-center">
+                            <span class="font-medium">{{ $item->max_stock }}</span>
+                        </td>
+
+                        {{-- FORECAST --}}
+                        <td class="p-3 border-b text-center">
+                            @if ($item->forecast_enabled)
+                                <span class="px-2 py-1 bg-indigo-50 text-indigo-600 text-xs rounded-md border border-indigo-200">
+                                    Aktif
+                                </span>
+                            @else
+                                <span class="px-2 py-1 bg-gray-50 text-gray-600 text-xs rounded-md border border-gray-200">
+                                    Nonaktif
+                                </span>
+                            @endif
+                        </td>
+
                         {{-- ACTIONS --}}
                         <td class="p-3 border-b">
                             <div class="flex items-center justify-center gap-2">
-
                                 <x-crud 
                                     resource="item"
                                     :model="$item"
@@ -67,20 +104,17 @@
                                     permissionPrefix="item"
                                     keyField="id"
                                 />
-
                             </div>
                         </td>
-
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="p-3 text-center text-gray-500 py-8">
+                        <td colspan="8" class="p-3 text-center text-gray-500 py-8">
                             Belum ada item.
                         </td>
                     </tr>
                 @endforelse
             </tbody>
-
         </table>
     </div>
 </div>

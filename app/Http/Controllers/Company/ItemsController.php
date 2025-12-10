@@ -49,6 +49,10 @@ class ItemsController extends Controller
             'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
             'satuan_id' => 'required|exists:satuan,id',
+            'mudah_rusak' => 'nullable|boolean',
+            'min_stock' => 'required|integer|min:0',
+            'max_stock' => 'required|integer|min:0|gte:min_stock',
+            'forecast_enabled' => 'nullable|boolean',
         ]);
 
         Item::create([
@@ -56,6 +60,10 @@ class ItemsController extends Controller
             'name' => $r->name,
             'category_id' => $r->category_id,
             'satuan_id' => $r->satuan_id,
+            'mudah_rusak' => $r->has('mudah_rusak') ? 1 : 0,
+            'min_stock' => $r->min_stock,
+            'max_stock' => $r->max_stock,
+            'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
         ]);
 
         return redirect()->route('items.index', $companyCode)
@@ -91,12 +99,20 @@ class ItemsController extends Controller
             'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
             'satuan_id' => 'required|exists:satuan,id',
+            'mudah_rusak' => 'nullable|boolean',
+            'min_stock' => 'required|integer|min:0',
+            'max_stock' => 'required|integer|min:0|gte:min_stock',
+            'forecast_enabled' => 'nullable|boolean',
         ]);
 
         $item->update([
             'name' => $r->name,
             'category_id' => $r->category_id,
             'satuan_id' => $r->satuan_id,
+            'mudah_rusak' => $r->has('mudah_rusak') ? 1 : 0,
+            'min_stock' => $r->min_stock,
+            'max_stock' => $r->max_stock,
+            'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
         ]);
 
         return redirect()->route('items.index', $companyCode)

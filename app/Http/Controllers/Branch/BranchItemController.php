@@ -12,6 +12,7 @@ use App\Models\Stock;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class BranchItemController extends Controller
@@ -21,11 +22,42 @@ class BranchItemController extends Controller
         $companyId = session('role.company.id');
         $branchId = session('role.branch.id');
         $companyCode = session('role.company.code');
+
+        // Ambil semua warehouse cabang ini
         $warehouseIds = Warehouse::where('cabang_resto_id', $branchId)->pluck('id');
 
+        // Ambil item + total stok cabang ini
         $items = Item::withSum(['stocks as total_qty' => function ($q) use ($warehouseIds) {
             $q->whereIn('warehouse_id', $warehouseIds);
-        }], 'qty')->where('company_id', $companyId)->get();
+        }], 'qty')
+            ->where('company_id', $companyId)
+            ->get();
+
+        // ============ FORECAST SES ============= //
+        foreach ($items as $item) {
+
+            $usage = DB::table('stock_movements')
+                ->where('item_id', $item->id)
+                ->where('company_id', $companyId)
+                ->where('type', 'OUT')
+                ->orderBy('created_at')
+                ->pluck('qty')
+                ->map(fn ($v) => abs($v))
+                ->toArray();
+
+            // Hitung forecast SES
+            $alpha = 0.3; // bisa dipindah ke DB nanti
+            $item->predicted_usage = $this->exponentialSmoothing($usage, $alpha);
+
+            // Rekomendasi restock
+            // Jika nilai forecast > stok, sarankan restock
+            $stokSekarang = $item->total_qty ?? 0;
+            $minStock = $item->min_stock;
+            $item->recommended_restock = max(
+                0,
+                ($minStock - $stokSekarang) + ceil($item->predicted_usage)
+            );
+        }
 
         return view('branch.item.index', compact('items', 'branchCode', 'companyCode'));
     }
@@ -76,6 +108,13 @@ class BranchItemController extends Controller
             'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
             'satuan_id' => 'required|exists:satuan,id',
+            'mudah_rusak' => 'nullable|boolean',
+
+            'min_stock' => 'required|integer|min:0',
+
+            'max_stock' => 'required|integer|min:0|gte:min_stock',
+
+            'forecast_enabled' => 'nullable|boolean',
         ]);
 
         Item::create([
@@ -83,6 +122,10 @@ class BranchItemController extends Controller
             'name' => $r->name,
             'category_id' => $r->category_id,
             'satuan_id' => $r->satuan_id,
+            'mudah_rusak' => $r->has('mudah_rusak') ? 1 : 0,
+            'min_stock' => $r->min_stock,
+            'max_stock' => $r->max_stock,
+            'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
         ]);
 
         return redirect()->route('branch.item.index', $branchId)
@@ -132,12 +175,20 @@ class BranchItemController extends Controller
             'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
             'satuan_id' => 'required|exists:satuan,id',
+            'mudah_rusak' => 'nullable|boolean',
+            'min_stock' => 'required|integer|min:0',
+            'max_stock' => 'required|integer|min:0|gte:min_stock',
+            'forecast_enabled' => 'nullable|boolean',
         ]);
 
         $item->update([
             'name' => $r->name,
             'category_id' => $r->category_id,
             'satuan_id' => $r->satuan_id,
+            'mudah_rusak' => $r->has('mudah_rusak') ? 1 : 0,
+            'min_stock' => $r->min_stock,
+            'max_stock' => $r->max_stock,
+            'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
         ]);
 
         return redirect()->route('branch.item.index', $branchId)
@@ -252,5 +303,21 @@ class BranchItemController extends Controller
 
         return redirect()->route('branch.item.show', [$branchCode, $item->id])
             ->with('success', 'Stok berhasil diperbarui.');
+    }
+
+    private function exponentialSmoothing(array $data, float $alpha = 0.3)
+    {
+        if (count($data) === 0) {
+            return 0; // tidak ada histori pemakaian
+        }
+
+        // forecast awal = data pertama
+        $forecast = $data[0];
+
+        foreach ($data as $point) {
+            $forecast = $alpha * $point + (1 - $alpha) * $forecast;
+        }
+
+        return round($forecast, 2); // prediksi periode berikutnya
     }
 }
