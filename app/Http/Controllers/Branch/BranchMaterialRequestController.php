@@ -185,6 +185,8 @@ class BranchMaterialRequestController extends Controller
 
     public function approve(Request $request, $branchCode, $id)
     {
+
+        $companyId = session('role.company.id');
         $req = InventoryTrans::with(['details.item'])->findOrFail($id);
 
         // hanya cabang pengirim yang boleh approve
@@ -272,12 +274,24 @@ class BranchMaterialRequestController extends Controller
 
                     $stock->qty -= $qty;
                     $stock->save();
-
                     Log::info('STOK UPDATE', [
                         'stock_id' => $stockId,
                         'before' => $stock->qty + $qty,
                         'after' => $stock->qty,
                     ]);
+                    StockMovement::create([
+                        'company_id' => $companyId,
+                        'warehouse_id' => $stock->warehouse_id,
+                        'stock_id' => $stock->id,
+                        'item_id' => $itemId,
+                        'created_by' => auth()->id(),
+                        'type' => 'OUT',
+                        'qty' => -$qty,
+                        'expired_at' => $stock->expired_at ?? null,
+                        'reference' => "Transfer Send #{$req->trans_number}",
+                        'notes' => "Send to branch {$req->cabangTo->name}",
+                    ]);
+                    Log::info('MOVEMENT');
                 }
 
             }

@@ -228,7 +228,7 @@
             roleLoading.classList.remove("hidden");
             roleSelect.innerHTML = `<option value="">-- Pilih Role --</option>`;
 
-            fetch(`/{{ strtolower($companyCode) }}/pegawai/roles-json?${universal ? 'universal=true' : 'cabangId=' + branch}`)
+            fetch(`/company/{{ strtolower($companyCode) }}/pegawai/roles-json?${universal ? 'universal=true' : 'cabangId=' + branch}`)
                 .then(r => r.json())
                 .then(res => {
                     res.data.forEach(role => {

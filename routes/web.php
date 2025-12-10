@@ -217,6 +217,9 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
                 // --- MOVEMENTS (History) ---
                 Route::get('/{itemId}/history', [StockController::class, 'itemHistory'])->name('stock.item.history');
 
+                Route::delete('/{stock}',
+                    [StockController::class, 'destroy']
+                )->name('stock.delete');
             });
         });
 
@@ -350,6 +353,9 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
 
             Route::get('/{stock}/history', [BranchStockController::class, 'itemHistory'])
                 ->name('branch.stock.history');
+            Route::delete('/{stock}',
+                [BranchStockController::class, 'destroy']
+            )->name('branch.stock.delete');
 
         });
         Route::prefix('penyimpanan')->group(function () {

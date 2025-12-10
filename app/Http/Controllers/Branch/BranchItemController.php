@@ -9,7 +9,6 @@ use App\Models\Category;
 use App\Models\Item;
 use App\Models\Satuan;
 use App\Models\Stock;
-use App\Models\StocksAdjustmentDetail;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
@@ -160,102 +159,78 @@ class BranchItemController extends Controller
     {
         $companyId = session('role.company.id');
 
-        // 1️⃣ Validasi Branch
         $branch = CabangResto::where('company_id', $companyId)
             ->where('code', $branchCode)
             ->firstOrFail();
 
-        // 2️⃣ Ambil seluruh warehouse di cabang
-        $warehouseIds = Warehouse::where('cabang_resto_id', $branch->id)
-            ->pluck('id');
+        $warehouseIds = Warehouse::where('cabang_resto_id', $branch->id)->pluck('id');
 
-        // 3️⃣ Ambil seluruh stock_id milik item di cabang ini
-        $stockIds = Stock::where('company_id', $companyId)
+        $stocks = Stock::with('warehouse')
+            ->where('company_id', $companyId)
             ->where('item_id', $item->id)
             ->whereIn('warehouse_id', $warehouseIds)
-            ->pluck('id');
+            ->get();
 
-        if ($stockIds->isEmpty()) {
-            $history = collect();
-            $users = collect();
-            $categoriesIssues = CategoriesIssues::all();
-
-            return view('branch.item.history', compact(
-                'branchCode',
-                'item',
-                'history',
-                'users',
-                'categoriesIssues'
-            ));
+        if ($stocks->isEmpty()) {
+            return view('branch.item.history', [
+                'branchCode' => $branchCode,
+                'item' => $item,
+                'history' => collect(),
+                'users' => collect(),
+                'categoriesIssues' => CategoriesIssues::where('company_id', $companyId)->get(),
+            ]);
         }
 
-        // 4️⃣ FILTERS
+        // 4️⃣ Kumpulkan seluruh stock IDs
+        $stockIds = $stocks->pluck('id');
+
+        // 5️⃣ Ambil FILTERS
         $filterIssue = request('issue');
         $filterUser = request('user');
         $filterFrom = request('from');
         $filterTo = request('to');
 
-        // 5️⃣ Ambil semua HISTORI dari seluruh stock_ids
-        $adjustments = StocksAdjustmentDetail::query()
-            ->selectRaw('
-            sa.adjustment_date AS date,
-            s.code AS stock_code,
-            i.name AS item_name,
-            ci.name AS issue_name,
-            d.prev_qty,
-            d.after_qty,
-            (d.after_qty - d.prev_qty) AS diff,
-            sa.note AS note,
-            u.username AS created_by_name,
-            w.name AS warehouse_name
-        ')
-            ->from('stocks_adjustmens_detail AS d')
-            ->join('stocks_adjustmens AS sa', 'sa.id', '=', 'd.stocks_adjustmens_id')
-            ->join('stocks AS s', 's.id', '=', 'd.stocks_id')
-            ->join('items AS i', 'i.id', '=', 's.item_id')
-            ->join('categories_issues AS ci', 'ci.id', '=', 'sa.categories_issues_id')
-            ->join('warehouse AS w', 'w.id', '=', 's.warehouse_id')
-            ->leftJoin('users AS u', 'u.id', '=', 'sa.created_by')
-            ->whereIn('d.stocks_id', $stockIds)
-            ->where('s.company_id', $companyId);
+        $history = collect();
 
-        // 6️⃣ APPLY FILTERS
+        foreach ($stocks as $stock) {
+
+            // Ambil history universal dari masing-masing stock
+            $stockHistory = collect()
+                ->merge($stock->historyAdjustments())
+                ->merge($stock->historyMovements());
+
+            $stockHistory = $stockHistory->map(function ($h) use ($stock) {
+                $h->stock_code = $stock->code;
+                $h->warehouse_name = $stock->warehouse->name;
+
+                return $h;
+            });
+
+            $history = $history->merge($stockHistory);
+        }
         if ($filterFrom) {
-            $adjustments->whereDate('sa.adjustment_date', '>=', $filterFrom);
+            $history = $history->where('date', '>=', $filterFrom);
         }
-
         if ($filterTo) {
-            $adjustments->whereDate('sa.adjustment_date', '<=', $filterTo);
+            $history = $history->where('date', '<=', $filterTo);
         }
-
         if ($filterUser) {
-            $adjustments->where('sa.created_by', $filterUser);
+            $history = $history->where('user', $filterUser);
         }
-
         if ($filterIssue) {
-            $adjustments->where('ci.name', $filterIssue);
+            $history = $history->where('issue_name', $filterIssue);
         }
 
-        // 7️⃣ Hasil
-        $history = $adjustments->orderBy('sa.adjustment_date', 'desc')->get();
+        // Sort descending by date
+        $history = $history->sortByDesc('date')->values();
 
-        // 8️⃣ Ambil daftar user yang pernah adjust item ini
-        $users = User::whereIn('id', function ($q) use ($stockIds) {
-            $q->select('created_by')
-                ->from('stocks_adjustmens AS sa')
-                ->join('stocks_adjustmens_detail AS d', 'sa.id', '=', 'd.stocks_adjustmens_id')
-                ->whereIn('d.stocks_id', $stockIds)
-                ->whereNotNull('sa.created_by');
-        })->get();
+        // Ambil user dari histori
+        $users = User::whereIn('username', $history->pluck('user')->filter())->get();
 
-        $categoriesIssues = CategoriesIssues::all();
+        $categoriesIssues = CategoriesIssues::where('company_id', $companyId)->get();
 
         return view('branch.item.history', compact(
-            'branchCode',
-            'item',
-            'history',
-            'users',
-            'categoriesIssues'
+            'branchCode', 'item', 'history', 'users', 'categoriesIssues'
         ));
     }
 

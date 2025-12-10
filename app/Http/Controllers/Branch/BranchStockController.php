@@ -164,74 +164,28 @@ class BranchStockController extends Controller
     {
         $companyId = session('role.company.id');
 
-        // 1️⃣ Validasi Branch
+        // Validasi branch
         $branch = CabangResto::where('company_id', $companyId)
             ->where('code', $branchCode)
             ->firstOrFail();
 
-        // 2️⃣ Validasi Stok milik company + cabang
-        $stock->load(['item.satuan', 'warehouse']);
-
         if ($stock->company_id !== $companyId) {
-            abort(403, 'Stok tidak valid.');
+            abort(403);
         }
-
         if ($stock->warehouse->cabang_resto_id !== $branch->id) {
-            abort(403, 'Gudang tidak valid untuk cabang ini.');
+            abort(403);
         }
 
         $item = $stock->item;
 
-        // 3️⃣ Ambil Filter
-        $filterIssue = request('issue');
-        $filterUser = request('user');
-        $filterFrom = request('from');
-        $filterTo = request('to');
+        // Ambil semua history, tidak pakai UNION SQL
+        $history = collect()
+            ->merge($stock->historyAdjustments())
+            ->merge($stock->historyMovements())
+            ->sortByDesc('date')
+            ->values();
 
-        // 4️⃣ Query History
-        $adjustments = StocksAdjustmentDetail::query()
-            ->selectRaw("
-            sa.adjustment_date AS date,
-            '{$stock->code}' AS stock_code,
-            i.name AS item_name,
-            ci.name AS issue_name,
-            d.prev_qty,
-            d.after_qty,
-            (d.after_qty - d.prev_qty) AS diff,
-            sa.note AS note,
-            u.username AS created_by_name
-        ")
-            ->from('stocks_adjustmens_detail AS d')
-            ->join('stocks_adjustmens AS sa', 'sa.id', '=', 'd.stocks_adjustmens_id')
-            ->join('stocks AS s', 's.id', '=', 'd.stocks_id')
-            ->join('items AS i', 'i.id', '=', 's.item_id')
-            ->join('categories_issues AS ci', 'ci.id', '=', 'sa.categories_issues_id')
-            ->leftJoin('users AS u', 'u.id', '=', 'sa.created_by')
-            ->where('d.stocks_id', $stock->id)
-            ->where('s.company_id', $companyId)
-            ->where('s.warehouse_id', $stock->warehouse_id);
-
-        // FILTERS
-        if ($filterFrom) {
-            $adjustments->whereDate('sa.adjustment_date', '>=', $filterFrom);
-        }
-
-        if ($filterTo) {
-            $adjustments->whereDate('sa.adjustment_date', '<=', $filterTo);
-        }
-
-        if ($filterUser) {
-            $adjustments->where('sa.created_by', $filterUser);
-        }
-
-        if ($filterIssue) {
-            $adjustments->where('ci.name', $filterIssue);
-        }
-
-        // FINAL RESULT
-        $history = $adjustments->orderBy('sa.adjustment_date', 'desc')->get();
-
-        // 5️⃣ Ambil daftar User yang pernah melakukan adjust stok ini (lebih efisien)
+        $categoriesIssues = CategoriesIssues::where('company_id', $companyId)->get();
         $users = User::whereIn('id', function ($q) use ($stock) {
             $q->select('created_by')
                 ->from('stocks_adjustmens AS sa')
@@ -241,15 +195,8 @@ class BranchStockController extends Controller
         })
             ->get();
 
-        $categoriesIssues = CategoriesIssues::all();
-
         return view('branch.stock.history', compact(
-            'branchCode',
-            'stock',
-            'item',
-            'history',
-            'users',
-            'categoriesIssues'
+            'branchCode', 'stock', 'item', 'history', 'categoriesIssues', 'users'
         ));
     }
 
@@ -349,5 +296,23 @@ class BranchStockController extends Controller
         return redirect()
             ->route('branch.stock.index', $branchCode)
             ->with('success', 'Stok berhasil ditambahkan.');
+    }
+
+    public function destroy($branchCode, Stock $stock)
+    {
+        $companyId = session('role.company.id');
+
+        // Pastikan stok ini milik company yang benar
+        if ($stock->company_id !== $companyId) {
+            abort(403, 'Stok tidak valid.');
+        }
+
+        if ($stock->qty > 0) {
+            return back()->with('error', 'Stok tidak bisa dihapus karena masih memiliki jumlah.');
+        }
+
+        $stock->delete();
+
+        return back()->with('success', 'Stok berhasil dihapus.');
     }
 }

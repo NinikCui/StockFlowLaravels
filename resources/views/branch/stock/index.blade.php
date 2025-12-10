@@ -141,26 +141,46 @@
                             {{ $stock->expired_at ? \Carbon\Carbon::parse($stock->expired_at)->translatedFormat('d F Y') : '-' }}
                         </td>
                             {{-- ACTIONS --}}
-                            <td class="px-4 py-4 text-center">
-                                <div class="flex justify-center gap-2">
+<td class="px-4 py-4 text-center">
+    <div class="flex justify-center gap-2">
 
-                                    
+        {{-- HISTORY BUTTON --}}
+        <a href="{{ route('branch.stock.history', [$branchCode, $stock->id]) }}"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
+                   bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200
+                   transition font-medium">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            History
+        </a>
 
-                                    {{-- HISTORY BUTTON --}}
-                                    <a href="{{ route('branch.stock.history', [$branchCode, $stock->id]) }}"
-                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
-                                               bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200
-                                               transition font-medium">
-                                        <svg xmlns="http://www.w3.org/2000/svg"
-                                            class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        History
-                                    </a>
+        {{-- DELETE BUTTON (HANYA MUNCUL JIKA QTY = 0) --}}
+        @if ($stock->qty == 0)
+            <form method="POST"
+                action="{{ route('branch.stock.delete', [$branchCode, $stock->id]) }}"
+                onsubmit="return confirm('Yakin ingin menghapus stok ini?');">
+                @csrf
+                @method('DELETE')
 
-                                </div>
-                            </td>
+                <button
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg
+                           bg-red-50 text-red-700 hover:bg-red-100 border border-red-200
+                           transition font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Hapus
+                </button>
+            </form>
+        @endif
+    </div>
+</td>
+
 
                         </tr>
                     @empty

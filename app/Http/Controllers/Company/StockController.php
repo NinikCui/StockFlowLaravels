@@ -154,88 +154,58 @@ class StockController extends Controller
     public function itemHistory($companyCode, $warehouseId, $stockId)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
-        $warehouse = Warehouse::findOrFail($warehouseId);
+
+        $warehouse = Warehouse::with('cabangResto')
+            ->findOrFail($warehouseId);
 
         if ($warehouse->cabangResto->company_id !== $company->id) {
-            abort(403, 'Gudang tidak valid.');
+            abort(403);
         }
 
-        // Ambil stok (per stok, bukan per item)
-        $stock = Stock::with('item')
+        // Ambil stok + item
+        $stock = Stock::with('item', 'warehouse')
             ->where('id', $stockId)
             ->where('warehouse_id', $warehouseId)
             ->firstOrFail();
 
         $item = $stock->item;
 
-        $filterIssue = request('issue');
-        $filterUser = request('user');
-        $filterFrom = request('from');
-        $filterTo = request('to');
+        // ================================
+        // MERGE SEMUA HISTORY (UNIVERSAL)
+        // ================================
+        $history = collect()
+            ->merge($stock->historyAdjustments())   // ADJUSTMENT
+            ->merge($stock->historyMovements())
+            ->sortByDesc('date')
+            ->values();
 
-        // ==================================
-        // PENYESUAIAN SAJA
-        // ==================================
-        $adjustments = StocksAdjustmentDetail::query()
-            ->selectRaw("
-                stocks_adjustmens.adjustment_date AS date,
-                '{$stock->code}' AS stock_code,
-                items.name AS item_name,
-                categories_issues.name AS issue_name,
-                prev_qty,
-                after_qty,
-                (after_qty - prev_qty) AS diff,
-                stocks_adjustmens.note AS note,
-                users.username AS created_by_name
-            ")
-            ->join('stocks_adjustmens', 'stocks_adjustmens.id', '=', 'stocks_adjustmens_detail.stocks_adjustmens_id')
-            ->join('stocks', 'stocks.id', '=', 'stocks_adjustmens_detail.stocks_id')
-            ->join('items', 'items.id', '=', 'stocks.item_id')
-            ->join('categories_issues', 'categories_issues.id', '=', 'stocks_adjustmens.categories_issues_id')
-            ->leftJoin('users', 'users.id', '=', 'stocks_adjustmens.created_by')
-            ->where('stocks_adjustmens_detail.stocks_id', $stockId);
+        // Semua user terkait
+        $users = User::whereIn('username', $history->pluck('user')->filter())->get();
 
-        // FILTER DATE
-        if ($filterFrom) {
-            $adjustments->whereDate('stocks_adjustmens.adjustment_date', '>=', $filterFrom);
-        }
-
-        if ($filterTo) {
-            $adjustments->whereDate('stocks_adjustmens.adjustment_date', '<=', $filterTo);
-        }
-
-        // FILTER USER
-        if ($filterUser) {
-            $adjustments->where('stocks_adjustmens.created_by', $filterUser);
-        }
-
-        // FILTER ISSUE (Penyesuaian saja)
-        if ($filterIssue) {
-            $adjustments->where('categories_issues.name', $filterIssue);
-        }
-
-        // FINAL RESULT
-        $history = $adjustments->orderBy('stocks_adjustmens.adjustment_date', 'desc')->get();
-
-        // LIST USER yg pernah melakukan Adjustment pada stok ini
-        $users = User::whereIn('id', function ($q) use ($stockId) {
-            $q->select('stocks_adjustmens.created_by')
-                ->from('stocks_adjustmens')
-                ->join(
-                    'stocks_adjustmens_detail',
-                    'stocks_adjustmens.id',
-                    '=',
-                    'stocks_adjustmens_detail.stocks_adjustmens_id'
-                )
-                ->where('stocks_adjustmens_detail.stocks_id', $stockId);
-        })
-            ->get();
-
-        $categoriesIssues = CategoriesIssues::all();
+        // Issue categories (untuk filter jika diperlukan)
+        $categoriesIssues = CategoriesIssues::where('company_id', $company->id)->get();
 
         return view('company.warehouse.detail.item-history', compact(
-            'companyCode', 'warehouse', 'stock', 'item',
-            'history', 'users', 'categoriesIssues'
+            'companyCode',
+            'warehouse',
+            'stock',
+            'item',
+            'history',
+            'users',
+            'categoriesIssues'
         ));
+    }
+
+    public function destroy($companyCode, $warehouseId, $stockId)
+    {
+        $stock = Stock::findOrFail($stockId);
+
+        if ($stock->qty > 0) {
+            return back()->with('error', 'Stok tidak bisa dihapus karena masih memiliki jumlah.');
+        }
+
+        $stock->delete();
+
+        return back()->with('success', 'Stok berhasil dihapus.');
     }
 }
