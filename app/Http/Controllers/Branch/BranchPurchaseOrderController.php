@@ -114,6 +114,7 @@ class BranchPurchaseOrderController extends Controller
             'suppliers_id' => $validated['suppliers_id'],
             'po_date' => $validated['po_date'],
             'expected_delivery_date' => $validated['expected_delivery_date'],
+            'created_by' => auth()->id(),
             'note' => $validated['note'],
             'status' => 'DRAFT',
             'ontime' => 0,
@@ -555,5 +556,26 @@ class BranchPurchaseOrderController extends Controller
         return redirect()
             ->route('branch.po.show', [$branchCode, $po->id])
             ->with('success', 'Penerimaan PO berhasil disimpan.');
+    }
+
+    public function print($branchCode, PurchaseOrder $po)
+    {
+        $companyId = session('role.company.id');
+
+        // Validasi branch
+        $branch = CabangResto::where('company_id', $companyId)
+            ->where('code', $branchCode)
+            ->firstOrFail();
+
+        if ($po->cabang_resto_id !== $branch->id) {
+            abort(403, 'PO tidak valid untuk cabang ini.');
+        }
+
+        $po->load(['details.item.satuan', 'supplier', 'cabangResto', 'createdByUser']);
+
+        return view('branch.purchase-order.print', [
+            'po' => $po,
+            'branchCode' => $branchCode,
+        ]);
     }
 }

@@ -75,7 +75,11 @@
                     @endif
 
 
-
+                        <a href="{{ route('branch.po.print', [$branchCode, $po->id]) }}"
+    target="_blank"
+    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
+    Print Nota
+</a>
 
                 </div>
             </div>

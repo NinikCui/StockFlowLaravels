@@ -427,6 +427,9 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             Route::patch('/{id}/status', [BranchPurchaseOrderController::class, 'updateStatus'])
                 ->name('updateStatus');
 
+            Route::get('/po/{po}/print', [BranchPurchaseOrderController::class, 'print'])
+                ->name('print');
+
         });
         Route::prefix('supplier')->name('branch.supplier.')->group(function () {
 
