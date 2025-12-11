@@ -51,7 +51,15 @@ class PosOrderController extends Controller
                 $cart[$key]['note'] = null;
             }
         }
-        $products = Product::where('company_id', $company->id)->get();
+        $products = Product::with('bomItems.item')
+            ->where('company_id', $company->id)
+            ->get()
+            ->map(function ($product) {
+
+                $product->is_available = $product->isStockAvailableForOne();
+
+                return $product;
+            });
 
         return view('branch.pos.order.index', compact(
             'companyCode', 'branchCode', 'branch', 'shift', 'cart', 'products'

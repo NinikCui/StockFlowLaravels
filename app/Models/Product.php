@@ -43,4 +43,21 @@ class Product extends Model
     {
         return $this->hasMany(Boms::class, 'product_id');
     }
+
+    public function isStockAvailableForOne()
+    {
+        foreach ($this->bomItems as $bom) {
+
+            $requiredQty = $bom->qty_per_unit;
+
+            $availableStock = Stock::where('item_id', $bom->item_id)
+                ->sum('qty');
+
+            if ($availableStock < $requiredQty) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

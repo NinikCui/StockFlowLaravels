@@ -46,7 +46,7 @@ class BranchItemController extends Controller
                 ->toArray();
 
             // Hitung forecast SES
-            $alpha = 0.3; // bisa dipindah ke DB nanti
+            $alpha = 0.3;
             $item->predicted_usage = $this->exponentialSmoothing($usage, $alpha);
 
             // Rekomendasi restock
@@ -318,6 +318,6 @@ class BranchItemController extends Controller
             $forecast = $alpha * $point + (1 - $alpha) * $forecast;
         }
 
-        return round($forecast, 2); // prediksi periode berikutnya
+        return round($forecast, 2);
     }
 }
