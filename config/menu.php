@@ -51,6 +51,19 @@ return [
             ],
         ],
         [
+            'label' => 'Laporan',
+            'icon' => 'bar-chart',
+            'permission' => 'report.view',
+            'children' => [
+                ['label' => 'Stok Global',           'href' => 'reports/stock-global',     'permission' => 'report.stock'],
+                ['label' => 'Mutasi Stok',           'href' => 'reports/mutasi-stok',      'permission' => 'report.mutation'],
+                ['label' => 'Penggunaan Bahan (BOM)', 'href' => 'reports/bom',              'permission' => 'report.bom'],
+                ['label' => 'Purchase Order',        'href' => 'reports/purchase-order',   'permission' => 'report.po'],
+                ['label' => 'Stok Hampir Expired',   'href' => 'reports/expired',          'permission' => 'report.expired'],
+                ['label' => 'Performa Cabang',       'href' => 'reports/performance',      'permission' => 'report.performance'],
+            ],
+        ],
+        [
             'label' => 'Pengaturan',
             'icon' => 'settings',
             'permission' => 'settings.general',

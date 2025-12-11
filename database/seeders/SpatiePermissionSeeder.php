@@ -99,6 +99,14 @@ class SpatiePermissionSeeder extends Seeder
             'settings.general',
 
             'pos.manage',
+            'report.view',
+            'report.stock',
+            'report.mutation',
+            'report.bom',
+            'report.po',
+            'report.expired',
+            'report.performance',
+
         ];
 
         foreach ($permissions as $perm) {

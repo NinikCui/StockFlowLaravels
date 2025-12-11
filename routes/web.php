@@ -22,6 +22,7 @@ use App\Http\Controllers\Company\MaterialRequestController;
 use App\Http\Controllers\Company\PegawaiController;
 use App\Http\Controllers\Company\ProductsController;
 use App\Http\Controllers\Company\PurchaseOrderController;
+use App\Http\Controllers\Company\ReportsController;
 use App\Http\Controllers\Company\RoleController;
 use App\Http\Controllers\Company\StockController;
 use App\Http\Controllers\Company\SupplierController;
@@ -328,6 +329,36 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
 
             Route::delete('/{product}/bom/{bom}/delete', [BomController::class, 'destroy'])
                 ->name('products.bom.destroy');
+        });
+        Route::prefix('reports')->group(function () {
+
+            // INDEX
+            Route::get('/', [ReportsController::class, 'index'])
+                ->name('company.reports.index');
+
+            // 1. STOK GLOBAL
+            Route::get('/stock-global', [ReportsController::class, 'stockGlobal'])
+                ->name('company.reports.stock-global');
+
+            // 2. MUTASI STOK
+            Route::get('/mutasi-stok', [ReportsController::class, 'mutasiStok'])
+                ->name('company.reports.mutasi-stok');
+
+            // 3. PENGGUNAAN BAHAN (BOM)
+            Route::get('/bom', [ReportsController::class, 'bom'])
+                ->name('company.reports.bom');
+
+            // 4. PURCHASE ORDER
+            Route::get('/purchase-order', [ReportsController::class, 'purchaseOrder'])
+                ->name('company.reports.purchase-order');
+
+            // 5. HAMPIR EXPIRED
+            Route::get('/expired', [ReportsController::class, 'expired'])
+                ->name('company.reports.expired');
+
+            // 6. PERFORMA CABANG
+            Route::get('/performance', [ReportsController::class, 'performance'])
+                ->name('company.reports.performance');
         });
 
     });
