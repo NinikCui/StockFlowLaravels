@@ -3,7 +3,6 @@
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-bold text-gray-800">Daftar Warehouse</h2>
 
-
         <x-crud-add 
             resource="warehouse"
             :companyCode="$companyCode"
@@ -11,13 +10,32 @@
         />
     </div>
 
+    {{-- FILTER CABANG --}}
+    <form method="GET" class="mb-4 flex items-center gap-3">
+        <select name="cabang"
+            class="px-4 py-2 border rounded-lg bg-white text-sm focus:ring-2 focus:ring-emerald-400">
+            <option value="">Semua Cabang</option>
+            @foreach($cabangs as $c)
+                <option value="{{ $c->id }}" @selected($filterCabang == $c->id)>
+                    {{ $c->name }}
+                </option>
+            @endforeach
+        </select>
+
+        <button class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700">
+            Terapkan
+        </button>
+    </form>
+
     <div class="overflow-hidden border border-gray-200 rounded-lg">
         <table class="w-full text-sm">
+
             <thead class="bg-gray-50 text-gray-600">
                 <tr>
                     <th class="px-4 py-3 text-left font-semibold">Nama</th>
                     <th class="px-4 py-3 text-left font-semibold">Kode</th>
                     <th class="px-4 py-3 text-left font-semibold">Tipe</th>
+                    <th class="px-4 py-3 text-left font-semibold">Cabang</th>
                     <th class="px-4 py-3 text-right font-semibold w-40">Aksi</th>
                 </tr>
             </thead>
@@ -30,7 +48,7 @@
                             {{ $w->name }}
                         </td>
 
-                        <td class="px-4 py-3 text-gray-700">
+                        <td class="px-4 py-3">
                             <span class="px-2 py-1 rounded-md bg-gray-100 border text-gray-800 text-xs">
                                 {{ $w->code }}
                             </span>
@@ -40,28 +58,32 @@
                             {{ $w->type->name ?? '-' }}
                         </td>
 
+                        {{-- CABANG --}}
+                        <td class="px-4 py-3 text-gray-700">
+                            {{ $w->cabangResto->name ?? '-' }}
+                        </td>
+
                         <td class="px-4 py-3">
                             <div class="flex justify-end gap-3">
 
-                                {{-- Detail --}}
                                 <a href="{{ route('warehouse.show', [$companyCode, $w->id]) }}"
                                    class="text-blue-600 hover:underline text-sm font-medium">
                                     Detail
                                 </a>
 
-                                
                             </div>
                         </td>
 
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-4 py-4 text-center text-gray-500">
+                        <td colspan="5" class="px-4 py-4 text-center text-gray-500">
                             Belum ada warehouse.
                         </td>
                     </tr>
                 @endforelse
             </tbody>
+
         </table>
     </div>
 

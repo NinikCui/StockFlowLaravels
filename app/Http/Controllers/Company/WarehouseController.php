@@ -16,13 +16,19 @@ use Illuminate\Support\Str;
 
 class WarehouseController extends Controller
 {
-    public function index($companyCode)
+    public function index($companyCode, Request $request)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
 
         $cabangs = CabangResto::where('company_id', $company->id)->get();
 
+        // FILTER CABANG
+        $filterCabang = $request->get('cabang');
+
         $warehouses = Warehouse::with('type', 'cabangResto')
+            ->when($filterCabang, function ($q) use ($filterCabang) {
+                $q->where('cabang_resto_id', $filterCabang);
+            })
             ->whereIn('cabang_resto_id', $cabangs->pluck('id'))
             ->orderBy('id', 'desc')
             ->get();
@@ -34,6 +40,7 @@ class WarehouseController extends Controller
             'warehouses' => $warehouses,
             'types' => $types,
             'cabangs' => $cabangs,
+            'filterCabang' => $filterCabang,
         ]);
     }
 
