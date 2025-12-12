@@ -16,7 +16,7 @@
                     <th class="px-4 py-3 text-left font-semibold text-gray-700">Gudang</th>
                     <th class="px-4 py-3 text-right font-semibold text-gray-700">Qty</th>
                     <th class="px-4 py-3 text-right font-semibold text-gray-700">Riwayat Stock</th>
-                    <th class="px-4 py-3 text-center font-semibold text-gray-700">Updated</th>
+                    <th class="px-4 py-3 text-center font-semibold text-gray-700">Kadaluarsa</th>
                 </tr>
             </thead>
 
@@ -61,10 +61,41 @@
                                         History
                                     </a>
                         </td>
-                        {{-- UPDATED AT --}}
                         <td class="px-4 py-3 text-center">
-                            {{ $stock->updated_at->format('d M Y H:i') }}
+
+                            @if ($stock->expired_at)
+
+                                @php
+                                    $days = ceil($stock->days_to_expire);
+                                    $isCritical = $days <= 2;
+                                    $isWarning  = $days <= 7 && $days > 2;
+                                @endphp
+
+                                {{-- 🔴 MERAH jika ≤ 2 hari --}}
+                                @if ($isCritical)
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-lg bg-red-100 text-red-700 border border-red-300">
+                                        Kadaluarsa dalam {{ $days }} hari
+                                    </span>
+
+                                {{-- 🟡 KUNING jika ≤ 7 hari --}}
+                                @elseif ($isWarning)
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-lg bg-yellow-100 text-yellow-700 border border-yellow-300">
+                                        Kadaluarsa dalam {{ $days }} hari
+                                    </span>
+
+                                {{-- 🟢 NORMAL --}}
+                                @else
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-lg bg-green-100 text-green-700 border border-green-300">
+                                        Exp: {{ \Carbon\Carbon::parse($stock->expired_at)->format('d M Y') }}
+                                    </span>
+                                @endif
+
+                            @else
+                                <span class="text-gray-400 text-xs italic">—</span>
+                            @endif
+
                         </td>
+
 
                     </tr>
                 @endforeach

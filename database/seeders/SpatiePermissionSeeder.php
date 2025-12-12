@@ -100,12 +100,6 @@ class SpatiePermissionSeeder extends Seeder
 
             'pos.manage',
             'report.view',
-            'report.stock',
-            'report.mutation',
-            'report.bom',
-            'report.po',
-            'report.expired',
-            'report.performance',
 
         ];
 

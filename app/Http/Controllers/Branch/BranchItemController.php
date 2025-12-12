@@ -23,19 +23,22 @@ class BranchItemController extends Controller
         $branchId = session('role.branch.id');
         $companyCode = session('role.company.code');
 
-        // Ambil semua warehouse cabang ini
+        // Semua warehouse dalam cabang ini
         $warehouseIds = Warehouse::where('cabang_resto_id', $branchId)->pluck('id');
 
-        // Ambil item + total stok cabang ini
+        // Ambil semua item + total stok cabang ini
         $items = Item::withSum(['stocks as total_qty' => function ($q) use ($warehouseIds) {
             $q->whereIn('warehouse_id', $warehouseIds);
         }], 'qty')
             ->where('company_id', $companyId)
             ->get();
 
-        // ============ FORECAST SES ============= //
+        // ===============================
+        // FORECAST SES + RESTOCK SUGGEST
+        // ===============================
         foreach ($items as $item) {
 
+            // Ambil histori pemakaian (OUT)
             $usage = DB::table('stock_movements')
                 ->where('item_id', $item->id)
                 ->where('company_id', $companyId)
@@ -45,18 +48,37 @@ class BranchItemController extends Controller
                 ->map(fn ($v) => abs($v))
                 ->toArray();
 
-            // Hitung forecast SES
+            // Forecast SES
             $alpha = 0.3;
             $item->predicted_usage = $this->exponentialSmoothing($usage, $alpha);
 
             // Rekomendasi restock
-            // Jika nilai forecast > stok, sarankan restock
             $stokSekarang = $item->total_qty ?? 0;
             $minStock = $item->min_stock;
+
             $item->recommended_restock = max(
                 0,
                 ($minStock - $stokSekarang) + ceil($item->predicted_usage)
             );
+
+            // ===============================
+            // CEK EXPIRY TERDEKAT
+            // ===============================
+            $exp = DB::table('stocks')
+                ->where('item_id', $item->id)
+                ->whereIn('warehouse_id', $warehouseIds)
+                ->whereNotNull('expired_at')
+                ->orderBy('expired_at', 'asc')
+                ->first();
+
+            if ($exp) {
+                $expDate = \Carbon\Carbon::parse($exp->expired_at);
+                $item->days_to_expire = now()->diffInDays($expDate, false);
+                $item->nearest_expiry = $expDate;
+            } else {
+                $item->days_to_expire = null;
+                $item->nearest_expiry = null;
+            }
         }
 
         return view('branch.item.index', compact('items', 'branchCode', 'companyCode'));
@@ -74,7 +96,19 @@ class BranchItemController extends Controller
             ->where('item_id', $item->id)
             ->whereIn('warehouse_id', $warehouseIds)
             ->get();
-        $categoriesIssues = CategoriesIssues::where('company_id', $companyId)->orderBy('name')->get();
+
+        // 🔥 Tambah hitung days_to_expire
+        foreach ($stocks as $s) {
+            if ($s->expired_at) {
+                $s->days_to_expire = now()->diffInDays($s->expired_at, false);
+            } else {
+                $s->days_to_expire = null;
+            }
+        }
+
+        $categoriesIssues = CategoriesIssues::where('company_id', $companyId)
+            ->orderBy('name')
+            ->get();
 
         return view('branch.item.show', compact(
             'categoriesIssues',

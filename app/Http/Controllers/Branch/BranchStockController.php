@@ -24,7 +24,7 @@ class BranchStockController extends Controller
         $companyId = session('role.company.id');
         $companyCode = session('role.company.code');
 
-        // Pastikan branch milik company yang login
+        // Pastikan branch milik company
         $branch = CabangResto::where('company_id', $companyId)
             ->where('code', $branchCode)
             ->firstOrFail();
@@ -33,6 +33,8 @@ class BranchStockController extends Controller
         $search = $request->get('q');
         $categoryId = $request->get('category');
         $warehouseId = $request->get('warehouse');
+
+        // Query stok
         $stocks = Stock::query()
             ->with([
                 'item.kategori',
@@ -41,17 +43,17 @@ class BranchStockController extends Controller
             ])
             ->where('company_id', $companyId)
 
-            // Filter branch => lewat warehouse
+            // Filter branch → via warehouse
             ->whereHas('warehouse', function ($q) use ($branch) {
                 $q->where('cabang_resto_id', $branch->id);
             })
 
-            // Filter Gudang
+            // Filter gudang
             ->when($warehouseId, function ($q) use ($warehouseId) {
                 $q->where('warehouse_id', $warehouseId);
             })
 
-            // Filter Search
+            // Filter search item
             ->when($search, function ($q) use ($search) {
                 $q->whereHas('item', function ($qq) use ($search) {
                     $qq->where('name', 'like', "%$search%")
@@ -59,7 +61,7 @@ class BranchStockController extends Controller
                 });
             })
 
-            // Filter Category
+            // Filter kategori
             ->when($categoryId, function ($q) use ($categoryId) {
                 $q->whereHas('item', function ($qq) use ($categoryId) {
                     $qq->where('category_id', $categoryId);
@@ -69,23 +71,41 @@ class BranchStockController extends Controller
             ->orderBy('item_id')
             ->paginate(20);
 
+        $stocks->getCollection()->transform(function ($stock) {
+            if ($stock->expired_at) {
+                // FALSE = boleh menghasilkan angka negatif jika sudah lewat
+                $stock->days_to_expire = now()->diffInDays($stock->expired_at, false);
+
+                // dibulatkan agar tidak mengeluarkan desimal
+                $stock->days_to_expire = (int) ceil($stock->days_to_expire);
+            } else {
+                $stock->days_to_expire = null;
+            }
+
+            return $stock;
+        });
+
         // Gudang berdasarkan cabang
         $warehouses = Warehouse::where('cabang_resto_id', $branch->id)
             ->orderBy('name')
             ->get();
 
-        // Kategori berdasarkan company
+        // Kategori item
         $categories = Category::where('company_id', $companyId)
             ->orderBy('name')
             ->get();
-        $categoriesIssues = CategoriesIssues::where('company_id', $companyId)->orderBy('name')->get();
+
+        // Issue categories (untuk modal adjust)
+        $categoriesIssues = CategoriesIssues::where('company_id', $companyId)
+            ->orderBy('name')
+            ->get();
 
         return view('branch.stock.index', [
             'companyCode' => strtolower($companyCode),
             'branchCode' => $branchCode,
             'branch' => $branch,
-            'categoriesIssues' => $categoriesIssues,
             'stocks' => $stocks,
+            'categoriesIssues' => $categoriesIssues,
             'categories' => $categories,
             'warehouses' => $warehouses,
 
