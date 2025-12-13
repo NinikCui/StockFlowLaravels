@@ -62,5 +62,7 @@ return new class extends Migration
         Schema::table('items', function (Blueprint $table) {
             $table->dropColumn('is_main_ingredient');
         });
+        Schema::dropIfExists('menu_promotion_recommendations');
+
     }
 };
