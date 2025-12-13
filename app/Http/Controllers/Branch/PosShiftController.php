@@ -151,15 +151,15 @@ class PosShiftController extends Controller
             ->with('success', 'Shift berhasil ditutup.');
     }
 
-    public function history($branchCode, $shiftId)
+    public function history(string $branchCode, int $shiftId)
     {
         $companyCode = session('role.company.code');
 
         [$company, $branch] = $this->loadBranch($branchCode);
 
         $shift = PosShift::with([
-            'orders.details.product',
             'orders.payments',
+            'orders.details.product',
         ])
             ->where('id', $shiftId)
             ->where('cabang_resto_id', $branch->id)

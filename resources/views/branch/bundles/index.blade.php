@@ -1,25 +1,28 @@
-<x-app-layout>
+<x-app-layout :branchCode="$branchCode">
 
 <div class="max-w-6xl mx-auto px-6 py-8">
 
     {{-- HEADER --}}
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Paket Pembelian</h1>
-            <p class="text-sm text-gray-500">Kelola paket produk untuk seluruh cabang</p>
+            <h1 class="text-2xl font-bold">Paket Pembelian</h1>
+            <p class="text-sm text-gray-500">
+                Cabang: {{ $branch->name }}
+            </p>
         </div>
 
         <x-crud-add 
-            resource="bundles"
-            :companyCode="$companyCode"
-            permissionPrefix="item"
-        />
+                resource="branch.bundles"
+                :companyCode="$branchCode"
+                permissionPrefix="item"
+                :routeParams="[$branchCode]" 
+            />
     </div>
 
     {{-- TABLE --}}
     <div class="bg-white rounded-xl shadow border overflow-hidden">
         <table class="w-full text-sm">
-            <thead class="bg-gray-100 text-gray-600">
+            <thead class="bg-gray-100">
                 <tr>
                     <th class="px-4 py-3 text-left">Nama Paket</th>
                     <th class="px-4 py-3">Isi Paket</th>
@@ -28,6 +31,7 @@
                     <th class="px-4 py-3 text-center">Aksi</th>
                 </tr>
             </thead>
+
             <tbody class="divide-y">
                 @forelse($bundles as $bundle)
                 <tr>
@@ -58,19 +62,20 @@
 
                     <td class="px-4 py-3 text-center space-x-2">
                         
-                        <x-crud
-                        resource="bundles"
-                        :model="$bundle"
-                        :companyCode="$companyCode"
-                        permissionPrefix="item"
-                        keyField="id"
-                    />
+                        <x-crud 
+                            resource="branch.bundles"
+                            keyField="id"
+                            :companyCode="$branchCode"
+                            :model="$bundle"
+                            permissionPrefix="item"
+                        />
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-4 py-10 text-center text-gray-500">
-                        Belum ada paket pembelian
+                    <td colspan="5"
+                        class="px-4 py-10 text-center text-gray-500">
+                        Belum ada paket di cabang ini
                     </td>
                 </tr>
                 @endforelse

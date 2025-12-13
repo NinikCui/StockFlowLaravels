@@ -133,6 +133,7 @@ return [
             'icon' => 'box',
             'children' => [
                 ['label' => 'Product', 'href' => 'products', 'permission' => 'item.view'],
+                ['label' => 'Paket', 'href' => 'bundles', 'permission' => 'item.view'],
 
             ],
         ],

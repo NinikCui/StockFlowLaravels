@@ -4,6 +4,7 @@ use App\Http\Controllers\Branch\BranchDashboardController;
 use App\Http\Controllers\Branch\BranchItemController;
 use App\Http\Controllers\Branch\BranchMaterialRequestController;
 use App\Http\Controllers\Branch\BranchPegawaiController;
+use App\Http\Controllers\Branch\BranchProductBundleController;
 use App\Http\Controllers\Branch\BranchProductController;
 use App\Http\Controllers\Branch\BranchPurchaseOrderController;
 use App\Http\Controllers\Branch\BranchRoleController;
@@ -336,8 +337,34 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
                 Route::get('/shift/{shiftId}/history',
                     [PosShiftController::class, 'history'])
                     ->name('shift.history');
-
+                Route::post(
+                    '/order/add-bundle',
+                    [PosOrderController::class, 'addBundle']
+                )->name('order.addBundle');
+                Route::get(
+                    '/order/{order}/receipt',
+                    [PosOrderController::class, 'receipt']
+                )->name('order.receipt');
             });
+        Route::prefix('bundles')->group(function () {
+            Route::get('/', [BranchProductBundleController::class, 'index'])
+                ->name('branch.bundles.index');
+
+            Route::get('/create', [BranchProductBundleController::class, 'create'])
+                ->name('branch.bundles.create');
+
+            Route::post('', [BranchProductBundleController::class, 'store'])
+                ->name('branch.bundles.store');
+
+            Route::get('{bundle}/edit', [BranchProductBundleController::class, 'edit'])
+                ->name('branch.bundles.edit');
+
+            Route::put('{bundle}', [BranchProductBundleController::class, 'update'])
+                ->name('branch.bundles.update');
+
+            Route::delete('/{bundle}', [BranchProductBundleController::class, 'destroy'])
+                ->name('branch.bundles.destroy');
+        });
 
     });
 

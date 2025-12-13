@@ -8,6 +8,10 @@ class PosOrder extends Model
 {
     protected $table = 'pos_order';
 
+    protected $casts = [
+        'receipt_items' => 'array',
+    ];
+
     protected $fillable = [
         'cabang_resto_id',
         'order_datetime',
@@ -17,7 +21,8 @@ class PosOrder extends Model
         'pos_shifts_id',
         'table_no',
         'created_at',
-        'updated_at'
+        'updated_at',    'receipt_items',
+
     ];
 
     public $timestamps = false;

@@ -8,6 +8,12 @@ class PosPayment extends Model
 {
     protected $table = 'pos_payments';
 
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
+        'change_amount' => 'decimal:2',
+    ];
+
     protected $fillable = [
         'pos_order_id',
         'method',
@@ -15,7 +21,8 @@ class PosPayment extends Model
         'ref_number',
         'paid_at',
         'status',
-        'note'
+        'note', 'paid_amount',
+        'change_amount',
     ];
 
     public $timestamps = false;

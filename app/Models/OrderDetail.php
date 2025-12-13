@@ -14,7 +14,7 @@ class OrderDetail extends Model
         'qty',
         'price',
         'discount_pct',
-        'note_line'
+        'note_line',
     ];
 
     public $timestamps = false;

@@ -105,3 +105,154 @@
     </div>
 
 </div>
+
+
+{{-- ======================================
+        SCRIPT AJAX NOTE
+======================================= --}}
+<script>
+function updateNote(cartKey, note) {
+    fetch("{{ route('branch.pos.order.note', $branchCode) }}", {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            cart_key: cartKey,
+            note: note,
+        }),
+    });
+}
+
+</script>
+
+{{-- ======================================
+       CONTROL MODAL
+======================================= --}}
+<script>
+function openPaymentModal() {
+    const modal = document.getElementById('paymentModal');
+    const content = document.getElementById('paymentModalContent');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        content.style.transform = 'scale(1)';
+        content.style.opacity = '1';
+    }, 10);
+}
+
+function closePaymentModal() {
+    const modal = document.getElementById('paymentModal');
+    const content = document.getElementById('paymentModalContent');
+    content.style.transform = 'scale(0.95)';
+    content.style.opacity = '0';
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+function openCashModal() {
+    closePaymentModal();
+    setTimeout(() => {
+        const modal = document.getElementById('cashModal');
+        modal.classList.remove('hidden');
+    }, 300);
+}
+
+function closeCashModal() {
+    document.getElementById('cashModal').classList.add('hidden');
+    document.getElementById('cashPaid').value = '';
+    document.getElementById('changeInfo').innerHTML = '';
+}
+</script>
+
+{{-- ======================================
+       CASH PAYMENT LOGIC
+======================================= --}}
+<script>
+function calcChange() {
+    let paid = parseFloat(document.getElementById("cashPaid").value || 0);
+    let total = {{ collect($cart)->sum('subtotal') }};
+
+    let change = paid - total;
+    const changeInfo = document.getElementById("changeInfo");
+
+    if (paid === 0) {
+        changeInfo.className = "p-4 rounded-xl border-2 border-gray-200 bg-gray-50 min-h-[60px] flex items-center justify-center";
+        changeInfo.innerHTML = "<span class='text-gray-400 text-sm'>Masukkan nominal uang...</span>";
+        document.getElementById("paidAmountField").value = "";
+        return;
+    }
+
+    if (change < 0) {
+        changeInfo.className = "p-4 rounded-xl border-2 border-red-200 bg-red-50 min-h-[60px] flex flex-col items-center justify-center";
+        changeInfo.innerHTML = `
+            <svg class="w-6 h-6 text-red-500 mb-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+            <span class='text-red-600 font-bold'>Uang kurang Rp ${Math.abs(change).toLocaleString('id-ID')}</span>
+        `;
+        document.getElementById("paidAmountField").value = "";
+        return;
+    }
+
+    changeInfo.className = "p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 min-h-[60px] flex flex-col items-center justify-center";
+    changeInfo.innerHTML = `
+        <span class='text-sm text-gray-600 mb-1'>Kembalian</span>
+        <span class='text-2xl font-bold text-emerald-600'>Rp ${change.toLocaleString('id-ID')}</span>
+    `;
+    document.getElementById("paidAmountField").value = paid;
+}
+</script>
+
+{{-- ======================================
+       MIDTRANS SNAP
+======================================= --}}
+<script src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="{{ config('midtrans.client_key') }}"></script>
+
+<script>
+function payMidtrans() {
+    fetch("{{ route('branch.pos.order.midtrans', $branchCode) }}", {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({})
+    })
+    .then(res => res.json())
+    .then(data => {
+        snap.pay(data.snap_token, {
+            onSuccess: function(result){
+                finishPayment(result);
+            },
+            onPending: function(result){
+                finishPayment(result);
+            },
+            onError: function(){
+                alert("Pembayaran gagal.");
+            },
+        });
+    });
+}
+
+function finishPayment(result) {
+    fetch("{{ route('branch.pos.order.pay', $branchCode) }}", {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            payment_method: "MIDTRANS",
+            midtrans_result: result,
+        }),
+    })
+    .then(res => res.json())
+    .then(data => {
+        window.location.href = data.redirect;
+    });
+
+}
+</script>
