@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Branch;
 use App\Http\Controllers\Controller;
 use App\Models\CabangResto;
 use App\Models\Company;
+use App\Models\MenuPromotionRecommendation;
 use App\Models\OrderDetail;
 use App\Models\PosOrder;
 use App\Models\PosShift;
@@ -31,9 +32,6 @@ class PosOrderController extends Controller
         return [$company, $branch, $shift];
     }
 
-    // ======================================
-    // POS SCREEN
-    // ======================================
     public function index($branchCode)
     {
         [$company, $branch, $shift] = $this->loadBranch($branchCode);
@@ -45,24 +43,39 @@ class PosOrderController extends Controller
         }
 
         $companyCode = session('role.company.code');
+
+        // CART
         $cart = session()->get('pos_cart', []);
         foreach ($cart as $key => $item) {
             if (! array_key_exists('note', $item)) {
                 $cart[$key]['note'] = null;
             }
         }
+
+        // 🔥 AMBIL REKOMENDASI MENU HARI INI
+        $recommendedProductIds = MenuPromotionRecommendation::whereDate('date', today())
+            ->where('cabang_resto_id', $branch->id)
+            ->pluck('product_id')
+            ->toArray();
+
+        // PRODUCTS
         $products = Product::with('bomItems.item')
             ->where('company_id', $company->id)
             ->get()
             ->map(function ($product) {
-
                 $product->is_available = $product->isStockAvailableForOne();
 
                 return $product;
             });
 
         return view('branch.pos.order.index', compact(
-            'companyCode', 'branchCode', 'branch', 'shift', 'cart', 'products'
+            'companyCode',
+            'branchCode',
+            'branch',
+            'shift',
+            'cart',
+            'products',
+            'recommendedProductIds'
         ));
     }
 

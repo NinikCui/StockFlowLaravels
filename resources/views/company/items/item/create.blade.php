@@ -41,8 +41,8 @@
             </select>
         </div>
         <div>
-            <label class="font-semibold block mb-1">Mudah Rusak?</label>
-            <input type="checkbox" name="mudah_rusak" value="1"
+            <label class="font-semibold block mb-1">Bahan Baku Utama ?</label>
+            <input type="checkbox" name="is_main_ingredient" value="1"
                 class="h-4 w-4 text-emerald-600 border-gray-300 rounded">
         </div>
 

@@ -1,6 +1,6 @@
 <x-app-layout :branchCode="$branchCode">
 
-<div class="min-h-screen  pb-10">
+<div class="min-h-screen pb-10">
     <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         {{-- HEADER --}}
@@ -63,26 +63,43 @@
                         @foreach($products as $p)
                             @php
                                 $disabled = !$p->is_available;
+                                $isRecommended = in_array($p->id, $recommendedProductIds);
                             @endphp
 
                             <form 
                                 action="{{ $disabled ? '#' : route('branch.pos.order.add', $branchCode) }}" 
                                 method="POST"
-                                class="{{ $disabled ? 'pointer-events-none' : '' }}"
+                                class="{{ $disabled ? 'pointer-events-none' : '' }} relative"
                             >
                                 @csrf
                                 <input type="hidden" name="product_id" value="{{ $p->id }}">
+
+                                {{-- ⭐ BADGE REKOMENDASI MENU (Fixed Position) --}}
+                                @if($isRecommended)
+                                    <div class="absolute -top-2 -right-2 z-10">
+                                        <span class="inline-flex items-center gap-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-lg border-2 border-white animate-pulse">
+                                            ⭐ Hot
+                                        </span>
+                                    </div>
+                                @endif
 
                                 <button type="{{ $disabled ? 'button' : 'submit' }}"
                                     class="group w-full rounded-2xl transition-all duration-200 p-4 text-left shadow-md border-2
                                         {{ $disabled 
                                             ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed' 
-                                            : 'bg-white border-transparent hover:border-green-400 hover:shadow-xl hover:scale-105 active:scale-100' 
+                                            : ($isRecommended 
+                                                ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-300 hover:border-orange-400 hover:shadow-xl hover:scale-105 active:scale-100'
+                                                : 'bg-white border-transparent hover:border-green-400 hover:shadow-xl hover:scale-105 active:scale-100')
                                         }}"
                                 >
                                     {{-- Product Icon --}}
                                     <div class="mb-3 h-16 w-16 mx-auto rounded-2xl flex items-center justify-center text-3xl
-                                        {{ $disabled ? 'bg-gray-100' : 'bg-gradient-to-br from-green-100 to-lime-100 group-hover:from-green-200 group-hover:to-lime-200' }}
+                                        {{ $disabled 
+                                            ? 'bg-gray-100' 
+                                            : ($isRecommended 
+                                                ? 'bg-gradient-to-br from-yellow-100 to-orange-100 group-hover:from-yellow-200 group-hover:to-orange-200'
+                                                : 'bg-gradient-to-br from-green-100 to-lime-100 group-hover:from-green-200 group-hover:to-lime-200')
+                                        }}
                                         transition-colors duration-200">
                                         🍽️
                                     </div>
@@ -94,7 +111,7 @@
 
                                     {{-- HARGA --}}
                                     <div class="text-center mb-3">
-                                        <span class="text-lg font-bold text-green-600">
+                                        <span class="text-lg font-bold {{ $isRecommended ? 'text-orange-600' : 'text-green-600' }}">
                                             Rp {{ number_format($p->base_price, 0, ',', '.') }}
                                         </span>
                                     </div>
@@ -108,7 +125,7 @@
                                             <span>Stok Habis</span>
                                         </div>
                                     @else
-                                        <div class="bg-gradient-to-r from-green-500 to-lime-500 text-white text-xs px-3 py-1.5 rounded-full font-semibold text-center flex items-center justify-center gap-1 group-hover:from-green-600 group-hover:to-lime-600 transition-all duration-200">
+                                        <div class="bg-gradient-to-r {{ $isRecommended ? 'from-orange-500 to-yellow-500 group-hover:from-orange-600 group-hover:to-yellow-600' : 'from-green-500 to-lime-500 group-hover:from-green-600 group-hover:to-lime-600' }} text-white text-xs px-3 py-1.5 rounded-full font-semibold text-center flex items-center justify-center gap-1 transition-all duration-200">
                                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
                                             </svg>
@@ -166,8 +183,8 @@
                                     
                                     {{-- TITLE BAR --}}
                                     <div class="flex justify-between items-start mb-3">
-                                        <div class="flex-1">
-                                            <p class="font-bold text-gray-900 mb-1">{{ $item['name'] }}</p>
+                                        <div class="flex-1 pr-2">
+                                            <p class="font-bold text-gray-900 mb-1 leading-tight">{{ $item['name'] }}</p>
                                             <div class="flex items-center gap-2 text-xs text-gray-500">
                                                 <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full font-semibold">
                                                     {{ $item['qty'] }}x
@@ -176,7 +193,7 @@
                                             </div>
                                         </div>
 
-                                        <p class="font-bold text-lg text-emerald-600">
+                                        <p class="font-bold text-base text-emerald-600 whitespace-nowrap">
                                             Rp {{ number_format($item['subtotal'], 0, ',', '.') }}
                                         </p>
                                     </div>
@@ -243,113 +260,7 @@
     </div>
 </div>
 
-{{-- ======================================
-   MODAL: METODE PEMBAYARAN
-======================================= --}}
-<div id="paymentModal"
-     class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50 transition-all duration-300">
-
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl transform transition-all duration-300 scale-95 opacity-0" id="paymentModalContent">
-        
-        {{-- Modal Header --}}
-        <div class="bg-gradient-to-r from-green-600 to-lime-600 p-6 rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                </svg>
-                <span>Pilih Metode Pembayaran</span>
-            </h2>
-        </div>
-
-        <div class="p-6 space-y-3">
-            {{-- CASH --}}
-            <button onclick="openCashModal()"
-                class="group w-full bg-gradient-to-r from-gray-100 to-gray-50 hover:from-emerald-500 hover:to-green-500 border-2 border-gray-200 hover:border-transparent py-4 rounded-xl font-bold text-gray-700 hover:text-white transition-all duration-200 flex items-center justify-center gap-3 hover:shadow-lg hover:scale-105">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                </svg>
-                <span>Cash / Tunai</span>
-            </button>
-
-            {{-- MIDTRANS QRIS --}}
-            <button onclick="payMidtrans()"
-                class="group w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white py-4 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:scale-105">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                </svg>
-                <span>QRIS / E-Wallet</span>
-            </button>
-
-            <button onclick="closePaymentModal()"
-                class="w-full text-red-500 hover:text-red-700 py-3 font-bold transition-colors duration-200 hover:bg-red-50 rounded-xl">
-                Batalkan
-            </button>
-        </div>
-    </div>
-
-</div>
-
-{{-- ======================================
-   MODAL: CASH PAYMENT INPUT
-======================================= --}}
-<div id="cashModal"
-     class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-50">
-
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl" id="cashModalContent">
-        
-        {{-- Modal Header --}}
-        <div class="bg-gradient-to-r from-emerald-500 to-green-500 p-6 rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-white flex items-center gap-3">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-                </svg>
-                <span>Pembayaran Cash</span>
-            </h2>
-        </div>
-
-        <div class="p-6 space-y-5">
-            <div class="p-4 bg-green-50 border-2 border-green-200 rounded-xl">
-                <p class="text-sm text-gray-600 mb-1">Total yang harus dibayar:</p>
-                <p class="text-3xl font-bold text-green-600">
-                    Rp {{ number_format(collect($cart)->sum('subtotal'), 0, ',', '.') }}
-                </p>
-            </div>
-
-            <div>
-                <label class="text-sm text-gray-700 font-bold mb-2 block">Uang yang diterima:</label>
-                <div class="relative">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">Rp</span>
-                    <input type="number" id="cashPaid"
-                           class="w-full border-2 border-gray-200 rounded-xl pl-12 pr-4 py-4 text-lg font-bold focus:ring-2 focus:ring-emerald-400 focus:border-transparent transition-all duration-200"
-                           placeholder="0"
-                           oninput="calcChange()">
-                </div>
-            </div>
-
-            <div id="changeInfo" class="p-4 rounded-xl border-2 min-h-[60px] flex items-center justify-center"></div>
-
-            <form id="cashForm" method="POST" action="{{ route('branch.pos.order.pay', $branchCode) }}" class="space-y-3">
-                @csrf
-                <input type="hidden" name="payment_method" value="CASH">
-                <input type="hidden" name="paid_amount" id="paidAmountField">
-
-                <button type="submit"
-                    class="w-full bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white py-4 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    <span>Selesaikan Pembayaran</span>
-                </button>
-
-                <button type="button" onclick="closeCashModal()"
-                    class="w-full text-red-500 hover:text-red-700 py-3 font-bold transition-colors duration-200 hover:bg-red-50 rounded-xl">
-                    Batalkan
-                </button>
-            </form>
-        </div>
-    </div>
-
-</div>
+@include("branch.pos.order.modal")
 
 <style>
 /* Custom Scrollbar */

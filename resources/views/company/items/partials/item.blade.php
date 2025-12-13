@@ -19,7 +19,7 @@
                     <th class="p-3 border-b text-left font-semibold">Nama Item</th>
                     <th class="p-3 border-b text-left font-semibold">Kategori</th>
                     <th class="p-3 border-b text-left font-semibold">Satuan</th>
-                    <th class="p-3 border-b text-center font-semibold">Mudah Rusak</th>
+                    <th class="p-3 border-b text-center font-semibold">Bahan Baku Utama</th>
                     <th class="p-3 border-b text-center font-semibold">Min Stok</th>
                     <th class="p-3 border-b text-center font-semibold">Max Stok</th>
                     <th class="p-3 border-b text-center font-semibold">Forecast</th>
@@ -60,7 +60,7 @@
 
                         {{-- MUDAH RUSAK --}}
                         <td class="p-3 border-b text-center">
-                            @if ($item->mudah_rusak)
+                            @if ($item->is_main_ingredient)
                                 <span class="px-2 py-1 bg-red-50 text-red-600 text-xs rounded-md border border-red-200">
                                     Ya
                                 </span>

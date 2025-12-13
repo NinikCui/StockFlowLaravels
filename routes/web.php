@@ -10,6 +10,7 @@ use App\Http\Controllers\Branch\BranchRoleController;
 use App\Http\Controllers\Branch\BranchStockController;
 use App\Http\Controllers\Branch\BranchSupplierController;
 use App\Http\Controllers\Branch\BranchWarehouseController;
+use App\Http\Controllers\Branch\MenuPromotionController;
 use App\Http\Controllers\Branch\PosOrderController;
 use App\Http\Controllers\Branch\PosShiftController;
 use App\Http\Controllers\Company\BomController;
@@ -367,6 +368,14 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/dashboard',
             [BranchDashboardController::class, 'index']
         )->name('branch.dashboard');
+        Route::post(
+            '/menu-promo/generate',
+            [MenuPromotionController::class, 'generate']
+        )->name('branch.menu-promo.generate');
+        Route::get(
+            '/menu-promotion',
+            [MenuPromotionController::class, 'index']
+        )->name('branch.menu-promo.index');
 
         Route::prefix('stock')->group(function () {
 

@@ -141,35 +141,11 @@ return [
             'permission' => 'report.view',
             'children' => [
                 [
-                    'label' => 'Stok Cabang',
-                    'href' => 'reports/stock',
+                    'label' => 'Rekomendasi Menu',
+                    'href' => 'menu-promotion',
                     'permission' => 'report.view',
                 ],
-                [
-                    'label' => 'Mutasi Stok',
-                    'href' => 'reports/movements',
-                    'permission' => 'report.view',
-                ],
-                [
-                    'label' => 'Penggunaan Bahan (BOM)',
-                    'href' => 'reports/bom',
-                    'permission' => 'report.view',
-                ],
-                [
-                    'label' => 'Purchase Order',
-                    'href' => 'reports/purchase-order',
-                    'permission' => 'report.view',
-                ],
-                [
-                    'label' => 'Hampir Expired',
-                    'href' => 'reports/expired',
-                    'permission' => 'report.view',
-                ],
-                [
-                    'label' => 'Performa Cabang',
-                    'href' => 'reports/performance',
-                    'permission' => 'report.view',
-                ],
+
             ],
         ],
         [

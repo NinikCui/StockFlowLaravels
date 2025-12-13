@@ -13,7 +13,7 @@ class Item extends Model
         'category_id',
         'satuan_id',
         'name',
-        'mudah_rusak',
+        'is_main_ingredient',
         'min_stock',
         'max_stock',
         'forecast_enabled',
@@ -61,7 +61,7 @@ class Item extends Model
 
     public function boms()
     {
-        return $this->hasMany(Bom::class, 'items_id');
+        return $this->hasMany(Boms::class, 'item_id');
     }
 
     public function restockRecommendations()

@@ -199,7 +199,6 @@ return new class extends Migration
             $table->unsignedBigInteger('satuan_id');
 
             $table->string('name', 45);
-            $table->boolean('mudah_rusak')->default(false);
             $table->integer('min_stock')->default(0);
             $table->integer('max_stock')->default(0);
             $table->boolean('forecast_enabled')->default(false);
