@@ -70,54 +70,70 @@ class BranchMaterialRequestController extends Controller
         ]);
     }
 
-    public function create($branchCode)
+    public function create(Request $request, $branchCode)
     {
         $companyId = session('role.company.id');
+        $itemId = $request->query('item_id'); // null = mode normal
 
-        // Cabang aktif sebagai penerima
+        // ===============================
+        // Cabang penerima
+        // ===============================
         $branch = CabangResto::where('company_id', $companyId)
             ->where('code', $branchCode)
             ->firstOrFail();
 
-        // Semua cabang lain sebagai cabang asal
-        $branchesFrom = CabangResto::where('company_id', $companyId)
+        // ===============================
+        // Semua cabang lain
+        // ===============================
+        $allBranchesFrom = CabangResto::where('company_id', $companyId)
             ->where('id', '!=', $branch->id)
             ->get();
 
-        // Ambil item per cabang asal
         $itemsPerBranch = [];
+        $branchesFrom = collect();
 
-        foreach ($branchesFrom as $b) {
+        foreach ($allBranchesFrom as $b) {
 
-            $warehouses = Warehouse::where('cabang_resto_id', $b->id)->get();
+            $warehouseIds = Warehouse::where('cabang_resto_id', $b->id)
+                ->pluck('id');
 
             $stocks = Stock::with(['item.satuan'])
-                ->whereIn('warehouse_id', $warehouses->pluck('id'))
+                ->whereIn('warehouse_id', $warehouseIds)
+                ->where('qty', '>', 0)
                 ->get();
 
-            $uniqueItems = [];
-            $added = [];
-
-            foreach ($stocks as $s) {
-                if (! in_array($s->item->id, $added)) {
-                    $added[] = $s->item->id;
-
-                    $uniqueItems[] = [
-                        'id' => $s->item->id,
-                        'name' => $s->item->name,
-                        'satuan' => $s->item->satuan->code,
-                    ];
-                }
+            // ❗ Jika cabang tidak punya stok apa pun → skip di SEMUA mode
+            if ($stocks->isEmpty()) {
+                continue;
             }
 
-            $itemsPerBranch[$b->id] = $uniqueItems;
+            // MODE ITEM: hanya cabang yang punya item pemicu
+            if ($itemId && ! $stocks->contains('item_id', $itemId)) {
+                continue;
+            }
+
+            // Cabang valid
+            $branchesFrom->push($b);
+
+            // Item tetap semua item cabang tsb
+            $uniqueItems = [];
+            foreach ($stocks as $s) {
+                $uniqueItems[$s->item->id] = [
+                    'id' => $s->item->id,
+                    'name' => $s->item->name,
+                    'satuan' => $s->item->satuan->code,
+                ];
+            }
+
+            $itemsPerBranch[$b->id] = array_values($uniqueItems);
         }
 
         return view('branch.request-cabang.create', [
             'branchCode' => $branchCode,
             'branch' => $branch,
             'branchesFrom' => $branchesFrom,
-            'itemsPerBranch' => $itemsPerBranch, // ★ dikirim ke blade
+            'itemsPerBranch' => $itemsPerBranch,
+            'requestedItemId' => $itemId,
         ]);
     }
 

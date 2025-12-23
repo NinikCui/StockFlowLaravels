@@ -11,6 +11,7 @@ use App\Models\Satuan;
 use App\Models\Stock;
 use App\Models\User;
 use App\Models\Warehouse;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -23,22 +24,17 @@ class BranchItemController extends Controller
         $branchId = session('role.branch.id');
         $companyCode = session('role.company.code');
 
-        // Semua warehouse dalam cabang ini
-        $warehouseIds = Warehouse::where('cabang_resto_id', $branchId)->pluck('id');
+        $warehouseIds = Warehouse::where('cabang_resto_id', $branchId)
+            ->pluck('id');
 
-        // Ambil semua item + total stok cabang ini
         $items = Item::withSum(['stocks as total_qty' => function ($q) use ($warehouseIds) {
             $q->whereIn('warehouse_id', $warehouseIds);
         }], 'qty')
             ->where('company_id', $companyId)
             ->get();
 
-        // ===============================
-        // FORECAST SES + RESTOCK SUGGEST
-        // ===============================
         foreach ($items as $item) {
 
-            // Ambil histori pemakaian (OUT)
             $usage = DB::table('stock_movements')
                 ->where('item_id', $item->id)
                 ->where('company_id', $companyId)
@@ -48,22 +44,34 @@ class BranchItemController extends Controller
                 ->map(fn ($v) => abs($v))
                 ->toArray();
 
-            // Forecast SES
             $alpha = 0.3;
             $item->predicted_usage = $this->exponentialSmoothing($usage, $alpha);
 
-            // Rekomendasi restock
             $stokSekarang = $item->total_qty ?? 0;
-            $minStock = $item->min_stock;
+            $minStock = $item->min_stock ?? 0;
 
-            $item->recommended_restock = max(
-                0,
-                ($minStock - $stokSekarang) + ceil($item->predicted_usage)
-            );
+            $warningThreshold = ceil($minStock * 1.2);
 
-            // ===============================
-            // CEK EXPIRY TERDEKAT
-            // ===============================
+            $item->is_low_stock = $stokSekarang < $minStock;
+            $item->is_near_low_stock =
+                $stokSekarang >= $minStock &&
+                $stokSekarang <= $warningThreshold;
+
+            if ($item->is_low_stock) {
+                $item->recommended_restock = max(
+                    1,
+                    ($minStock - $stokSekarang) + ceil($item->predicted_usage)
+                );
+            } elseif ($item->is_near_low_stock) {
+                $item->recommended_restock = max(
+                    1,
+                    ceil($item->predicted_usage)
+                );
+            } else {
+                // Aman
+                $item->recommended_restock = 0;
+            }
+
             $exp = DB::table('stocks')
                 ->where('item_id', $item->id)
                 ->whereIn('warehouse_id', $warehouseIds)
@@ -72,7 +80,7 @@ class BranchItemController extends Controller
                 ->first();
 
             if ($exp) {
-                $expDate = \Carbon\Carbon::parse($exp->expired_at);
+                $expDate = Carbon::parse($exp->expired_at);
                 $item->days_to_expire = now()->diffInDays($expDate, false);
                 $item->nearest_expiry = $expDate;
             } else {
@@ -81,7 +89,11 @@ class BranchItemController extends Controller
             }
         }
 
-        return view('branch.item.index', compact('items', 'branchCode', 'companyCode'));
+        return view('branch.item.index', compact(
+            'items',
+            'branchCode',
+            'companyCode'
+        ));
     }
 
     public function show($branchCode, Item $item)
