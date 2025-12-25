@@ -29,7 +29,7 @@
                     <x-crud-add 
                         resource="branch.request"
                         :companyCode="$branchCode"
-                        permissionPrefix="inventory"
+                        permissionPrefix="transfer"
                     />
                 </div>
 

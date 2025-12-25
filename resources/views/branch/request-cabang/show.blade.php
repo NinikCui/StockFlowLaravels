@@ -114,7 +114,7 @@
                             keyField="id"
                             :companyCode="$branchCode"
                             :model="$req"
-                            permissionPrefix="inventory"
+                            permissionPrefix="transfer"
                         />
                     
 

@@ -50,7 +50,6 @@ class SpatiePermissionSeeder extends Seeder
             // INVENTORY
             // ============================
             'inventory.view',
-            'inventory.transfer',
             'inventory.adjust',
             'inventory.create',
             'inventory.audit',
@@ -97,6 +96,11 @@ class SpatiePermissionSeeder extends Seeder
             // SETTINGS
             // ============================
             'settings.general',
+
+            'transfer.view',
+            'transfer.update',
+            'transfer.create',
+            'transfer.delete',
 
             'pos.manage',
             'report.view',

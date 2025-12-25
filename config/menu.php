@@ -48,7 +48,7 @@ return [
             'label' => 'Stok & Mutasi',
             'icon' => 'layers',
             'children' => [
-                ['label' => 'Request Cabang', 'href' => 'request-cabang',                  'permission' => 'inventory.transfer'],
+                ['label' => 'Request Cabang', 'href' => 'request-cabang',                  'permission' => 'transfer.view'],
             ],
         ],
         [
@@ -108,7 +108,7 @@ return [
                 [
                     'label' => 'Request Barang',
                     'href' => 'request-cabang',
-                    'permission' => 'inventory.transfer',
+                    'permission' => 'transfer.view',
                 ],
             ],
         ],

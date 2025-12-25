@@ -19,7 +19,7 @@
             <x-crud-add 
                         resource="request"
                         :companyCode="$companyCode"
-                        permissionPrefix="inventory"
+                        permissionPrefix="transfer"
                     />
         </div>
     </div>

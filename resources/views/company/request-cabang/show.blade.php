@@ -102,7 +102,7 @@
             resource="request"
             :model="$req"
             :companyCode="$companyCode"
-            permissionPrefix="inventory"
+            permissionPrefix="transfer"
             keyField="id"
         />
                     @endif

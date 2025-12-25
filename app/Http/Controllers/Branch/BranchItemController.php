@@ -24,9 +24,11 @@ class BranchItemController extends Controller
         $branchId = session('role.branch.id');
         $companyCode = session('role.company.code');
 
+        // Ambil semua warehouse dalam cabang
         $warehouseIds = Warehouse::where('cabang_resto_id', $branchId)
             ->pluck('id');
 
+        // Ambil item + total stok per cabang
         $items = Item::withSum(['stocks as total_qty' => function ($q) use ($warehouseIds) {
             $q->whereIn('warehouse_id', $warehouseIds);
         }], 'qty')
@@ -35,41 +37,43 @@ class BranchItemController extends Controller
 
         foreach ($items as $item) {
 
-            $usage = DB::table('stock_movements')
-                ->where('item_id', $item->id)
-                ->where('company_id', $companyId)
-                ->where('type', 'OUT')
-                ->orderBy('created_at')
-                ->pluck('qty')
-                ->map(fn ($v) => abs($v))
-                ->toArray();
-
-            $alpha = 0.3;
-            $item->predicted_usage = $this->exponentialSmoothing($usage, $alpha);
-
             $stokSekarang = $item->total_qty ?? 0;
             $minStock = $item->min_stock ?? 0;
 
             $warningThreshold = ceil($minStock * 1.2);
 
             $item->is_low_stock = $stokSekarang < $minStock;
-            $item->is_near_low_stock =
-                $stokSekarang >= $minStock &&
-                $stokSekarang <= $warningThreshold;
+            $item->is_near_low_stock = $stokSekarang >= $minStock && $stokSekarang <= $warningThreshold;
 
-            if ($item->is_low_stock) {
-                $item->recommended_restock = max(
-                    1,
-                    ($minStock - $stokSekarang) + ceil($item->predicted_usage)
-                );
-            } elseif ($item->is_near_low_stock) {
-                $item->recommended_restock = max(
-                    1,
-                    ceil($item->predicted_usage)
-                );
-            } else {
-                // Aman
-                $item->recommended_restock = 0;
+            $item->predicted_usage = 0;
+            $item->recommended_restock = 0;
+
+            if ($item->is_low_stock || $item->is_near_low_stock) {
+
+                $usage = DB::table('stock_movements')
+                    ->where('item_id', $item->id)
+                    ->where('company_id', $companyId)
+                    ->where('type', 'OUT')
+                    ->orderBy('created_at')
+                    ->pluck('qty')
+                    ->map(fn ($v) => abs($v))
+                    ->toArray();
+
+                $alpha = 0.3;
+                $item->predicted_usage =
+                    $this->exponentialSmoothing($usage, $alpha);
+
+                if ($item->is_low_stock) {
+                    $item->recommended_restock = max(
+                        1,
+                        ($minStock - $stokSekarang) + ceil($item->predicted_usage)
+                    );
+                } else {
+                    $item->recommended_restock = max(
+                        1,
+                        ceil($item->predicted_usage)
+                    );
+                }
             }
 
             $exp = DB::table('stocks')
@@ -354,10 +358,9 @@ class BranchItemController extends Controller
     private function exponentialSmoothing(array $data, float $alpha = 0.3)
     {
         if (count($data) === 0) {
-            return 0; // tidak ada histori pemakaian
+            return 0;
         }
 
-        // forecast awal = data pertama
         $forecast = $data[0];
 
         foreach ($data as $point) {
