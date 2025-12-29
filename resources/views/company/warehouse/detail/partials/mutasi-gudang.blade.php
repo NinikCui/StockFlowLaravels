@@ -1,162 +1,134 @@
-<div class="bg-white border rounded-2xl shadow-sm p-6">
+<div class="max-w-7xl mx-auto px-6 py-10 space-y-8">
 
-    {{-- HEADER --}}
-    <div class="mb-8">
-        <h2 class="text-2xl font-bold text-gray-900">Mutasi Stok Gudang</h2>
-        <p class="text-sm text-gray-500 mt-1">
-            Aktivitas stok pada gudang <strong class="text-gray-700">{{ $warehouse->name }}</strong>.
-        </p>
-    </div>
+
 
     {{-- FILTERS --}}
-    <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+    <form method="GET"
+          class="bg-white p-4 rounded-xl shadow-sm border grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
 
-        {{-- FROM --}}
+        {{-- DATE FROM --}}
         <div>
-            <label class="text-sm font-medium">Dari Tanggal</label>
+            <label class="text-sm font-semibold text-gray-700 mb-1 block">Dari Tanggal</label>
             <input type="date" name="from" value="{{ request('from') }}"
-                   class="w-full px-3 py-2 border rounded-lg">
+                class="w-full border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500">
         </div>
 
-        {{-- TO --}}
+        {{-- DATE TO --}}
         <div>
-            <label class="text-sm font-medium">Sampai Tanggal</label>
+            <label class="text-sm font-semibold text-gray-700 mb-1 block">Sampai Tanggal</label>
             <input type="date" name="to" value="{{ request('to') }}"
-                   class="w-full px-3 py-2 border rounded-lg">
+                class="w-full border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500">
         </div>
 
-        {{-- ISSUE --}}
+
+
+        {{-- ISSUE CATEGORY --}}
         <div>
-            <label class="text-sm font-medium">Kategori Mutasi</label>
-            <select name="issue" class="w-full px-3 py-2 border rounded-lg">
-                <option value="">Semua</option>
-
-                <optgroup label="Movement">
-                    <option value="Stok Masuk" @selected(request('issue') == 'Stok Masuk')>Stok Masuk</option>
-                    <option value="Stok Keluar" @selected(request('issue') == 'Stok Keluar')>Stok Keluar</option>
-                    <option value="Transfer Masuk" @selected(request('issue') == 'Transfer Masuk')>Transfer Masuk</option>
-                    <option value="Transfer Keluar" @selected(request('issue') == 'Transfer Keluar')>Transfer Keluar</option>
-                </optgroup>
-
-                <optgroup label="Penyesuaian">
-                    @foreach ($categoriesIssues as $ci)
-                        <option value="{{ $ci->name }}" @selected(request('issue') == $ci->name)>
-                            {{ $ci->name }}
-                        </option>
-                    @endforeach
-                </optgroup>
+            <label class="text-sm font-semibold text-gray-700 mb-1 block">Kategori Issue</label>
+            <select name="issue"
+                class="w-full border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500">
+                <option value="">Semua Kategori</option>
+                @foreach ($categoriesIssues as $ci)
+                    <option value="{{ $ci->name }}" @selected(request('issue') == $ci->name)>
+                        {{ $ci->name }}
+                    </option>
+                @endforeach
             </select>
         </div>
 
-        {{-- BUTTONS --}}
-        <div class="flex items-end gap-3">
-            <button class="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
-                Terapkan
+        <div class="col-span-full flex justify-end pt-2">
+            <button class="bg-emerald-600 text-white px-6 py-2 rounded-lg shadow hover:bg-emerald-700">
+                Terapkan Filter
             </button>
-            <a href="{{ route('warehouse.show', [$companyCode, $warehouse->id]) }}?tab=mutasi"
-               class="px-5 py-2 bg-gray-200 rounded-lg hover:bg-gray-300">Reset</a>
         </div>
 
     </form>
 
-    {{-- TABEL MUTASI --}}
-    <div class="overflow-x-auto rounded-xl border border-gray-200">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 text-xs text-gray-600 uppercase tracking-wide">
+    {{-- TABLE --}}
+    <div class="bg-white rounded-xl shadow-sm border overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 text-sm">
+            <thead class="bg-gray-50">
                 <tr>
-                    <th class="p-3 text-left">Tanggal</th>
-                    <th class="p-3 text-left">Kode Stok</th>
-                    <th class="p-3 text-left">Item</th>
-                    <th class="p-3 text-left">Kategori</th>
-                    <th class="p-3 text-center">Qty Lama</th>
-                    <th class="p-3 text-center">Qty Baru</th>
-                    <th class="p-3 text-center">Selisih</th>
-                    <th class="p-3 text-left">Catatan</th>
-                    <th class="p-3 text-left">User</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Tanggal</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Kode Stok</th>
+                    <th class="px-4 py-3 text-right font-semibold text-gray-700">Selisih</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Kategori</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Catatan</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700">Pengguna</th>
                 </tr>
             </thead>
 
             <tbody class="divide-y divide-gray-100">
 
-                @forelse ($warehouseMutations as $m)
+                @forelse ($warehouseMutations as $row)
+
                     @php
-                        $colors = [
-                            'Stok Masuk'      => 'emerald',
-                            'Stok Keluar'     => 'red',
-                            'Transfer Masuk'  => 'sky',
-                            'Transfer Keluar' => 'orange',
-                        ];
+                        $diff = $row->diff ?? 0;
+                        $user = $row->user ?? $row->created_by_name ?? '-';
 
-                        $badge = $colors[$m->issue_name] ?? 'purple';
-
-                        $diffColor =
-                            $m->diff > 0 ? 'text-emerald-700' :
-                            ($m->diff < 0 ? 'text-red-600' : 'text-gray-500');
+                        // WARNA BADGE KATEGORI
+                        $badgeColor = 'blue';
+                        if ($diff > 0) $badgeColor = 'emerald';
+                        if ($diff < 0) $badgeColor = 'red';
                     @endphp
 
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50 transition">
 
                         {{-- DATE --}}
-                        <td class="p-3">
-                            <div class="font-medium">{{ Carbon\Carbon::parse($m->date)->format('d M Y') }}</div>
-                            <div class="text-xs text-gray-500">{{ Carbon\Carbon::parse($m->date)->format('H:i') }}</div>
-                        </td>
-
-                        {{-- STOCK CODE --}}
-                        <td class="p-3 font-mono text-gray-800">{{ $m->stock_code ?? '-' }}</td>
-
-                        {{-- ITEM --}}
-                        <td class="p-3 font-medium text-gray-900">
-                            {{ $m->item_name }}
-                        </td>
-
-                        {{-- ISSUE --}}
-                        <td class="p-3">
-                            <span class="px-2 py-1 text-xs font-semibold rounded-md
-                                bg-{{ $badge }}-50 text-{{ $badge }}-700 border border-{{ $badge }}-200">
-                                {{ $m->issue_name }}
-                            </span>
-                        </td>
-
-                        {{-- PREV QTY --}}
-                        <td class="p-3 text-center">
-                            {{ $m->prev_qty !== null ? number_format($m->prev_qty,2) : '-' }}
-                        </td>
-
-                        {{-- AFTER QTY --}}
-                        <td class="p-3 text-center">
-                            {{ $m->after_qty !== null ? number_format($m->after_qty,2) : '-' }}
-                        </td>
-
-                        {{-- DIFF --}}
-                        <td class="p-3 text-center font-bold {{ $diffColor }}">
-                            {{ number_format($m->diff,2) }}
-                        </td>
-
-                        {{-- NOTES --}}
-                        <td class="p-3 text-gray-700 max-w-[180px]">
-                            <div class="line-clamp-2 break-words overflow-hidden text-ellipsis">
-                                {{ $m->note ?: '-' }}
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="font-medium text-gray-900">
+                                {{ \Carbon\Carbon::parse($row->date)->format('d M Y') }}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                {{ \Carbon\Carbon::parse($row->date)->format('H:i') }}
                             </div>
                         </td>
 
+                        {{-- STOCK CODE --}}
+                        <td class="px-4 py-3 font-mono text-gray-900">
+                            {{ $row->stock_code ?? '-' }}
+                        </td>
+
+
+
+                        {{-- DIFF --}}
+                        <td class="px-4 py-3 text-right font-bold
+                            @if($diff > 0) text-emerald-600
+                            @elseif($diff < 0) text-red-600
+                            @else text-gray-600 @endif">
+                            {{ number_format($diff, 2) }}
+                        </td>
+
+                        {{-- ISSUE --}}
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded-lg text-xs bg-{{ $badgeColor }}-50 text-{{ $badgeColor }}-700 border border-{{ $badgeColor }}-200">
+                                {{ $row->issue_name ?? $row->source ?? '-' }}
+                            </span>
+                        </td>
+
+                        {{-- NOTE --}}
+                        <td class="px-4 py-3 text-gray-700 max-w-xs line-clamp-2">
+                            {{ $row->note ?: '-' }}
+                        </td>
+
                         {{-- USER --}}
-                        <td class="p-3 font-medium text-gray-900">
-                            {{ $m->created_by_name ?? 'System' }}
+                        <td class="px-4 py-3 text-gray-900 font-medium">
+                            {{ $user }}
                         </td>
 
                     </tr>
 
                 @empty
+
                     <tr>
-                        <td colspan="9" class="p-10 text-center text-gray-500">
-                            Tidak ada mutasi stok.
+                        <td colspan="9" class="text-center py-10 text-gray-500">
+                            Tidak ada riwayat ditemukan.
                         </td>
                     </tr>
+
                 @endforelse
 
             </tbody>
-
         </table>
     </div>
 

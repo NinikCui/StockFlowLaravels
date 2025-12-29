@@ -22,15 +22,29 @@ class WarehouseController extends Controller
 
         $cabangs = CabangResto::where('company_id', $company->id)->get();
 
-        // FILTER CABANG
-        $filterCabang = $request->get('cabang');
-
-        $warehouses = Warehouse::with('type', 'cabangResto')
-            ->when($filterCabang, function ($q) use ($filterCabang) {
-                $q->where('cabang_resto_id', $filterCabang);
-            })
+        $warehouses = Warehouse::with(['type', 'cabangResto'])
             ->whereIn('cabang_resto_id', $cabangs->pluck('id'))
-            ->orderBy('id', 'desc')
+            ->when($request->q, function ($q) use ($request) {
+                $q->where(function ($qq) use ($request) {
+                    $qq->where('name', 'like', '%'.$request->q.'%')
+                        ->orWhere('code', 'like', '%'.$request->q.'%');
+                });
+            })
+            ->when($request->cabang, function ($q) use ($request) {
+                $q->where('cabang_resto_id', $request->cabang);
+            })
+            ->when($request->type, function ($q) use ($request) {
+                $q->where('warehouse_type_id', $request->type);
+            })
+            ->when($request->sort, function ($q) use ($request) {
+                match ($request->sort) {
+                    'name_asc' => $q->orderBy('name', 'asc'),
+                    'name_desc' => $q->orderBy('name', 'desc'),
+                    'latest' => $q->latest(),
+                    default => $q->orderBy('name'),
+                };
+            }, fn ($q) => $q->orderBy('name'))
+
             ->get();
 
         $types = WarehouseType::where('company_id', $company->id)->get();
@@ -40,7 +54,7 @@ class WarehouseController extends Controller
             'warehouses' => $warehouses,
             'types' => $types,
             'cabangs' => $cabangs,
-            'filterCabang' => $filterCabang,
+            'filters' => $request->only(['q', 'cabang', 'type', 'sort']),
         ]);
     }
 
@@ -96,13 +110,11 @@ class WarehouseController extends Controller
 
     public function edit($companyCode, $id)
     {
-        // Ambil company
         $company = Company::where('code', $companyCode)->firstOrFail();
 
-        // Ambil warehouse
         $warehouse = Warehouse::findOrFail($id);
 
-        // Pastikan warehouse berasal dari cabang yang milik company ini
+        // Pastikan warehouse brasal dari cabang yang milik company ini
         $isValidWarehouse = CabangResto::where('id', $warehouse->cabang_resto_id)
             ->where('company_id', $company->id)
             ->exists();

@@ -54,7 +54,6 @@
             </p>
         </div>
 
-
         @if ($supplier->notes)
             <div class="space-y-1">
                 <p class="text-gray-500">Catatan</p>
@@ -67,7 +66,13 @@
 
     {{-- ACTION BUTTONS --}}
     <div class="mt-8 flex justify-end">
-        
+        <x-crud 
+            resource="supplier"
+            :model="$supplier"
+            :companyCode="$companyCode"
+            permissionPrefix="supplier"
+            keyField="id"
+        />
     </div>
 
 </div>
