@@ -56,7 +56,12 @@
 
 
         @if ($supplier->notes)
-            {!! row('Catatan', $supplier->notes, true) !!}
+            <div class="space-y-1">
+                <p class="text-gray-500">Catatan</p>
+                <p class="font-semibold text-gray-800 leading-relaxed">
+                    {{ $supplier->notes }}
+                </p>
+            </div>
         @endif
     </div>
 

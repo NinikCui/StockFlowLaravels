@@ -10,7 +10,6 @@
                class="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm">
                 ←
             </a>
-
             <div>
                 <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-3">
                     <span class="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xl">
@@ -87,6 +86,36 @@
                 </h2>
 
                 <x-permission-builder :permissions="$permissions" :selected="[]" />
+                <script>
+                function applyScopeFilter() {
+                    const isUniversal = document.getElementById('isUniversal')?.checked;
+
+                    document.querySelectorAll('[data-permission-group]').forEach(group => {
+                        const resource = group.dataset.resource;
+
+                        if (isUniversal) {
+                            // UNIVERSAL / COMPANY
+                            if (['pos', 'permission'].includes(resource)) {
+                                group.style.display = 'none';
+                                group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                            } else {
+                                group.style.display = '';
+                            }
+                        } else {
+                            // CABANG
+                            if (resource === 'settings') {
+                                group.style.display = 'none';
+                                group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                            } else {
+                                group.style.display = '';
+                            }
+                        }
+                    });
+                }
+
+                document.getElementById('isUniversal')?.addEventListener('change', applyScopeFilter);
+                document.addEventListener('DOMContentLoaded', applyScopeFilter);
+                </script>
             </section>
 
 

@@ -202,7 +202,7 @@ return new class extends Migration
             $table->integer('min_stock')->default(0);
             $table->integer('max_stock')->default(0);
             $table->boolean('forecast_enabled')->default(false);
-
+            $table->boolean('mudah_rusak')->default(false);
             $table->timestamps();
 
             $table->foreign('company_id')->references('id')->on('companies')->cascadeOnDelete();

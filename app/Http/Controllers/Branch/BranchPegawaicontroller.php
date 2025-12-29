@@ -15,7 +15,7 @@ class BranchPegawaiController extends Controller
     {
         $companyId = session('role.company.id');
 
-        $companyCode = session('role.company.code');        // 1️⃣ Validasi cabang milik company
+        $companyCode = session('role.company.code');
         $branch = CabangResto::where('company_id', $companyId)
             ->where('code', $branchCode)
             ->firstOrFail();

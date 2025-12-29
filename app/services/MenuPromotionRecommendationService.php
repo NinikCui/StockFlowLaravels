@@ -5,18 +5,12 @@ namespace App\Services;
 use App\Models\MenuPromotionRecommendation;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class MenuPromotionRecommendationService
 {
     public function generateForCabang(int $cabangRestoId, int $companyId): void
     {
-        Log::info('Generate menu promo start', [
-            'cabang_id' => $cabangRestoId,
-            'company_id' => $companyId,
-        ]);
         $today = Carbon::today();
-
         MenuPromotionRecommendation::whereDate('date', $today)
             ->where('cabang_resto_id', $cabangRestoId)
             ->delete();
@@ -40,7 +34,6 @@ class MenuPromotionRecommendationService
             ', [$today])
             ->groupBy('i.id', 'p.id')
             ->get();
-        Log::info('DEBUG RAW JOIN COUNT', ['count' => $rows->count()]);
 
         foreach ($rows as $row) {
             $riskScore = $this->calculateRiskScore(

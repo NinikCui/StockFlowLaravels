@@ -121,4 +121,34 @@
     </div>
 </main>
 
+<script>
+function applyScopeFilterEdit() {
+    const isUniversal = document.getElementById('universalCheck')?.checked;
+
+    document.querySelectorAll('[data-permission-group]').forEach(group => {
+        const resource = group.dataset.resource;
+
+        if (isUniversal) {
+            // UNIVERSAL / COMPANY
+            if (['pos', 'permission'].includes(resource)) {
+                group.style.display = 'none';
+                group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            } else {
+                group.style.display = '';
+            }
+        } else {
+            // CABANG
+            if (resource === 'settings') {
+                group.style.display = 'none';
+                group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            } else {
+                group.style.display = '';
+            }
+        }
+    });
+}
+
+document.getElementById('universalCheck')?.addEventListener('change', applyScopeFilterEdit);
+document.addEventListener('DOMContentLoaded', applyScopeFilterEdit);
+</script>
 </x-app-layout>

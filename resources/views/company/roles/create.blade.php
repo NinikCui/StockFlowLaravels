@@ -99,6 +99,37 @@
                 </h2>
 
                 <x-permission-builder :permissions="$permissions" :selected="[]" />
+                <script>
+                function applyScopeFilter() {
+                    const isUniversal = document.getElementById('isUniversal')?.checked;
+
+                    document.querySelectorAll('[data-permission-group]').forEach(group => {
+                        const resource = group.dataset.resource;
+
+                        if (isUniversal) {
+                            // UNIVERSAL / COMPANY
+                            if (['pos', 'permission'].includes(resource)) {
+                                group.style.display = 'none';
+                                group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                            } else {
+                                group.style.display = '';
+                            }
+                        } else {
+                            // CABANG
+                            if (resource === 'settings') {
+                                group.style.display = 'none';
+                                group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                            } else {
+                                group.style.display = '';
+                            }
+                        }
+                    });
+                }
+
+                document.getElementById('isUniversal')?.addEventListener('change', applyScopeFilter);
+                document.addEventListener('DOMContentLoaded', applyScopeFilter);
+                </script>
+
             </section>
 
 

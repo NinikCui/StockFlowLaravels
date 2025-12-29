@@ -7,15 +7,12 @@ use Spatie\Permission\Models\Permission;
 
 class SpatiePermissionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $permissions = [
 
             // ============================
-            // CABANG
+            // BRANCH
             // ============================
             'branch.view',
             'branch.create',
@@ -23,7 +20,7 @@ class SpatiePermissionSeeder extends Seeder
             'branch.delete',
 
             // ============================
-            // GUDANG
+            // WAREHOUSE
             // ============================
             'warehouse.view',
             'warehouse.create',
@@ -50,8 +47,8 @@ class SpatiePermissionSeeder extends Seeder
             // INVENTORY
             // ============================
             'inventory.view',
-            'inventory.adjust',
             'inventory.create',
+            'inventory.adjust',
             'inventory.audit',
 
             // ============================
@@ -74,17 +71,25 @@ class SpatiePermissionSeeder extends Seeder
             // PURCHASE ORDER
             // ============================
             'purchase.view',
-            'purchase.delete',
             'purchase.create',
             'purchase.update',
+            'purchase.delete',
 
             // ============================
-            // ROLE & PERMISSION MGMT
+            // ROLE & PERMISSION MANAGEMENT
             // ============================
             'permission.view',
+            'permission.create',
             'permission.update',
             'permission.delete',
-            'permission.create',
+
+            // ============================
+            // TRANSFER
+            // ============================
+            'transfer.view',
+            'transfer.create',
+            'transfer.update',
+            'transfer.delete',
 
             // ============================
             // ANALYTICS
@@ -93,23 +98,24 @@ class SpatiePermissionSeeder extends Seeder
             'analytics.supplier',
 
             // ============================
-            // SETTINGS
+            // REPORT
+            // ============================
+            'report.view',
+
+            // ============================
+            // SETTINGS (company context)
             // ============================
             'settings.general',
 
-            'transfer.view',
-            'transfer.update',
-            'transfer.create',
-            'transfer.delete',
-
+            // ============================
+            // POS (branch context)
+            // ============================
             'pos.manage',
-            'report.view',
-
         ];
 
-        foreach ($permissions as $perm) {
+        foreach ($permissions as $permission) {
             Permission::firstOrCreate([
-                'name' => $perm,
+                'name' => $permission,
                 'guard_name' => 'web',
             ]);
         }
