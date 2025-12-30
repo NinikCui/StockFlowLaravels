@@ -112,9 +112,9 @@ class WarehouseController extends Controller
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
 
+        
         $warehouse = Warehouse::findOrFail($id);
 
-        // Pastikan warehouse brasal dari cabang yang milik company ini
         $isValidWarehouse = CabangResto::where('id', $warehouse->cabang_resto_id)
             ->where('company_id', $company->id)
             ->exists();
@@ -258,9 +258,6 @@ class WarehouseController extends Controller
         $filterTo = request('to');
         $filterIssue = request('issue');
 
-        // =============================
-        // MOVEMENTS (IN / OUT / TRANSFER)
-        // =============================
         $movements = StockMovement::query()
             ->selectRaw("
         stock_movements.created_at AS date,
