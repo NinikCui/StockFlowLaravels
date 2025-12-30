@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
@@ -38,9 +37,6 @@ class RegisteredUserController extends Controller
 
             $result = DB::transaction(function () use ($data) {
 
-                // ============================================
-                // 1️⃣ Generate Company Code
-                // ============================================
                 $companyCode = $this->toCompanyCode(
                     $data['companyCode'] ?: $data['companyName']
                 );
@@ -49,17 +45,11 @@ class RegisteredUserController extends Controller
                     throw new \Exception('Kode perusahaan sudah dipakai.');
                 }
 
-                // ============================================
-                // 2️⃣ INSERT COMPANY
-                // ============================================
                 $company = Company::create([
                     'name' => $data['companyName'],
                     'code' => $companyCode,
                 ]);
 
-                // ============================================
-                // 3️⃣ INSERT USER
-                // ============================================
                 $user = User::create([
                     'username' => $data['username'],
                     'email' => $data['email'],
@@ -68,27 +58,16 @@ class RegisteredUserController extends Controller
                     'is_active' => true,
                 ]);
 
-                // ============================================
-                // 4️⃣ CREATE OWNER ROLE (UNIK PER COMPANY)
-                // ============================================
                 $role = Role::create([
                     'company_id' => $company->id,
-                    'cabang_resto_id' => null,               // universal
-                    'code' => 'OWNER',            // untuk UI
+                    'cabang_resto_id' => null,
+                    'code' => 'OWNER',
                     'name' => 'OWNER_'.strtoupper($companyCode),
                     'guard_name' => 'web',
                 ]);
-
-                // ============================================
-                // 5️⃣ Owner mendapatkan SEMUA PERMISSION
-                // ============================================
                 $role->syncPermissions(Permission::all());
 
-                // ============================================
-                // 6️⃣ Assign role ke user
-                // ============================================
                 $user->assignRole($role->name);
-                // NOTE: assignRole pakai NAME, bukan ID!
 
                 return [
                     'company' => $company,
@@ -96,11 +75,6 @@ class RegisteredUserController extends Controller
                     'user' => $user,
                 ];
             });
-
-            // ============================================
-            // 7️⃣ Auto login setelah registrasi
-            // ============================================
-            Auth::login($result['user']);
 
             return redirect('/login')
                 ->with('status', 'Registrasi perusahaan berhasil!');
