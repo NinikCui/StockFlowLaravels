@@ -215,11 +215,14 @@
                                 {{-- AKSI --}}
                                 <td class="px-6 py-6">
                                     <div class="flex justify-center gap-2">
-                                        {{-- DETAIL 
-                                        <a href="{{ route('itemmanage.show', $item->id) }}"
+                                        {{-- DETAIL --}}
+                                        <a href="{{ route('stockmanage.index', [
+                                                'companyCode' => $companyCode,
+                                                'item' => $item->id
+                                            ]) }}"
                                             class="px-4 py-2 text-xs font-bold bg-gray-100 rounded-xl hover:bg-gray-200">
                                             Detail
-                                        </a>--}}
+                                        </a>
 
                                         {{-- RIWAYAT --}}
                                         <a href="{{ route('itemmanage.history', [$companyCode, $item->id]) }}"

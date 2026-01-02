@@ -15,6 +15,7 @@ use App\Http\Controllers\Company\PurchaseOrderController;
 use App\Http\Controllers\Company\ReportsController;
 use App\Http\Controllers\Company\RoleController;
 use App\Http\Controllers\Company\StockController;
+use App\Http\Controllers\Company\StockManageController;
 use App\Http\Controllers\Company\SupplierController;
 use App\Http\Controllers\Company\WarehouseController;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,15 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/dashboard',
             [CompanyDashboardController::class, 'index']
         )->name('company.dashboard');
+        Route::prefix('stockmanage')->group(function () {
+
+            Route::get('/', [StockManageController::class, 'index'])
+                ->name('stockmanage.index');
+
+            Route::get('/{stock}/history', [StockManageController::class, 'history'])
+                ->name('stockmanage.history');
+
+        });
 
         Route::prefix('itemmanage')->group(function () {
 

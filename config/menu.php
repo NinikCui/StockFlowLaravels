@@ -55,7 +55,7 @@ return [
                 ],
                 [
                     'label' => 'Daftar Stok',
-                    'href' => 'stock',
+                    'href' => 'stockmanage',
                     'permission' => 'item.view',
                 ],
                 ['label' => 'Request Cabang', 'href' => 'request-cabang',                  'permission' => 'transfer.view'],
