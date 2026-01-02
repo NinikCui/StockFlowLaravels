@@ -27,7 +27,7 @@ return [
             ],
         ],
         [
-            'label' => 'Produk',
+            'label' => 'Manajemen Produk',
             'icon' => 'box',
             'children' => [
                 ['label' => 'Barang Baku', 'href' => 'items', 'permission' => 'item.view'],
@@ -48,6 +48,16 @@ return [
             'label' => 'Stok & Mutasi',
             'icon' => 'layers',
             'children' => [
+                [
+                    'label' => 'Daftar Item',
+                    'href' => 'itemmanage',
+                    'permission' => 'item.view',
+                ],
+                [
+                    'label' => 'Daftar Stok',
+                    'href' => 'stock',
+                    'permission' => 'item.view',
+                ],
                 ['label' => 'Request Cabang', 'href' => 'request-cabang',                  'permission' => 'transfer.view'],
             ],
         ],

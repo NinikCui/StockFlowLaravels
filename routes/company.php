@@ -5,6 +5,7 @@ use App\Http\Controllers\Company\CabangController;
 use App\Http\Controllers\Company\CategoriesIssuesController;
 use App\Http\Controllers\Company\CompanyDashboardController;
 use App\Http\Controllers\Company\CompanySettingController;
+use App\Http\Controllers\Company\itemManageController;
 use App\Http\Controllers\Company\ItemsController;
 use App\Http\Controllers\Company\MaterialRequestController;
 use App\Http\Controllers\Company\PegawaiController;
@@ -24,6 +25,20 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
         Route::get('/dashboard',
             [CompanyDashboardController::class, 'index']
         )->name('company.dashboard');
+
+        Route::prefix('itemmanage')->group(function () {
+
+            Route::get('/', [itemManageController::class, 'index'])
+                ->name('itemmanage.index');
+
+            Route::get('/{item}', [itemManageController::class, 'show'])
+                ->name('itemmanage.show');
+
+            Route::get('/{item}/history',
+                [itemManageController::class, 'history']
+            )->name('itemmanage.history');
+
+        });
 
         Route::prefix('bundles')->group(function () {
             Route::get('/', [ProductBundleController::class, 'index'])

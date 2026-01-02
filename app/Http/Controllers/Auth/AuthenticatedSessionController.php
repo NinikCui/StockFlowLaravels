@@ -62,6 +62,7 @@ class AuthenticatedSessionController extends Controller
                 'scope' => $activeRole->cabangResto ? 'BRANCH' : 'COMPANY',
                 'company' => $activeRole->company ? [
                     'id' => $activeRole->company->id,
+                    'codeUrl' => strtolower($activeRole->company->code),
                     'code' => $activeRole->company->code,
                     'name' => $activeRole->company->name,
                 ] : null,

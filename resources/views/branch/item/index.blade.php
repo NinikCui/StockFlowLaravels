@@ -28,9 +28,6 @@
             </div>
         </div>
 
-        {{-- ===============================
-            SUMMARY CARDS
-        =============================== --}}
         @php
             $expiredCount = $items->filter(fn($i) => !is_null($i->days_to_expire) && $i->days_to_expire <= 7)->count();
             $lowStockCount = $items->filter(fn($i) => $i->is_low_stock)->count();
