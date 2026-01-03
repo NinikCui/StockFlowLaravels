@@ -11,7 +11,7 @@ use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
 
-class itemManageController extends Controller
+class ItemManageController extends Controller
 {
     public function index(Request $request)
     {

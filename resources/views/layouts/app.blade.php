@@ -31,18 +31,11 @@
         @php
             $scope = session('role.scope'); 
         @endphp
-        {{-- SIDEBAR 
-        @if ($scope === 'COMPANY')
-            @include('components.sidebarCompany')
-
-        @elseif($scope === 'BRANCH')
-            @include('components.sidebarBranch')
-
-        @endif--}}
 
         @include('components.sidebar')
     <main class="md:ml-64 min-h-screen p-6">
             <div class="mx-auto max-w-6xl p-6 min-h-screen">
+                
 {{ $slot }}
             </div>
         
