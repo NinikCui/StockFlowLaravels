@@ -6,8 +6,15 @@
 
     {{-- HEADER --}}
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">Detail Gudang</h1>
-        <p class="text-gray-500 text-sm mt-1">Informasi lengkap mengenai gudang & seluruh aktivitas stok.</p>
+        <div>
+            {{ Breadcrumbs::render(
+                'company.warehouse.detail',
+                $companyCode,$warehouse
+
+            ) }}
+        </div>
+        <h1 class="text-3xl font-bold text-gray-900">Detail Penyimpanan</h1>
+        <p class="text-gray-500 text-sm mt-1">Informasi lengkap mengenai penyimpanan & seluruh aktivitas stok.</p>
     </div>
 
     {{-- TAB MENU --}}
@@ -16,7 +23,7 @@
         <button @click="changeTab('info')"
                 :class="tab === 'info' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-500'"
                 class="pb-2">
-            Info Gudang
+            Info Penyimpanan
         </button>
 
         <button @click="changeTab('stock')"

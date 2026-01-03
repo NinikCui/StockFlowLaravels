@@ -1,12 +1,25 @@
 <x-app-layout>
 <main class="max-w-3xl mx-auto px-6 py-10">
+{{-- BREADCRUMB + BACK --}}
+        <div class="mb-8 space-y-2">
+            <div class="text-sm text-gray-500">
+                {{ Breadcrumbs::render(
+                    'company.warehouse.edit',
+                    $companyCode,
+                    $warehouse
+                ) }}
+            </div>
 
+            <a href="{{ route('warehouse.show', [$companyCode, $warehouse->id]) }}"
+               class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition">
+                ← Kembali ke daftar warehouse
+            </a>
+        </div>
     {{-- HEADER --}}
     <div class="flex justify-between mb-6">
         <h1 class="text-xl font-bold text-gray-900">Edit Warehouse</h1>
 
-        <a href="{{ route('warehouse.show', [$companyCode, $warehouse->id]) }}"
-           class="text-gray-500 text-sm hover:text-gray-700">← Kembali</a>
+        
     </div>
 
     {{-- FORM --}}

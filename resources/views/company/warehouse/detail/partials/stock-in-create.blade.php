@@ -1,6 +1,12 @@
 <x-app-layout>
 <main class="max-w-xl mx-auto px-6 py-10">
-
+    <div>
+        {{ Breadcrumbs::render(
+            'company.warehouse.stock-in.create',
+            $companyCode,
+            $warehouse
+        ) }}
+    </div>
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900">Stok Masuk</h1>
         <p class="text-gray-500 text-sm mt-1">
