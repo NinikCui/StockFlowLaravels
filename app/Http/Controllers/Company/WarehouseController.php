@@ -112,6 +112,7 @@ class WarehouseController extends Controller
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
 
+        
         $warehouse = Warehouse::findOrFail($id);
 
         $isValidWarehouse = CabangResto::where('id', $warehouse->cabang_resto_id)
@@ -195,7 +196,7 @@ class WarehouseController extends Controller
 
         $warehouse->delete();
 
-        return redirect()->route('warehouse.index', $companyCode);
+        return back()->with('success', 'Warehouse berhasil dihapus');
     }
 
     public function typesStore(Request $request, $companyCode)

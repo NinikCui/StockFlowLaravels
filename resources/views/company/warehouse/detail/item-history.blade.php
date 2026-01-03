@@ -2,12 +2,6 @@
 <main class="max-w-5xl mx-auto px-6 py-10">
 
     {{-- HEADER --}}
-    {{ Breadcrumbs::render(
-        'company.warehouse.detail.item-history',
-        $companyCode,
-        $warehouse,
-        $stock,
-    ) }}
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900">Riwayat Mutasi Item</h1>
         <p class="text-gray-600 text-sm mt-1">
