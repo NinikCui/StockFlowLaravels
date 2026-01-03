@@ -5,19 +5,22 @@ use Diglactic\Breadcrumbs\Generator as BreadcrumbTrail;
 
 /*
 |--------------------------------------------------------------------------
-| COMPANY
+| COMPANY - CABANG
 |--------------------------------------------------------------------------
 */
 
 // Company → Daftar Cabang
-Breadcrumbs::for('company.cabang.index', function (BreadcrumbTrail $trail, $company) {
+Breadcrumbs::for('company.cabang.index', function (
+    BreadcrumbTrail $trail,
+    string $companyCode
+) {
     $trail->push(
         'Cabang Restoran',
-        route('cabang.index', ['companyCode' => $company])
+        route('cabang.index', ['companyCode' => $companyCode])
     );
-
 });
 
+// Company → Detail Cabang
 Breadcrumbs::for('company.cabang.show', function (
     BreadcrumbTrail $trail,
     string $companyCode,
@@ -33,11 +36,18 @@ Breadcrumbs::for('company.cabang.show', function (
         ])
     );
 });
-Breadcrumbs::for('company.cabang.create', function (BreadcrumbTrail $trail, $company) {
-    $trail->parent('company.cabang.index', $company);
+
+// Company → Buat Cabang
+Breadcrumbs::for('company.cabang.create', function (
+    BreadcrumbTrail $trail,
+    string $companyCode
+) {
+    $trail->parent('company.cabang.index', $companyCode);
 
     $trail->push('Buat Cabang Baru');
 });
+
+// Company → Edit Cabang
 Breadcrumbs::for('company.cabang.edit', function (
     BreadcrumbTrail $trail,
     string $companyCode,
@@ -45,6 +55,5 @@ Breadcrumbs::for('company.cabang.edit', function (
 ) {
     $trail->parent('company.cabang.show', $companyCode, $cabang);
 
-    // Label jelas & rapi
     $trail->push('Edit Cabang');
 });

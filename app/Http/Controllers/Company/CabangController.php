@@ -54,6 +54,7 @@ class CabangController extends Controller
         }
 
         $cabang = $query->get();
+        $companyCode = strtolower($companyCode);
 
         return view('company.cabang.index', compact('cabang', 'companyCode'));
     }
