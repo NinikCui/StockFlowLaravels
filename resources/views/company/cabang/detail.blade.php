@@ -3,13 +3,8 @@
 @endphp
 
 <x-app-layout>
- 
 <main class="min-h-screen px-6 py-10 bg-gray-50">
-   {{ Breadcrumbs::render(
-            'company.cabang.show',
-            $companyCode,
-            $cabang
-        ) }}
+
     {{-- ================= HEADER ================= --}}
     <div class="flex items-center justify-between mb-10">
         <div>
