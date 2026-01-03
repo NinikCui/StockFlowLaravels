@@ -29,9 +29,5 @@ class AppServiceProvider extends ServiceProvider
         });
         Paginator::defaultView('components.pagination.custom');
         Blade::component('owner.kpi-card', kpiCard::class);
-
-        if (file_exists(base_path('routes/breadcrumbs/_load.php'))) {
-            require base_path('routes/breadcrumbs/_load.php');
-        }
     }
 }

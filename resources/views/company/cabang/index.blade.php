@@ -1,4 +1,8 @@
 <x-app-layout>
+    @php
+        $companyCode = session('role.company.code');
+        $branchCode  = session('role.branch.code');
+    @endphp
 
     <main class="min-h-screen px-6 py-10 bg-gray-50">
 
