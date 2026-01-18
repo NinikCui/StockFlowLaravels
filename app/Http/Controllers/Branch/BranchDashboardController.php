@@ -8,7 +8,7 @@ use App\Services\BranchDashboardCacheService;
 
 class BranchDashboardController extends Controller
 {
-    public function index($branchCode, BranchDashboardCacheService $cacheSvc)
+    public function index(string $branchCode, BranchDashboardCacheService $cacheSvc)
     {
         $companyId = session('role.company.id');
 
@@ -19,7 +19,6 @@ class BranchDashboardController extends Controller
 
         $warehouseIds = $branch->warehouses->pluck('id');
 
-        // 🔥 SUPER FAST (ambil dari cache)
         $data = $cacheSvc->getBranchDashboard($branch, $warehouseIds);
 
         return view('branch.dashboard', array_merge([

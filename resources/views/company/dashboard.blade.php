@@ -89,7 +89,7 @@
         {{-- =============================== --}}
         {{-- MONTHLY ACTIVITIES --}}
         {{-- =============================== --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             <div class="relative bg-white rounded-2xl shadow-lg p-6 overflow-hidden border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-300">
                 <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-blue-50"></div>
@@ -119,47 +119,96 @@
                 </div>
             </div>
 
-            <div class="relative bg-white rounded-2xl shadow-lg p-6 overflow-hidden border-l-4 border-indigo-500 hover:shadow-xl transition-shadow duration-300">
-                <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-indigo-50"></div>
-                <div class="relative">
-                    <p class="text-gray-600 text-sm font-medium mb-2">Barang Diterima Bulan Ini</p>
-                    <h2 class="text-5xl font-bold text-indigo-600">{{ $receivedMonth }}</h2>
-                    <div class="mt-4 flex items-center text-sm text-gray-500">
-                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+           
+
+        </div>
+
+
+        {{-- =============================== --}}
+        {{-- LATEST REQUEST / PO / RECEIVE --}}
+        {{-- =============================== --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            {{-- REQUEST --}}
+            <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-lg font-bold text-gray-900">Latest Request</h2>
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                         </svg>
-                        <span>Periode: Bulan Ini</span>
                     </div>
+                </div>
+                <div class="space-y-3">
+                    @forelse ($latestRequest as $req)
+                        <div class="p-4 rounded-xl bg-gray-50 hover:bg-blue-50 transition-colors duration-200 border border-gray-100 hover:border-blue-200">
+                            <div class="flex items-center text-sm mb-2">
+                                <span class="font-semibold text-gray-900">
+                                    {{ $req->cabangFrom?->name ?? 'Supplier / Gudang' }}
+                                </span>
+                                <svg class="w-4 h-4 mx-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                </svg>
+                                <span class="font-semibold text-gray-900">{{ $req->cabangTo->name }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs text-gray-500">
+                                <span class="font-mono bg-white px-2 py-1 rounded">#{{ $req->id }}</span>
+                                <span>{{ \Carbon\Carbon::parse($req->trans_date)->format('d M Y') }}</span>
+                            </div>
+                        </div>
+                        @empty
+                            <div class="text-center py-6 text-gray-500 text-sm">
+                                Belum ada data
+                            </div>
+                        @endforelse
+                </div>
+            </div>
+
+            {{-- PO --}}
+            <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-lg font-bold text-gray-900">Latest PO</h2>
+                    <div class="p-2 bg-emerald-100 rounded-lg">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    @foreach ($latestPO as $po)
+                        <div class="p-4 rounded-xl bg-gray-50 hover:bg-emerald-50 transition-colors duration-200 border border-gray-100 hover:border-emerald-200">
+                            <p class="font-semibold text-gray-900 mb-2">{{ $po->cabangResto->name }}</p>
+                            <div class="flex items-center text-xs text-gray-500">
+                                <span class="font-mono bg-white px-2 py-1 rounded">PO #{{ $po->po_number }}</span>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- RECEIVE --}}
+            <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+                <div class="flex items-center justify-between mb-5">
+                    <h2 class="text-lg font-bold text-gray-900">Latest Receive</h2>
+                    <div class="p-2 bg-indigo-100 rounded-lg">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="space-y-3">
+                    @foreach ($latestReceive as $rc)
+                        <div class="p-4 rounded-xl bg-gray-50 hover:bg-indigo-50 transition-colors duration-200 border border-gray-100 hover:border-indigo-200">
+                            <p class="font-semibold text-gray-900 mb-2">{{ $rc->purchaseOrder->cabangResto->name }}</p>
+                            <div class="flex items-center text-xs text-gray-500">
+                                <span class="font-mono bg-white px-2 py-1 rounded">Receive #{{ $rc->id }}</span>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
             </div>
 
         </div>
-
-        {{-- =============================== --}}
-        {{-- TREND CHART --}}
-        {{-- =============================== --}}
-        <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Trend Request dan PO</h2>
-                    <p class="text-gray-500 text-sm mt-1">Data 12 bulan terakhir</p>
-                </div>
-                <div class="flex items-center space-x-2 text-sm">
-                    <div class="flex items-center">
-                        <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                        <span class="text-gray-600">Request</span>
-                    </div>
-                    <div class="flex items-center ml-4">
-                        <span class="w-3 h-3 bg-emerald-500 rounded-full mr-2"></span>
-                        <span class="text-gray-600">PO</span>
-                    </div>
-                </div>
-            </div>
-            <div class="relative">
-                <canvas id="trendChart" height="100"></canvas>
-            </div>
-        </div>
-
         {{-- =============================== --}}
         {{-- HEATMAP TRANSFER ANTAR CABANG --}}
         {{-- =============================== --}}
@@ -173,9 +222,13 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="bg-gradient-to-r from-gray-50 to-gray-100">
-                            <th class="px-4 py-3 text-left font-semibold text-gray-700 sticky left-0 bg-gray-100">From \ To</th>
-                            @foreach($heatmap as $from => $row)
-                                <th class="px-4 py-3 text-center font-semibold text-gray-700">{{ $from }}</th>
+                            <th class="px-4 py-3 text-left font-semibold text-gray-700 sticky left-0 bg-gray-100">
+                                From \ To
+                            </th>
+                            @foreach(array_keys(reset($heatmap)) as $to)
+                                <th class="px-4 py-3 text-center font-semibold text-gray-700">
+                                    {{ $to }}
+                                </th>
                             @endforeach
                         </tr>
                     </thead>
@@ -225,13 +278,13 @@
             </div>
 
             <div class="space-y-3">
-                @foreach ($fastItems as $index => $fi)
+                @forelse ($fastItems as $index => $fi)
                     <div class="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:from-blue-50 hover:to-white transition-all duration-200 border border-gray-100 hover:border-blue-200 hover:shadow-md group">
                         <div class="flex items-center space-x-4">
                             <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-110 transition-transform duration-200">
                                 {{ $index + 1 }}
                             </div>
-                            <span class="font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-200">{{ $fi->item->name }}</span>
+                            <span class="font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-200">{{ $fi->item?->name ?? '-' }}</span>
                         </div>
                         <div class="flex items-center space-x-3">
                             <span class="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">{{ number_format($fi->total, 2) }}</span>
@@ -240,194 +293,18 @@
                             </svg>
                         </div>
                     </div>
-                @endforeach
+                @empty
+                    <div class="text-center py-10 text-gray-500 text-sm">
+                        Belum ada aktivitas item pada bulan ini
+                    </div>
+                @endforelse
             </div>
         </div>
 
-        {{-- =============================== --}}
-        {{-- LATEST REQUEST / PO / RECEIVE --}}
-        {{-- =============================== --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            {{-- REQUEST --}}
-            <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                <div class="flex items-center justify-between mb-5">
-                    <h2 class="text-lg font-bold text-gray-900">Latest Request</h2>
-                    <div class="p-2 bg-blue-100 rounded-lg">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    @foreach ($latestRequest as $req)
-                        <div class="p-4 rounded-xl bg-gray-50 hover:bg-blue-50 transition-colors duration-200 border border-gray-100 hover:border-blue-200">
-                            <div class="flex items-center text-sm mb-2">
-                                <span class="font-semibold text-gray-900">{{ $req->cabangFrom->name }}</span>
-                                <svg class="w-4 h-4 mx-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                                </svg>
-                                <span class="font-semibold text-gray-900">{{ $req->cabangTo->name }}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs text-gray-500">
-                                <span class="font-mono bg-white px-2 py-1 rounded">#{{ $req->id }}</span>
-                                <span>{{ $req->trans_date }}</span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- PO --}}
-            <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                <div class="flex items-center justify-between mb-5">
-                    <h2 class="text-lg font-bold text-gray-900">Latest PO</h2>
-                    <div class="p-2 bg-emerald-100 rounded-lg">
-                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    @foreach ($latestPO as $po)
-                        <div class="p-4 rounded-xl bg-gray-50 hover:bg-emerald-50 transition-colors duration-200 border border-gray-100 hover:border-emerald-200">
-                            <p class="font-semibold text-gray-900 mb-2">{{ $po->cabangResto->name }}</p>
-                            <div class="flex items-center text-xs text-gray-500">
-                                <span class="font-mono bg-white px-2 py-1 rounded">PO #{{ $po->po_number }}</span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- RECEIVE --}}
-            <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                <div class="flex items-center justify-between mb-5">
-                    <h2 class="text-lg font-bold text-gray-900">Latest Receive</h2>
-                    <div class="p-2 bg-indigo-100 rounded-lg">
-                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    @foreach ($latestReceive as $rc)
-                        <div class="p-4 rounded-xl bg-gray-50 hover:bg-indigo-50 transition-colors duration-200 border border-gray-100 hover:border-indigo-200">
-                            <p class="font-semibold text-gray-900 mb-2">{{ $rc->purchaseOrder->cabangResto->name }}</p>
-                            <div class="flex items-center text-xs text-gray-500">
-                                <span class="font-mono bg-white px-2 py-1 rounded">Receive #{{ $rc->id }}</span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-        </div>
 
     </div>
 </div>
 
-{{-- =============================== --}}
-{{-- CHART.JS --}}
-{{-- =============================== --}}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    const ctx = document.getElementById('trendChart');
-
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {!! json_encode($requestTrend->keys()) !!},
-            datasets: [
-                {
-                    label: 'Request',
-                    data: {!! json_encode($requestTrend->values()) !!},
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59,130,246,0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#3b82f6',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7
-                },
-                {
-                    label: 'Purchase Order',
-                    data: {!! json_encode($poTrend->values()) !!},
-                    borderColor: '#10b981',
-                    backgroundColor: 'rgba(16,185,129,0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#10b981',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7
-                },
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 20,
-                        font: {
-                            size: 13,
-                            weight: '500'
-                        }
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    cornerRadius: 8,
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 13
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 12
-                        }
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false,
-                        drawBorder: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 12
-                        }
-                    }
-                }
-            }
-        }
-    });
-</script>
 
 </x-app-layout>

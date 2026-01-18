@@ -174,7 +174,7 @@ class BranchMaterialRequestController extends Controller
 
         return redirect()
             ->route('branch.request.index', $branchCode)
-            ->with('success', 'Request berhasil dibuat.');
+            ->with('success', 'Permintaan berhasil dibuat.');
     }
 
     public function show($branchCode, $id)
@@ -251,7 +251,7 @@ class BranchMaterialRequestController extends Controller
 
                 $totalAlloc = array_sum($alloc);
 
-                if ($totalAlloc != $needed) {
+                if ($totalAlloc < $needed) {
                     DB::rollBack();
 
                     Log::error('ALLOC != NEEDED', [
@@ -323,7 +323,7 @@ class BranchMaterialRequestController extends Controller
 
             return redirect()
                 ->route('branch.request.show', [$branchCode, $req->id])
-                ->with('success', 'Request berhasil di-approve.');
+                ->with('success', 'Permintaan berhasil di-approve.');
 
         } catch (\Throwable $e) {
 
@@ -374,7 +374,7 @@ class BranchMaterialRequestController extends Controller
         $req->delete();
 
         return redirect()->route('branch.request.index', $branchCode)
-            ->with('success', 'Request berhasil dihapus.');
+            ->with('success', 'Permintaan berhasil dihapus.');
     }
 
     public function edit($branchCode, $id)

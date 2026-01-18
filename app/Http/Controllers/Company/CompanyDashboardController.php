@@ -19,68 +19,36 @@ class CompanyDashboardController extends Controller
         $companyId = session('role.company.id');
 
         /* ===============================
+         * CABANG
+         * ===============================*/
+        $branches = CabangResto::where('company_id', $companyId)->get();
+        $branchIds = $branches->pluck('id');
+
+        /* ===============================
          * BASIC KPI
          * ===============================*/
-        $totalBranches = CabangResto::where('company_id', $companyId)->count();
+        $totalBranches = $branches->count();
         $totalSuppliers = Supplier::where('company_id', $companyId)->count();
         $totalItems = Item::where('company_id', $companyId)->count();
         $totalEmployees = 0;
-
-        $branches = CabangResto::where('company_id', $companyId)->get();
-        $branchIds = $branches->pluck('id');
 
         $start = Carbon::now()->startOfMonth();
         $end = Carbon::now()->endOfMonth();
 
         /* ===============================
-         * REQUEST CABANG (bulan ini)
+         * REQUEST BULAN INI
          * ===============================*/
-        $requestMonth = InventoryTrans::whereIn('cabang_id_from', $branchIds)
+        $requestMonth = InventoryTrans::whereIn('cabang_id_to', $branchIds)
             ->whereBetween('trans_date', [$start, $end])
             ->where('status', '!=', 'DRAFT')
             ->count();
 
         /* ===============================
-         * PURCHASE ORDER (bulan ini)
+         * PURCHASE ORDER BULAN INI
          * ===============================*/
         $poMonth = PurchaseOrder::whereIn('cabang_resto_id', $branchIds)
-            ->whereBetween('created_at', [$start, $end])
+            ->whereBetween('po_date', [$start, $end])
             ->count();
-
-        $receivedMonth = PoReceive::whereHas('purchaseOrder', function ($q) use ($branchIds) {
-            $q->whereIn('cabang_resto_id', $branchIds);
-        })
-            ->whereBetween('created_at', [$start, $end])
-            ->count();
-
-        /* ===============================
-         * REQUEST TREND (12 BULAN)
-         * ===============================*/
-        $requestTrend = InventoryTrans::selectRaw("
-            DATE_FORMAT(trans_date, '%Y-%m') AS month,
-            COUNT(*) AS total
-        ")
-            ->whereIn('cabang_id_from', $branchIds)
-            ->where('status', '!=', 'DRAFT')
-            ->where('trans_date', '>=', Carbon::now()->subMonths(12))
-            ->groupBy('month')
-            ->orderBy('month')
-            ->pluck('total', 'month');
-
-        /* ===============================
-         * PO TREND (12 BULAN)
-         * ===============================*/
-        $poTrend = PurchaseOrder::selectRaw("
-            DATE_FORMAT(created_at, '%Y-%m') AS month,
-            COUNT(*) AS total
-        ")
-            ->whereIn('cabang_resto_id', $branchIds)
-            ->where('created_at', '>=', Carbon::now()->subMonths(12))
-            ->groupBy('month')
-            ->orderBy('month')
-            ->pluck('total', 'month');
-
-        $avgPerMonth = $requestTrend->avg() ?? 0;
 
         /* ===============================
          * HEATMAP TRANSFER ANTAR CABANG
@@ -96,11 +64,12 @@ class CompanyDashboardController extends Controller
         }
 
         /* ===============================
-         * FAST MOVING ITEMS (TOP 10)
+         * FAST MOVING ITEMS (BULAN INI)
          * ===============================*/
         $fastItems = InvenTransDetail::selectRaw('items_id, SUM(qty) AS total')
-            ->whereHas('header', function ($q) use ($branchIds) {
-                $q->whereIn('cabang_id_from', $branchIds)
+            ->whereHas('header', function ($q) use ($branchIds, $start, $end) {
+                $q->whereIn('cabang_id_to', $branchIds)
+                    ->whereBetween('trans_date', [$start, $end])
                     ->where('status', '!=', 'DRAFT');
             })
             ->groupBy('items_id')
@@ -113,7 +82,7 @@ class CompanyDashboardController extends Controller
          * LATEST REQUEST
          * ===============================*/
         $latestRequest = InventoryTrans::with(['cabangFrom', 'cabangTo'])
-            ->whereIn('cabang_id_from', $branchIds)
+            ->whereIn('cabang_id_to', $branchIds)
             ->where('status', '!=', 'DRAFT')
             ->orderByDesc('id')
             ->limit(5)
@@ -149,10 +118,6 @@ class CompanyDashboardController extends Controller
             'totalEmployees',
             'requestMonth',
             'poMonth',
-            'receivedMonth',
-            'avgPerMonth',
-            'requestTrend',
-            'poTrend',
             'heatmap',
             'fastItems',
             'latestRequest',

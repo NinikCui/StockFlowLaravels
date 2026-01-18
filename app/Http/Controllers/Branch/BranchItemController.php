@@ -24,11 +24,9 @@ class BranchItemController extends Controller
         $branchId = session('role.branch.id');
         $companyCode = session('role.company.code');
 
-        // Ambil semua warehouse dalam cabang
         $warehouseIds = Warehouse::where('cabang_resto_id', $branchId)
             ->pluck('id');
 
-        // Ambil item + total stok per cabang
         $items = Item::withSum(['stocks as total_qty' => function ($q) use ($warehouseIds) {
             $q->whereIn('warehouse_id', $warehouseIds);
         }], 'qty')

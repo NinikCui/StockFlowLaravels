@@ -23,7 +23,7 @@
         </div>
 
         <div>
-            <h1 class="text-3xl font-bold text-gray-900">Buat Transfer Antar Gudang</h1>
+            <h1 class="text-3xl font-bold text-gray-900">Buat Transfer Antar Cabang</h1>
             <p class="text-sm text-gray-600 mt-1">
                 Permintaan pemindahan stok dari cabang lain ke cabang ini.
             </p>

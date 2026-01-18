@@ -34,7 +34,30 @@
                 </div>
 
             </div>
+            
         </div>
+@if (session('success'))
+    <div 
+        x-data="{ show: true }"
+        x-show="show"
+        x-transition
+        x-init="setTimeout(() => show = false, 3000)"
+        class="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-emerald-700 shadow-sm"
+    >
+        <svg class="w-5 h-5 mt-0.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M5 13l4 4L19 7"/>
+        </svg>
+
+        <div class="flex-1 text-sm font-medium">
+            {{ session('success') }}
+        </div>
+
+        <button @click="show = false" class="text-emerald-600 hover:text-emerald-800">
+            ✕
+        </button>
+    </div>
+@endif
 
         {{-- TAB HEADER --}}
         <div class="flex gap-6 border-b mb-6 pb-1 text-sm font-semibold">

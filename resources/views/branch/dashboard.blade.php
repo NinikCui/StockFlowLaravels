@@ -121,48 +121,6 @@
 
         </div>
 
-        {{-- =============================== --}}
-        {{-- CHART ROW --}}
-        {{-- =============================== --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-            {{-- Trend Stok --}}
-            <div class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-lg">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="text-lg font-bold text-gray-900">Trend Stok</h2>
-                            <p class="text-xs text-gray-500">6 bulan terakhir</p>
-                        </div>
-                    </div>
-                </div>
-                <canvas id="stockTrendChart" height="120"></canvas>
-            </div>
-
-            {{-- Aktivitas Request --}}
-            <div class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <h2 class="text-lg font-bold text-gray-900">Aktivitas Request</h2>
-                            <p class="text-xs text-gray-500">12 bulan terakhir</p>
-                        </div>
-                    </div>
-                </div>
-                <canvas id="requestActivityChart" height="120"></canvas>
-            </div>
-
-        </div>
 
         {{-- =============================== --}}
         {{-- TABLE ROW --}}
@@ -255,14 +213,14 @@
                                     {{-- TEXT --}}
                                     <div class="flex-1 min-w-0">
                                         <p class="text-sm text-gray-900 font-semibold group-hover:text-blue-600 transition-colors">
-                                            {{ $activity['description'] }}
+                                            {{ $activity['note'] }}
                                         </p>
                                         <div class="flex items-center gap-2 mt-2">
-                                            <span class="text-xs text-gray-600 font-medium">{{ $activity['from'] }}</span>
+                                            <span class="text-xs text-gray-600 font-medium">{{ $activity['from'] ?? '-' }}</span>
                                             <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                                             </svg>
-                                            <span class="text-xs text-gray-600 font-medium">{{ $activity['to'] }}</span>
+                                            <span class="text-xs text-gray-600 font-medium">{{ $activity['to'] ?? '-' }}</span>
                                         </div>
                                         <div class="flex items-center gap-1.5 mt-2">
                                             <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,179 +247,7 @@
 
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script>
-/* ------------------------------
- * STOCK TREND CHART
- * ------------------------------ */
-new Chart(document.getElementById('stockTrendChart'), {
-    type: 'line',
-    data: {
-        labels: {!! json_encode($stockTrendLabels) !!},
-        datasets: [{
-            label: 'Total Stok',
-            data: {!! json_encode($stockTrendData) !!},
-            borderColor: '#10b981',
-            backgroundColor: 'rgba(16,185,129,0.1)',
-            fill: true,
-            tension: 0.4,
-            borderWidth: 3,
-            pointRadius: 5,
-            pointBackgroundColor: '#10b981',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2,
-            pointHoverRadius: 7,
-            pointHoverBackgroundColor: '#10b981',
-            pointHoverBorderWidth: 3
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        interaction: {
-            intersect: false,
-            mode: 'index'
-        },
-        plugins: {
-            legend: { 
-                display: true,
-                position: 'bottom',
-                labels: {
-                    usePointStyle: true,
-                    padding: 15,
-                    font: {
-                        size: 12,
-                        weight: '600'
-                    }
-                }
-            },
-            tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                padding: 12,
-                cornerRadius: 8,
-                titleFont: {
-                    size: 13,
-                    weight: 'bold'
-                },
-                bodyFont: {
-                    size: 12
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(0, 0, 0, 0.05)',
-                    drawBorder: false
-                },
-                ticks: {
-                    font: {
-                        size: 11
-                    }
-                }
-            },
-            x: {
-                grid: {
-                    display: false,
-                    drawBorder: false
-                },
-                ticks: {
-                    font: {
-                        size: 11
-                    }
-                }
-            }
-        }
-    }
-});
-
-
-/* ------------------------------
- * REQUEST ACTIVITY CHART
- * ------------------------------ */
-new Chart(document.getElementById('requestActivityChart'), {
-    type: 'bar',
-    data: {
-        labels: {!! json_encode($requestLabels) !!},
-        datasets: [
-            {
-                label: 'Masuk',
-                data: {!! json_encode($requestInData) !!},
-                backgroundColor: '#10b981',
-                borderRadius: 6,
-                borderWidth: 0
-            },
-            {
-                label: 'Keluar',
-                data: {!! json_encode($requestOutData) !!},
-                backgroundColor: '#3b82f6',
-                borderRadius: 6,
-                borderWidth: 0
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        interaction: {
-            intersect: false,
-            mode: 'index'
-        },
-        plugins: {
-            legend: { 
-                position: 'bottom',
-                labels: {
-                    usePointStyle: true,
-                    padding: 15,
-                    font: {
-                        size: 12,
-                        weight: '600'
-                    }
-                }
-            },
-            tooltip: {
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                padding: 12,
-                cornerRadius: 8,
-                titleFont: {
-                    size: 13,
-                    weight: 'bold'
-                },
-                bodyFont: {
-                    size: 12
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: 'rgba(0, 0, 0, 0.05)',
-                    drawBorder: false
-                },
-                ticks: {
-                    font: {
-                        size: 11
-                    }
-                }
-            },
-            x: {
-                grid: {
-                    display: false,
-                    drawBorder: false
-                },
-                ticks: {
-                    font: {
-                        size: 11
-                    }
-                }
-            }
-        }
-    }
-});
-</script>
 
 <style>
 /* Custom Scrollbar */

@@ -311,10 +311,13 @@
                         Batal
                     </button>
 
-                    <button id="approveSubmit"
-                            disabled
-                            class="px-4 py-2 bg-emerald-600 text-white rounded-lg">
-                        Konfirmasi Approve
+                    <button
+                        id="approveSubmit"
+                        disabled
+                        class="px-4 py-2 rounded-lg text-sm font-semibold transition
+                            bg-gray-300 text-gray-500 cursor-not-allowed
+                            disabled:opacity-100">
+                        Konfirmasi 
                     </button>
                 </div>
             </form>
@@ -461,25 +464,38 @@ function closeReceiveModal() {
 
     {{-- VALIDASI ALOKASI STOK --}}
     <script>
-        document.querySelectorAll('.alloc-input').forEach(input => {
-            input.addEventListener('input', validateAllocations);
+        document.addEventListener('input', function (e) {
+            if (e.target.classList.contains('alloc-input')) {
+                validateAllocations();
+            }
         });
 
         function validateAllocations() {
-
             let allValid = true;
 
-            document.querySelectorAll('.alloc-input').forEach(input => {
-                const itemId = input.dataset.item;
-                const needed = parseFloat(input.dataset.needed);
+            const itemIds = [...new Set(
+                Array.from(document.querySelectorAll('.alloc-input'))
+                    .map(i => i.dataset.item)
+            )];
 
+            itemIds.forEach(itemId => {
+                const inputs = document.querySelectorAll(`.alloc-input[data-item="${itemId}"]`);
+                const needed = parseFloat(inputs[0].dataset.needed);
                 let sum = 0;
-                document.querySelectorAll(`.alloc-input[data-item="${itemId}"]`)
-                    .forEach(i => sum += parseFloat(i.value || 0));
+                let hasInput = false;
+
+                inputs.forEach(i => {
+                    const val = parseFloat(i.value);
+                    if (!isNaN(val) && val > 0) {
+                        sum += val;
+                        hasInput = true;
+                    }
+                });
 
                 const warn = document.getElementById(`alloc-warning-${itemId}`);
 
-                if (sum !== needed) {
+                if (!hasInput || sum < needed) {
+                    warn.textContent = `Total alokasi minimal ${needed}`;
                     warn.classList.remove('hidden');
                     allValid = false;
                 } else {
@@ -487,8 +503,27 @@ function closeReceiveModal() {
                 }
             });
 
-            document.getElementById('approveSubmit').disabled = !allValid;
+            const btn = document.getElementById('approveSubmit');
+
+            if (allValid) {
+                btn.disabled = false;
+                btn.classList.remove(
+                    'bg-gray-300', 'text-gray-500', 'cursor-not-allowed'
+                );
+                btn.classList.add(
+                    'bg-emerald-600', 'text-white', 'hover:bg-emerald-700', 'cursor-pointer'
+                );
+            } else {
+                btn.disabled = true;
+                btn.classList.remove(
+                    'bg-emerald-600', 'text-white', 'hover:bg-emerald-700', 'cursor-pointer'
+                );
+                btn.classList.add(
+                    'bg-gray-300', 'text-gray-500', 'cursor-not-allowed'
+                );
+            }
         }
     </script>
+
 
 </x-app-layout>
