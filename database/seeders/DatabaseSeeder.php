@@ -14,6 +14,21 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             SpatiePermissionSeeder::class,
+            CompanyWithOwnerSeeder::class,
+            CabangRestoSeeder::class,
+            RoleSeeder::class,
+            UserSeeder::class,
+            CategorySeeder::class,
+            ItemSeeder::class,
+            WarehouseSeeder::class,
+
+            SupplierSeeder::class,
+            SupplierItemSeeder::class,
+            PurchaseSeeder::class,
+            PoDetailSeeder::class,
+            ReceivingSeeder::class,
+            StockSeeder::class,
+            StockTransferSeeder::class,
         ]);
     }
 }

@@ -303,7 +303,7 @@ return new class extends Migration
             $table->unsignedBigInteger('suppliers_id');
 
             $table->date('po_date');
-            $table->enum('status', ['DRAFT', 'APPROVED', 'PARTIAL', 'RECEIVED', 'CANCELLED']);
+            $table->enum('status', ['DRAFT', 'APPROVED', 'RECEIVED', 'CANCELLED']);
 
             $table->string('note', 200);
             $table->boolean('ontime');
