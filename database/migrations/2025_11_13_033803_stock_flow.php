@@ -74,7 +74,7 @@ return new class extends Migration
             $table->string('address', 145);
             $table->string('city', 145);
             $table->string('phone', 45);
-
+            $table->boolean(column: 'utama')->default(false);
             $table->boolean('is_active')->default(true);
 
             $table->decimal('latitude', 10, 7)->nullable();

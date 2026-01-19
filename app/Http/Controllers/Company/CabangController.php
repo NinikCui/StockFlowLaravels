@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class CabangController extends Controller
@@ -16,7 +17,7 @@ class CabangController extends Controller
     {
         // Cari company berdasarkan code tenant
         $company = Company::where('code', $companyCode)->firstOrFail();
-
+        $branchCode = session('role.branch.code');
         $query = CabangResto::with([
             'manager:id,username,email',
         ])->where('company_id', $company->id);
@@ -55,12 +56,21 @@ class CabangController extends Controller
 
         $cabang = $query->get();
 
-        return view('company.cabang.index', compact('cabang', 'companyCode'));
+        return view('company.cabang.index', compact('cabang', 'companyCode', 'branchCode'));
     }
 
     public function create($companyCode)
     {
-        return view('company.cabang.create', compact('companyCode'));
+        $company = Company::where('code', $companyCode)->firstOrFail();
+
+        $cabangUtama = CabangResto::where('company_id', $company->id)
+            ->where('utama', true)
+            ->first();
+
+        return view('company.cabang.create', compact(
+            'companyCode',
+            'cabangUtama'
+        ));
     }
 
     public function store(Request $request, $companyCode)
@@ -78,12 +88,27 @@ class CabangController extends Controller
             'city' => 'required',
             'address' => 'nullable',
             'phone' => 'nullable|max:20',
+            'utama' => 'nullable|boolean',
         ]);
 
-        CabangResto::create([
-            'company_id' => $company->id,
-            ...$validated,
-        ]);
+        DB::transaction(function () use ($validated, $company) {
+
+            // Jika cabang baru dijadikan cabang utama
+            if (! empty($validated['utama']) && $validated['utama']) {
+                CabangResto::where('company_id', $company->id)
+                    ->update(['utama' => false]);
+            }
+
+            CabangResto::create([
+                'company_id' => $company->id,
+                'name' => $validated['name'],
+                'code' => strtoupper($validated['code']),
+                'city' => $validated['city'],
+                'address' => $validated['address'] ?? null,
+                'phone' => $validated['phone'] ?? null,
+                'utama' => $validated['utama'] ?? false,
+            ]);
+        });
 
         return redirect()
             ->route('cabang.index', $companyCode)
@@ -150,27 +175,27 @@ class CabangController extends Controller
             ->where('code', $code)
             ->firstOrFail();
 
-        // Daftar pegawai yang role-nya sesuai cabang
+        $cabangUtama = CabangResto::where('company_id', $companyId)
+            ->where('utama', true)
+            ->first();
+
         $pegawai = User::with('roles')
             ->whereHas('roles', function ($q) use ($cabang) {
                 $q->where('roles.cabang_resto_id', $cabang->id);
             })
             ->get()
-            ->map(function ($p) {
-                $role = $p->roles->first();
+            ->map(fn ($p) => [
+                'id' => $p->id,
+                'username' => $p->username,
+                'role_code' => $p->roles->first()?->code ?? '-',
+            ]);
 
-                return [
-                    'id' => $p->id,
-                    'username' => $p->username,
-                    'role_code' => $role?->code ?? '-',
-                ];
-            });
-
-        return view('company.cabang.edit', [
-            'companyCode' => $companyCode,
-            'cabang' => $cabang,
-            'pegawai' => $pegawai,
-        ]);
+        return view('company.cabang.edit', compact(
+            'companyCode',
+            'cabang',
+            'cabangUtama',
+            'pegawai'
+        ));
     }
 
     public function update(Request $request, $companyCode, $code)
@@ -195,14 +220,13 @@ class CabangController extends Controller
             'address' => 'nullable|string',
             'is_active' => 'required|boolean',
             'manager_user_id' => ['nullable', Rule::exists('users', 'id')],
+            'utama' => 'nullable|boolean',
         ]);
 
-        // Jika ada manager, pastikan role cabangnya cocok
         if ($request->manager_user_id) {
             $valid = User::where('id', $request->manager_user_id)
-                ->whereHas('roles', function ($q) use ($cabang) {
-                    $q->where('roles.cabang_resto_id', $cabang->id);
-                })
+                ->whereHas('roles', fn ($q) => $q->where('roles.cabang_resto_id', $cabang->id)
+                )
                 ->exists();
 
             if (! $valid) {
@@ -212,15 +236,24 @@ class CabangController extends Controller
             }
         }
 
-        $cabang->update([
-            'name' => $request->name,
-            'code' => strtoupper($request->code),
-            'city' => $request->city,
-            'phone' => $request->phone,
-            'address' => $request->address,
-            'is_active' => $request->is_active,
-            'manager_user_id' => $request->manager_user_id,
-        ]);
+        DB::transaction(function () use ($request, $cabang, $companyId) {
+
+            if ($request->boolean('utama')) {
+                CabangResto::where('company_id', $companyId)
+                    ->update(['utama' => false]);
+            }
+
+            $cabang->update([
+                'name' => $request->name,
+                'code' => strtoupper($request->code),
+                'city' => $request->city,
+                'phone' => $request->phone,
+                'address' => $request->address,
+                'is_active' => $cabang->utama ? true : $request->is_active,
+                'manager_user_id' => $request->manager_user_id,
+                'utama' => $request->boolean('utama'),
+            ]);
+        });
 
         return redirect()
             ->route('cabang.detail', [$companyCode, strtoupper($request->code)])
