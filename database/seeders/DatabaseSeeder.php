@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
             SupplierItemSeeder::class,
             PurchaseSeeder::class,
             PoDetailSeeder::class,
-            ReceivingSeeder::class,
+            // ReceivingSeeder::class,
             StockSeeder::class,
             StockTransferSeeder::class,
         ]);

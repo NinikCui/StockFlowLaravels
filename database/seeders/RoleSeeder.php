@@ -15,20 +15,66 @@ class RoleSeeder extends Seeder
         $company = Company::first();
         $cabangs = CabangResto::all();
 
+        // Mapping role → permission
+        $rolePermissions = [
+
+            'MANAGER' => Permission::all(),
+
+            'KASIR' => Permission::whereIn('name', [
+                'pos.manage',
+                'report.view',
+                'item.view',
+                'category.view',
+                'inventory.view',
+            ])->get(),
+
+            'GUDANG' => Permission::whereIn('name', [
+                'inventory.view',
+                'inventory.create',
+                'inventory.adjust',
+                'inventory.audit',
+
+                'item.view',
+                'supplier.view',
+                'supplier.create',
+                'supplier.update',
+
+                'warehouse.view',
+                'warehouse.create',
+                'warehouse.update',
+
+                'purchase.view',
+                'purchase.create',
+                'transfer.view',
+                'transfer.create',
+            ])->get(),
+
+            'KITCHEN' => Permission::whereIn('name', [
+                'item.view',
+                'category.view',
+                'inventory.view',
+            ])->get(),
+
+            'STAFF' => Permission::whereIn('name', [
+                'item.view',
+                'inventory.view',
+            ])->get(),
+        ];
+
         foreach ($cabangs as $cabang) {
+            foreach ($rolePermissions as $roleName => $permissions) {
 
-            // MANAGER
-            $manager = Role::create([
-                'company_id' => $company->id,
-                'cabang_resto_id' => $cabang->id,
-                'code' => 'MANAGER_'.$cabang->name,
-                'name' => 'MANAGER_'.strtoupper($cabang->name),
-                'guard_name' => 'web',
-            ]);
+                $role = Role::firstOrCreate([
+                    'company_id' => $company->id,
+                    'cabang_resto_id' => $cabang->id,
+                    'name' => $roleName.'_'.strtoupper($cabang->name),
+                    'guard_name' => 'web',
+                ], [
+                    'code' => $roleName.'_'.$cabang->id,
+                ]);
 
-            $manager->syncPermissions(Permission::all());
-
+                $role->syncPermissions($permissions);
+            }
         }
-
     }
 }

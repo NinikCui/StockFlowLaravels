@@ -70,7 +70,7 @@ class PurchaseSeeder extends Seeder
             'warehouse_id' => $warehouse->id,
             'suppliers_id' => $supplier->id,
             'po_date' => Carbon::now()->subDays(5),
-            'status' => 'RECEIVED',
+            'status' => 'APPROVED',
             'note' => 'Barang sudah diterima',
             'ontime' => 1,
             'po_number' => 'PO-'.strtoupper(Str::random(6)),
