@@ -29,6 +29,12 @@ class DatabaseSeeder extends Seeder
             // ReceivingSeeder::class,
             StockSeeder::class,
             StockTransferSeeder::class,
+            ProductSeeder::class,
+            BomSeeder::class,
+            ProductBundleSeeder::class,
+            ProductBundleItemSeeder::class,
+            CategoryIssueSeeder::class,
+
         ]);
     }
 }

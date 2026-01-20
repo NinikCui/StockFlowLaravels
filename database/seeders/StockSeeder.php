@@ -52,6 +52,14 @@ class StockSeeder extends Seeder
                 'qty' => 0,
                 'expired_at' => Carbon::now()->addDays(30),
             ]);
+            Stock::create([
+                'code' => 'STK-ZERO-'.strtoupper(Str::random(4)),
+                'company_id' => $company->id,
+                'warehouse_id' => $warehouse->id,
+                'item_id' => Item::inRandomOrder()->first()->id,
+                'qty' => 0,
+                'expired_at' => Carbon::now()->addDays(3),
+            ]);
 
             // stok expired
             Stock::create([

@@ -29,7 +29,7 @@ class MenuPromotionRecommendationService
             ->selectRaw('
                 i.id as item_id,
                 p.id as product_id,
-                SUM(b.qty_per_unit * s.qty) as potential_usage,
+                FLOOR(SUM(s.qty / b.qty_per_unit)) as potential_usage,
                 MIN(DATEDIFF(s.expired_at, ?)) as days_to_expired
             ', [$today])
             ->groupBy('i.id', 'p.id')
