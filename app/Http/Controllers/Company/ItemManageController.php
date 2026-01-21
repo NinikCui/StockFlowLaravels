@@ -7,6 +7,7 @@ use App\Models\CabangResto;
 use App\Models\CategoriesIssues;
 use App\Models\Item;
 use App\Models\Stock;
+use App\Models\UnitConversion;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Http\Request;
@@ -17,14 +18,12 @@ class itemManageController extends Controller
     {
         $companyId = session('role.company.id');
 
-        // Filter cabang (optional)
         $branchId = $request->get('branch_id');
 
         $branches = CabangResto::where('company_id', $companyId)
             ->orderBy('name')
             ->get();
 
-        // Ambil warehouse sesuai filter cabang
         $warehouseIds = Warehouse::whereIn(
             'cabang_resto_id',
             $branchId
@@ -32,21 +31,28 @@ class itemManageController extends Controller
                 : $branches->pluck('id')
         )->pluck('id');
 
-        // Ambil item + total stok
         $items = Item::withSum([
             'stocks as total_qty' => function ($q) use ($warehouseIds) {
                 $q->whereIn('warehouse_id', $warehouseIds);
             },
         ], 'qty')
+            ->with('satuan') // penting
             ->where('company_id', $companyId)
             ->orderBy('name')
             ->get();
+
+        // 🔥 siapkan conversion PER SATUAN (siap pakai Blade)
+        $unitConversions = UnitConversion::with('toSatuan')
+            ->where('is_active', true)
+            ->get()
+            ->groupBy('from_satuan_id');
 
         return view('company.itemmanage.index', [
             'items' => $items,
             'branches' => $branches,
             'selectedBranch' => $branchId,
             'companyCode' => session('role.company.code'),
+            'unitConversions' => $unitConversions,
         ]);
     }
 

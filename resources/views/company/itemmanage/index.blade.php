@@ -23,18 +23,16 @@
                     </p>
                 </div>
 
-                {{-- ADD ITEM --}}
                 <x-crud-add
                     resource="item"
-                                            :companyCode="$companyCode"
-
+                    :companyCode="$companyCode"
                     permissionPrefix="item"
                 />
             </div>
         </div>
 
         {{-- ===============================
-            FILTER CABANG (KHUSUS COMPANY)
+            FILTER CABANG
         =============================== --}}
         <form method="GET" class="mb-8">
             <div class="flex flex-wrap items-center gap-4 bg-white p-4 rounded-2xl shadow border">
@@ -44,8 +42,7 @@
                     class="rounded-xl border-gray-300 text-sm focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="">Semua Cabang</option>
                     @foreach ($branches as $branch)
-                        <option value="{{ $branch->id }}"
-                            @selected($selectedBranch == $branch->id)>
+                        <option value="{{ $branch->id }}" @selected($selectedBranch == $branch->id)>
                             {{ $branch->name }}
                         </option>
                     @endforeach
@@ -57,107 +54,6 @@
                 </button>
             </div>
         </form>
-
-        @php
-            $expiredCount = $items->filter(fn($i) => !is_null($i->days_to_expire) && $i->days_to_expire <= 7)->count();
-            $lowStockCount = $items->filter(fn($i) => $i->is_low_stock)->count();
-            $nearStockCount = $items->filter(fn($i) => $i->is_near_low_stock)->count();
-            $totalItems = $items->count();
-        @endphp
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-            
-            {{-- Total Items --}}
-            <div class="relative group">
-                <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-blue-600 rounded-3xl opacity-20 group-hover:opacity-30 blur transition duration-300"></div>
-                <div class="relative bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 rounded-3xl p-6 border border-blue-200/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                            </svg>
-                        </div>
-                        <div class="px-3 py-1.5 bg-blue-200/60 rounded-full">
-                            <svg class="w-4 h-4 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                    </div>
-                    <p class="text-xs font-bold text-blue-700 uppercase tracking-wider mb-2">Total Item</p>
-                    <p class="text-4xl font-black text-blue-900 mb-1">{{ $totalItems }}</p>
-                    <div class="h-1 w-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"></div>
-                </div>
-            </div>
-
-            {{-- Hampir Expired --}}
-            <div class="relative group">
-                <div class="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-red-600 rounded-3xl opacity-20 group-hover:opacity-30 blur transition duration-300"></div>
-                <div class="relative bg-gradient-to-br from-red-50 via-red-50 to-red-100 rounded-3xl p-6 border border-red-200/50 shadow-lg hover:shadow-xl transition-all duration-300 {{ $expiredCount ? '' : 'opacity-60' }}">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-br from-red-500 to-red-700 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        @if($expiredCount)
-                            <span class="px-3 py-1.5 bg-red-600 text-white text-xs font-black rounded-full animate-pulse shadow-md">!</span>
-                        @endif
-                    </div>
-                    <p class="text-xs font-bold text-red-700 uppercase tracking-wider mb-2">Hampir Kadaluarsa</p>
-                    <p class="text-4xl font-black text-red-900 mb-1">{{ $expiredCount }}</p>
-                    <div class="flex items-center gap-2">
-                        <div class="h-1 w-16 bg-gradient-to-r from-red-500 to-red-600 rounded-full"></div>
-                        <span class="text-xs font-bold text-red-700">≤ 7 hari</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Mendekati Minimum --}}
-            <div class="relative group">
-                <div class="absolute -inset-0.5 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-3xl opacity-20 group-hover:opacity-30 blur transition duration-300"></div>
-                <div class="relative bg-gradient-to-br from-yellow-50 via-yellow-50 to-yellow-100 rounded-3xl p-6 border border-yellow-200/50 shadow-lg hover:shadow-xl transition-all duration-300 {{ $nearStockCount ? '' : 'opacity-60' }}">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                        </div>
-                        @if($nearStockCount)
-                            <span class="px-3 py-1.5 bg-yellow-600 text-white text-xs font-black rounded-full shadow-md">⚠</span>
-                        @endif
-                    </div>
-                    <p class="text-xs font-bold text-yellow-700 uppercase tracking-wider mb-2">Mendekati Minimum</p>
-                    <p class="text-4xl font-black text-yellow-900 mb-1">{{ $nearStockCount }}</p>
-                    <div class="flex items-center gap-2">
-                        <div class="h-1 w-16 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full"></div>
-                        <span class="text-xs font-bold text-yellow-700">Perlu pantau</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Stok Kritis --}}
-            <div class="relative group">
-                <div class="absolute -inset-0.5 bg-gradient-to-r from-rose-500 to-rose-600 rounded-3xl opacity-20 group-hover:opacity-30 blur transition duration-300"></div>
-                <div class="relative bg-gradient-to-br from-rose-50 via-rose-50 to-rose-100 rounded-3xl p-6 border border-rose-200/50 shadow-lg hover:shadow-xl transition-all duration-300 {{ $lowStockCount ? '' : 'opacity-60' }}">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="w-14 h-14 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl flex items-center justify-center shadow-lg transform group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </div>
-                        @if($lowStockCount)
-                            <span class="px-3 py-1.5 bg-rose-600 text-white text-xs font-black rounded-full animate-pulse shadow-md">!!</span>
-                        @endif
-                    </div>
-                    <p class="text-xs font-bold text-rose-700 uppercase tracking-wider mb-2">Stok Kritis</p>
-                    <p class="text-4xl font-black text-rose-900 mb-1">{{ $lowStockCount }}</p>
-                    <div class="flex items-center gap-2">
-                        <div class="h-1 w-16 bg-gradient-to-r from-rose-500 to-rose-600 rounded-full"></div>
-                        <span class="text-xs font-bold text-rose-700">Segera isi</span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
 
         {{-- ===============================
             TABLE
@@ -176,6 +72,7 @@
                     <tbody class="divide-y divide-gray-100">
                         @forelse ($items as $item)
                             <tr class="hover:bg-gray-50 transition group">
+
                                 {{-- ITEM --}}
                                 <td class="px-6 py-6">
                                     <div class="flex items-center gap-4">
@@ -199,23 +96,68 @@
                                     </div>
                                 </td>
 
-                                {{-- STATUS --}}
+                                {{-- STATUS STOK + SATUAN + TOOLTIP --}}
                                 <td class="px-6 py-6">
-                                    <span
-                                        class="inline-flex items-center gap-2 px-5 py-2 rounded-2xl text-sm font-black
-                                        {{ $item->is_low_stock
-                                            ? 'bg-red-600 text-white'
-                                            : ($item->is_near_low_stock
-                                                ? 'bg-yellow-500 text-white'
-                                                : 'bg-emerald-600 text-white') }}">
-                                        Stok: {{ $item->total_qty ?? 0 }}
-                                    </span>
+                                    <div class="inline-flex items-center gap-1 relative group">
+
+                                        <span
+                                            class="inline-flex items-center gap-2 px-5 py-2 rounded-2xl text-sm font-black
+                                            {{ $item->is_low_stock
+                                                ? 'bg-red-600 text-white'
+                                                : ($item->is_near_low_stock
+                                                    ? 'bg-yellow-500 text-white'
+                                                    : 'bg-emerald-600 text-white') }}"
+                                        >
+                                            Stok:
+                                            {{ 
+                                                ($item->total_qty ?? 0) == floor($item->total_qty ?? 0)
+                                                    ? number_format($item->total_qty ?? 0, 0, ',', '.')
+                                                    : number_format($item->total_qty ?? 0, 2, ',', '.')
+                                            }}
+                                            {{ $item->satuan->code ?? '' }}
+                                        </span>
+
+                                        @if (
+                                            isset($unitConversions[$item->satuan_id]) &&
+                                            $unitConversions[$item->satuan_id]->count()
+                                        )
+                                            <span
+                                                class="ml-1 w-4 h-4 text-xs font-bold flex items-center justify-center
+                                                       rounded-full bg-white/80 text-gray-700 cursor-pointer border">
+                                                ?
+                                            </span>
+
+                                            <div
+                                                class="absolute left-0 top-full mt-2 w-56
+                                                       hidden group-hover:block
+                                                       bg-white border border-gray-200 shadow-xl
+                                                       rounded-xl p-3 text-xs text-gray-700 z-50">
+                                                <div class="font-semibold text-gray-900 mb-1">
+                                                    Konversi Satuan
+                                                </div>
+
+                                                <ul class="space-y-1">
+                                                    @foreach ($unitConversions[$item->satuan_id] as $conv)
+                                                        <li>
+                                                           {{
+                                                                (($item->total_qty ?? 0) * $conv->factor)
+                                                                    == floor(($item->total_qty ?? 0) * $conv->factor)
+                                                                        ? number_format(($item->total_qty ?? 0) * $conv->factor, 0, ',', '.')
+                                                                        : number_format(($item->total_qty ?? 0) * $conv->factor, 3, ',', '.')
+                                                            }}
+                                                            {{ $conv->toSatuan->code }}
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        @endif
+
+                                    </div>
                                 </td>
 
                                 {{-- AKSI --}}
                                 <td class="px-6 py-6">
                                     <div class="flex justify-center gap-2">
-                                        {{-- DETAIL --}}
                                         <a href="{{ route('stockmanage.index', [
                                                 'companyCode' => $companyCode,
                                                 'item' => $item->id
@@ -224,13 +166,10 @@
                                             Detail
                                         </a>
 
-                                        {{-- RIWAYAT --}}
                                         <a href="{{ route('itemmanage.history', [$companyCode, $item->id]) }}"
                                             class="px-4 py-2 text-xs font-bold bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200">
                                             Riwayat
                                         </a>
-
-
                                     </div>
                                 </td>
                             </tr>

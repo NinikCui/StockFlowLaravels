@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Item;
 use App\Models\Satuan;
 use App\Models\Stock;
+use App\Models\UnitConversion;
 use App\Models\User;
 use App\Models\Warehouse;
 use Carbon\Carbon;
@@ -37,17 +38,16 @@ class BranchItemController extends Controller
         $warehouseIds = Warehouse::where('cabang_resto_id', $branchId)
             ->pluck('id');
 
-        $items = Item::withSum(['stocks as total_qty' => function ($q) use ($warehouseIds) {
-            $q->whereIn('warehouse_id', $warehouseIds);
-        }], 'qty')
+        $items = Item::with('satuan')
+            ->withSum(['stocks as total_qty' => function ($q) use ($warehouseIds) {
+                $q->whereIn('warehouse_id', $warehouseIds);
+            }], 'qty')
             ->where('company_id', $companyId)
             ->get();
 
         foreach ($items as $item) {
-
             $stokSekarang = $item->total_qty ?? 0;
             $minStock = $item->min_stock ?? 0;
-
             $warningThreshold = ceil($minStock * 1.2);
 
             $item->is_low_stock = $stokSekarang < $minStock;
@@ -57,7 +57,6 @@ class BranchItemController extends Controller
             $item->recommended_restock = 0;
 
             if ($item->is_low_stock || $item->is_near_low_stock) {
-
                 $usage = DB::table('stock_movements')
                     ->where('item_id', $item->id)
                     ->where('company_id', $companyId)
@@ -68,20 +67,11 @@ class BranchItemController extends Controller
                     ->toArray();
 
                 $alpha = 0.3;
-                $item->predicted_usage =
-                    $this->exponentialSmoothing($usage, $alpha);
+                $item->predicted_usage = $this->exponentialSmoothing($usage, $alpha);
 
-                if ($item->is_low_stock) {
-                    $item->recommended_restock = max(
-                        1,
-                        ($minStock - $stokSekarang) + ceil($item->predicted_usage)
-                    );
-                } else {
-                    $item->recommended_restock = max(
-                        1,
-                        ceil($item->predicted_usage)
-                    );
-                }
+                $item->recommended_restock = $item->is_low_stock
+                    ? max(1, ($minStock - $stokSekarang) + ceil($item->predicted_usage))
+                    : max(1, ceil($item->predicted_usage));
             }
 
             $exp = DB::table('stocks')
@@ -94,17 +84,22 @@ class BranchItemController extends Controller
             if ($exp) {
                 $expDate = Carbon::parse($exp->expired_at);
                 $item->days_to_expire = now()->diffInDays($expDate, false);
-                $item->nearest_expiry = $expDate;
             } else {
                 $item->days_to_expire = null;
-                $item->nearest_expiry = null;
             }
         }
+
+        // 🔥 conversion universal
+        $unitConversions = UnitConversion::with('toSatuan')
+            ->where('is_active', true)
+            ->get()
+            ->groupBy('from_satuan_id');
 
         return view('branch.item.index', compact(
             'items',
             'branchCode',
-            'companyCode'
+            'companyCode',
+            'unitConversions'
         ));
     }
 

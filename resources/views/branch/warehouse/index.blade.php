@@ -147,7 +147,6 @@
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Kode</th>
                         <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tipe</th>
                         <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Jumlah Item</th>
-                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Stok</th>
                         <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Aksi</th>
                     </tr>
                 </thead>
@@ -194,17 +193,7 @@
                                 </div>
                             </td>
 
-                            {{-- TOTAL QTY --}}
-                            <td class="px-6 py-4 text-center">
-                                <div class="inline-flex items-center justify-center px-3 py-1 bg-emerald-50 rounded-lg">
-                                    <svg class="w-4 h-4 text-emerald-600 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                                    </svg>
-                                    <span class="text-emerald-900 font-bold">
-                                       {{ $w->stocks_sum_qty}}
-                                    </span>
-                                </div>
-                            </td>
+
 
                             {{-- AKSI --}}
                             <td class="px-6 py-4">

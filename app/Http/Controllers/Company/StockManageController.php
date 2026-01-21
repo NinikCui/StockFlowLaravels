@@ -8,6 +8,7 @@ use App\Models\CategoriesIssues;
 use App\Models\Category;
 use App\Models\Item;
 use App\Models\Stock;
+use App\Models\UnitConversion;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -101,10 +102,11 @@ class StockManageController extends Controller
 
             return $stock;
         });
+        $unitConversions = UnitConversion::where('is_active', true)->get()->groupBy('from_satuan_id');
 
         return view('company.stockmanage.index', [
             'stocks' => $stocks,
-
+            'unitConversions' => $unitConversions,
             // filters
             'branches' => $branches,
             'items' => $items,

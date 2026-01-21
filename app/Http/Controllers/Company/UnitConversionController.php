@@ -26,9 +26,20 @@ class UnitConversionController extends Controller
     public function store(Request $request, string $companyCode)
     {
         $request->validate([
-            'from_satuan_id' => ['required', 'exists:satuan,id', 'different:to_satuan_id'],
-            'to_satuan_id' => ['required', 'exists:satuan,id'],
-            'factor' => ['required', 'numeric', 'min:0.000001'],
+            'from_satuan_id' => [
+                'required',
+                'exists:satuan,id',
+                'different:to_satuan_id',
+            ],
+            'to_satuan_id' => [
+                'required',
+                'exists:satuan,id',
+            ],
+            'factor' => [
+                'required',
+                'numeric',
+                'min:0.000001',
+            ],
         ]);
 
         $existing = UnitConversion::where('from_satuan_id', $request->from_satuan_id)

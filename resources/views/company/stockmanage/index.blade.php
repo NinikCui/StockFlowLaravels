@@ -140,8 +140,53 @@
 
                         {{-- QTY --}}
                         <td class="px-4 py-3 text-right font-bold">
-                            {{ number_format($stock->qty, 2) }}
+                            <div class="inline-flex items-center gap-1 relative group">
+
+                                {{-- QTY + SATUAN --}}
+                                <span>
+                                    {{ number_format($stock->qty, 2) }}
+                                    {{ $stock->item->satuan->code ?? '' }}
+                                </span>
+
+                                {{-- ICON INFO --}}
+                                @php
+                                    $satuanId = $stock->item->satuan_id ?? null;
+                                    $conversions = $unitConversions[$satuanId] ?? collect();
+                                @endphp
+
+                                @if ($conversions->count())
+                                    <span
+                                        class="ml-1 w-4 h-4 text-xs font-bold flex items-center justify-center
+                                            rounded-full bg-gray-200 text-gray-600 cursor-pointer"
+                                    >
+                                        ?
+                                    </span>
+
+                                    {{-- TOOLTIP --}}
+                                    <div
+                                        class="absolute right-0 top-full mt-2 w-52
+                                            hidden group-hover:block
+                                            bg-white border border-gray-200 shadow-lg
+                                            rounded-lg p-3 text-left text-xs text-gray-700 z-50"
+                                    >
+                                        <div class="font-semibold text-gray-900 mb-1">
+                                            Konversi Satuan
+                                        </div>
+
+                                        <ul class="space-y-1">
+                                            @foreach ($conversions as $conv)
+                                                <li>
+                                                    {{ number_format($stock->qty * $conv->factor, 3, ',', '.') }}
+                                                    {{ $conv->toSatuan->code }}
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @endif
+
+                            </div>
                         </td>
+
 
                         {{-- EXPIRED --}}
                         <td class="px-4 py-3 text-center">
