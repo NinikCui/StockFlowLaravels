@@ -71,50 +71,70 @@ class BranchDashboardCacheService
 
     protected function getSafeStockItems()
     {
-        return Stock::whereHas('warehouse', function ($q) {
-            $q->where('cabang_resto_id', $this->branchId);
-        })
-            ->whereHas('item', function ($q) {
-                $q->whereRaw('(SELECT COALESCE(SUM(qty), 0) FROM stocks WHERE item_id = items.id AND warehouse_id IN (SELECT id FROM warehouse WHERE cabang_resto_id = ?)) > min_stock * 1.5', [$this->branchId]);
+        $warehouseTable = 'warehouse';
+
+        $sub = \DB::table('stocks as s')
+            ->join($warehouseTable.' as w', 'w.id', '=', 's.warehouse_id')
+            ->leftJoin('item_branch_min_stocks as m', function ($join) {
+                $join->on('m.item_id', '=', 's.item_id')
+                    ->where('m.cabang_resto_id', '=', $this->branchId);
             })
-            ->distinct('item_id')
-            ->count('item_id');
+            ->where('w.cabang_resto_id', $this->branchId)
+            ->selectRaw('s.item_id, COALESCE(m.min_stock,0) as min_stock, SUM(s.qty) as total_qty')
+            ->groupBy('s.item_id', 'min_stock')
+            ->havingRaw('total_qty > min_stock * 1.5');
+
+        return \DB::query()->fromSub($sub, 'x')->count();
     }
 
     protected function getCriticalStockItems()
     {
-        return Stock::whereHas('warehouse', function ($q) {
-            $q->where('cabang_resto_id', $this->branchId);
-        })
-            ->whereHas('item', function ($q) {
-                $q->whereRaw('(SELECT COALESCE(SUM(qty), 0) FROM stocks WHERE item_id = items.id AND warehouse_id IN (SELECT id FROM warehouse WHERE cabang_resto_id = ?)) <= min_stock', [$this->branchId]);
+        $warehouseTable = 'warehouse';
+
+        $sub = \DB::table('stocks as s')
+            ->join($warehouseTable.' as w', 'w.id', '=', 's.warehouse_id')
+            ->leftJoin('item_branch_min_stocks as m', function ($join) {
+                $join->on('m.item_id', '=', 's.item_id')
+                    ->where('m.cabang_resto_id', '=', $this->branchId);
             })
-            ->distinct('item_id')
-            ->count('item_id');
+            ->where('w.cabang_resto_id', $this->branchId)
+            ->selectRaw('s.item_id, COALESCE(m.min_stock,0) as min_stock, SUM(s.qty) as total_qty')
+            ->groupBy('s.item_id', 'min_stock')
+            ->havingRaw('total_qty <= min_stock');
+
+        return \DB::query()->fromSub($sub, 'x')->count();
     }
 
     protected function getNearCriticalStockItems()
     {
-        return Stock::whereHas('warehouse', function ($q) {
-            $q->where('cabang_resto_id', $this->branchId);
-        })
-            ->whereHas('item', function ($q) {
-                $q->whereRaw('(SELECT COALESCE(SUM(qty), 0) FROM stocks WHERE item_id = items.id AND warehouse_id IN (SELECT id FROM warehouse WHERE cabang_resto_id = ?)) > min_stock AND (SELECT COALESCE(SUM(qty), 0) FROM stocks WHERE item_id = items.id AND warehouse_id IN (SELECT id FROM warehouse WHERE cabang_resto_id = ?)) <= min_stock * 1.5', [$this->branchId, $this->branchId]);
+        $warehouseTable = 'warehouse';
+
+        $sub = \DB::table('stocks as s')
+            ->join($warehouseTable.' as w', 'w.id', '=', 's.warehouse_id')
+            ->leftJoin('item_branch_min_stocks as m', function ($join) {
+                $join->on('m.item_id', '=', 's.item_id')
+                    ->where('m.cabang_resto_id', '=', $this->branchId);
             })
-            ->distinct('item_id')
-            ->count('item_id');
+            ->where('w.cabang_resto_id', $this->branchId)
+            ->selectRaw('s.item_id, COALESCE(m.min_stock,0) as min_stock, SUM(s.qty) as total_qty')
+            ->groupBy('s.item_id', 'min_stock')
+            ->havingRaw('total_qty > min_stock AND total_qty <= min_stock * 1.5');
+
+        return \DB::query()->fromSub($sub, 'x')->count();
     }
 
     protected function getOutOfStockItems()
     {
-        return Stock::whereHas('warehouse', function ($q) {
-            $q->where('cabang_resto_id', $this->branchId);
-        })
-            ->whereHas('item', function ($q) {
-                $q->whereRaw('(SELECT COALESCE(SUM(qty), 0) FROM stocks WHERE item_id = items.id AND warehouse_id IN (SELECT id FROM warehouse WHERE cabang_resto_id = ?)) = 0', [$this->branchId]);
-            })
-            ->distinct('item_id')
-            ->count('item_id');
+        $warehouseTable = 'warehouse';
+
+        $sub = \DB::table('stocks as s')
+            ->join($warehouseTable.' as w', 'w.id', '=', 's.warehouse_id')
+            ->where('w.cabang_resto_id', $this->branchId)
+            ->selectRaw('s.item_id, SUM(s.qty) as total_qty')
+            ->groupBy('s.item_id')
+            ->havingRaw('total_qty = 0');
+
+        return \DB::query()->fromSub($sub, 'x')->count();
     }
 
     protected function getExpiringSoonItems()

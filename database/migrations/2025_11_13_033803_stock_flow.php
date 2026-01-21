@@ -196,8 +196,6 @@ return new class extends Migration
             $table->unsignedBigInteger('satuan_id');
 
             $table->string('name', 45);
-            $table->integer('min_stock')->default(0);
-            $table->integer('max_stock')->default(0);
             $table->boolean('forecast_enabled')->default(false);
             $table->boolean('mudah_rusak')->default(false);
             $table->timestamps();
@@ -207,6 +205,17 @@ return new class extends Migration
             $table->foreign('satuan_id')->references('id')->on('satuan')->cascadeOnDelete();
         });
 
+        Schema::create('item_branch_min_stocks', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('company_id');
+            $table->unsignedBigInteger('cabang_resto_id');
+            $table->unsignedBigInteger('item_id');
+            $table->decimal('min_stock', 12, 2)->default(0);
+            $table->decimal('max_stock', 12, 2)->default(0);
+            $table->timestamps();
+
+            $table->unique(['cabang_resto_id', 'item_id']);
+        });
         // ============================
         // STOCKS
         // ============================

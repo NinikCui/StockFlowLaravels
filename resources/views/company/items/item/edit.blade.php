@@ -59,19 +59,7 @@
                class="h-4 w-4 text-emerald-600 border-gray-300 rounded">
     </div>
 
-    <div>
-        <label class="font-semibold block mb-1">Minimal Stok</label>
-        <input type="number" name="min_stock"
-               value="{{ old('min_stock', $item->min_stock) }}"
-               class="w-full border rounded-lg px-4 py-2" min="0" required>
-    </div>
-
-    <div>
-        <label class="font-semibold block mb-1">Maksimal Stok</label>
-        <input type="number" name="max_stock"
-               value="{{ old('max_stock', $item->max_stock) }}"
-               class="w-full border rounded-lg px-4 py-2" min="0" required>
-    </div>
+    
 
 </div>
 

@@ -2,128 +2,171 @@
 
 namespace Database\Seeders;
 
+use App\Models\CabangResto;
 use App\Models\Category;
 use App\Models\Item;
 use App\Models\Satuan;
 use App\Models\UnitConversion;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class ItemSeeder extends Seeder
 {
     public function run(): void
     {
         $now = Carbon::now();
+        $companyId = 1;
 
-        // Ambil kategori
-        $bahanUtama = Category::where('name', 'Bahan Utama')->first();
-        $bumbu = Category::where('name', 'Bumbu')->first();
-        $minuman = Category::where('name', 'Minuman')->first();
-        $pelengkap = Category::where('name', 'Pelengkap')->first();
+        DB::transaction(function () use ($now, $companyId) {
 
-        // ======================
-        // SATUAN
-        // ======================
-        Satuan::insert([
-            ['id' => 1, 'name' => 'Kilogram', 'code' => 'KG'],
-            ['id' => 2, 'name' => 'Gram', 'code' => 'GR'],
-            ['id' => 3, 'name' => 'Liter', 'code' => 'LTR'],
-            ['id' => 4, 'name' => 'Pieces', 'code' => 'PCS'],
-            ['id' => 5, 'name' => 'Pack', 'code' => 'PACK'],
-            ['id' => 6, 'name' => 'Butir', 'code' => 'BTR'],
-            ['id' => 7, 'name' => 'Milliliter', 'code' => 'ML'],
-        ]);
-
-        UnitConversion::insert([
-            // BERAT
-            ['from_satuan_id' => 1, 'to_satuan_id' => 2, 'factor' => 1000],   // KG → GR
-            ['from_satuan_id' => 2, 'to_satuan_id' => 1, 'factor' => 0.001], // GR → KG
-
-            // VOLUME
-            ['from_satuan_id' => 3, 'to_satuan_id' => 7, 'factor' => 1000],
-            ['from_satuan_id' => 7, 'to_satuan_id' => 3, 'factor' => 0.001],
-        ]);
-
-        // ======================
-        // ITEM
-        // ======================
-        Item::insert([
+            // Ambil kategori
+            $bahanUtama = Category::where('name', 'Bahan Utama')->firstOrFail();
+            $bumbu = Category::where('name', 'Bumbu')->firstOrFail();
+            $minuman = Category::where('name', 'Minuman')->firstOrFail();
+            $pelengkap = Category::where('name', 'Pelengkap')->firstOrFail();
 
             // ======================
-            // BAHAN UTAMA
+            // SATUAN (aman re-run)
             // ======================
-            [
-                'company_id' => 1, 'category_id' => $bahanUtama->id, 'satuan_id' => 1, 'name' => 'Beras',
-                'min_stock' => 50, 'max_stock' => 300, 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 1,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
-            [
-                'company_id' => 1, 'category_id' => $bahanUtama->id, 'satuan_id' => 1, 'name' => 'Ayam',
-                'min_stock' => 20, 'max_stock' => 150, 'forecast_enabled' => 1, 'mudah_rusak' => 1, 'is_main_ingredient' => 1,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
-            [
-                'company_id' => 1, 'category_id' => $bahanUtama->id, 'satuan_id' => 6, 'name' => 'Telur Ayam',
-                'min_stock' => 30, 'max_stock' => 200, 'forecast_enabled' => 1, 'mudah_rusak' => 1, 'is_main_ingredient' => 1,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
+            Satuan::upsert([
+                ['id' => 1, 'name' => 'Kilogram',   'code' => 'KG',   'company_id' => null],
+                ['id' => 2, 'name' => 'Gram',       'code' => 'GR',   'company_id' => null],
+                ['id' => 3, 'name' => 'Liter',      'code' => 'LTR',  'company_id' => null],
+                ['id' => 4, 'name' => 'Pieces',     'code' => 'PCS',  'company_id' => null],
+                ['id' => 5, 'name' => 'Pack',       'code' => 'PACK', 'company_id' => null],
+                ['id' => 6, 'name' => 'Butir',      'code' => 'BTR',  'company_id' => null],
+                ['id' => 7, 'name' => 'Milliliter', 'code' => 'ML',   'company_id' => null],
+            ], ['id'], ['name', 'code', 'company_id']);
 
             // ======================
-            // BUMBU
+            // UNIT CONVERSION (aman re-run)
             // ======================
-            [
-                'company_id' => 1, 'category_id' => $bumbu->id, 'satuan_id' => 2, 'name' => 'Garam',
-                'min_stock' => 5, 'max_stock' => 50, 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
-            [
-                'company_id' => 1, 'category_id' => $bumbu->id, 'satuan_id' => 1, 'name' => 'Gula Pasir',
-                'min_stock' => 10, 'max_stock' => 80, 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
-            [
-                'company_id' => 1, 'category_id' => $bumbu->id, 'satuan_id' => 1, 'name' => 'Bawang Merah',
-                'min_stock' => 10, 'max_stock' => 70, 'forecast_enabled' => 1, 'mudah_rusak' => 1, 'is_main_ingredient' => 0,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
-            [
-                'company_id' => 1, 'category_id' => $bumbu->id, 'satuan_id' => 1, 'name' => 'Bawang Putih',
-                'min_stock' => 10, 'max_stock' => 70, 'forecast_enabled' => 1, 'mudah_rusak' => 1, 'is_main_ingredient' => 0,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
+            UnitConversion::upsert([
+                // BERAT
+                ['from_satuan_id' => 1, 'to_satuan_id' => 2, 'factor' => 1000],   // KG → GR
+                ['from_satuan_id' => 2, 'to_satuan_id' => 1, 'factor' => 0.001], // GR → KG
+
+                // VOLUME
+                ['from_satuan_id' => 3, 'to_satuan_id' => 7, 'factor' => 1000],  // LTR → ML
+                ['from_satuan_id' => 7, 'to_satuan_id' => 3, 'factor' => 0.001], // ML → LTR
+            ], ['from_satuan_id', 'to_satuan_id'], ['factor']);
 
             // ======================
-            // MINUMAN
+            // CABANG LIST (company 1)
             // ======================
-            [
-                'company_id' => 1, 'category_id' => $minuman->id, 'satuan_id' => 5, 'name' => 'Teh Celup',
-                'min_stock' => 20, 'max_stock' => 150, 'forecast_enabled' => 0, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
-            [
-                'company_id' => 1, 'category_id' => $minuman->id, 'satuan_id' => 5, 'name' => 'Kopi Bubuk',
-                'min_stock' => 15, 'max_stock' => 100, 'forecast_enabled' => 0, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
+            $branchIds = CabangResto::where('company_id', $companyId)->pluck('id');
+            // kalau belum ada cabang, skip generate min stock
+            // (item tetap dibuat)
+            $hasBranches = $branchIds->isNotEmpty();
 
             // ======================
-            // PELENGKAP
+            // ITEM DATA
             // ======================
-            [
-                'company_id' => 1, 'category_id' => $pelengkap->id, 'satuan_id' => 3, 'name' => 'Minyak Goreng',
-                'min_stock' => 20, 'max_stock' => 120, 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
-            [
-                'company_id' => 1, 'category_id' => $pelengkap->id, 'satuan_id' => 5, 'name' => 'Mie Kering',
-                'min_stock' => 30, 'max_stock' => 200, 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 1,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
-            [
-                'company_id' => 1, 'category_id' => $pelengkap->id, 'satuan_id' => 3, 'name' => 'Sirup',
-                'min_stock' => 2, 'max_stock' => 20, 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
-                'created_at' => $now, 'updated_at' => $now,
-            ],
-        ]);
+            $itemsData = [
+
+                // ======================
+                // BAHAN UTAMA
+                // ======================
+                [
+                    'company_id' => $companyId, 'category_id' => $bahanUtama->id, 'satuan_id' => 1,
+                    'name' => 'Beras', 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 1,
+                ],
+                [
+                    'company_id' => $companyId, 'category_id' => $bahanUtama->id, 'satuan_id' => 1,
+                    'name' => 'Ayam', 'forecast_enabled' => 1, 'mudah_rusak' => 1, 'is_main_ingredient' => 1,
+                ],
+                [
+                    'company_id' => $companyId, 'category_id' => $bahanUtama->id, 'satuan_id' => 6,
+                    'name' => 'Telur Ayam', 'forecast_enabled' => 1, 'mudah_rusak' => 1, 'is_main_ingredient' => 1,
+                ],
+
+                // ======================
+                // BUMBU
+                // ======================
+                [
+                    'company_id' => $companyId, 'category_id' => $bumbu->id, 'satuan_id' => 2,
+                    'name' => 'Garam', 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
+                ],
+                [
+                    'company_id' => $companyId, 'category_id' => $bumbu->id, 'satuan_id' => 1,
+                    'name' => 'Gula Pasir', 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
+                ],
+                [
+                    'company_id' => $companyId, 'category_id' => $bumbu->id, 'satuan_id' => 1,
+                    'name' => 'Bawang Merah', 'forecast_enabled' => 1, 'mudah_rusak' => 1, 'is_main_ingredient' => 0,
+                ],
+                [
+                    'company_id' => $companyId, 'category_id' => $bumbu->id, 'satuan_id' => 1,
+                    'name' => 'Bawang Putih', 'forecast_enabled' => 1, 'mudah_rusak' => 1, 'is_main_ingredient' => 0,
+                ],
+
+                // ======================
+                // MINUMAN
+                // ======================
+                [
+                    'company_id' => $companyId, 'category_id' => $minuman->id, 'satuan_id' => 5,
+                    'name' => 'Teh Celup', 'forecast_enabled' => 0, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
+                ],
+                [
+                    'company_id' => $companyId, 'category_id' => $minuman->id, 'satuan_id' => 5,
+                    'name' => 'Kopi Bubuk', 'forecast_enabled' => 0, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
+                ],
+
+                // ======================
+                // PELENGKAP
+                // ======================
+                [
+                    'company_id' => $companyId, 'category_id' => $pelengkap->id, 'satuan_id' => 3,
+                    'name' => 'Minyak Goreng', 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
+                ],
+                [
+                    'company_id' => $companyId, 'category_id' => $pelengkap->id, 'satuan_id' => 5,
+                    'name' => 'Mie Kering', 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 1,
+                ],
+                [
+                    'company_id' => $companyId, 'category_id' => $pelengkap->id, 'satuan_id' => 3,
+                    'name' => 'Sirup', 'forecast_enabled' => 1, 'mudah_rusak' => 0, 'is_main_ingredient' => 0,
+                ],
+            ];
+
+            // ======================
+            // CREATE / UPDATE ITEM + AUTO MIN STOCK PER CABANG
+            // ======================
+            foreach ($itemsData as $data) {
+                $item = Item::updateOrCreate(
+                    [
+                        'company_id' => $companyId,
+                        'name' => $data['name'],
+                    ],
+                    array_merge($data, [
+                        'updated_at' => $now,
+                        'created_at' => $now, // kalau sudah ada, Eloquent tetap jaga created_at lama
+                    ])
+                );
+
+                if (! $hasBranches) {
+                    continue;
+                }
+
+                $rows = $branchIds->map(function ($branchId) use ($companyId, $item, $now) {
+                    return [
+                        'company_id' => $companyId,
+                        'cabang_resto_id' => $branchId,
+                        'item_id' => $item->id,
+                        'min_stock' => 0,
+                        'max_stock' => 0,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                })->toArray();
+
+                DB::table('item_branch_min_stocks')->upsert(
+                    $rows,
+                    ['company_id', 'cabang_resto_id', 'item_id'],
+                    ['min_stock', 'max_stock', 'updated_at']
+                );
+            }
+        });
     }
 }

@@ -16,7 +16,6 @@ use App\Services\SesForecastService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class BranchItemController extends Controller
@@ -39,25 +38,36 @@ class BranchItemController extends Controller
         $warehouseIds = Warehouse::where('cabang_resto_id', $branchId)
             ->pluck('id');
 
-        $items = Item::with('satuan')
+        $items = Item::query()
+            ->select([
+                'items.*',
+                DB::raw('COALESCE(ib.min_stock, 0) as min_stock'),
+                DB::raw('COALESCE(ib.max_stock, 0) as max_stock'),
+            ])
+            ->leftJoin('item_branch_min_stocks as ib', function ($join) use ($companyId, $branchId) {
+                $join->on('ib.item_id', '=', 'items.id')
+                    ->where('ib.company_id', '=', $companyId)
+                    ->where('ib.cabang_resto_id', '=', $branchId);
+            })
+            ->with('satuan')
             ->withSum(['stocks as total_qty' => function ($q) use ($warehouseIds) {
                 $q->whereIn('warehouse_id', $warehouseIds);
             }], 'qty')
-            ->where('company_id', $companyId)
+            ->where('items.company_id', $companyId)
             ->get();
 
         foreach ($items as $item) {
             $stokSekarang = $item->total_qty ?? 0;
-            $minStock = $item->min_stock ?? 0;
+            $minStock = (float) ($item->min_stock ?? 0);
             $warningThreshold = ceil($minStock * 1.2);
 
-            $item->is_low_stock = $stokSekarang < $minStock;
-            $item->is_near_low_stock = $stokSekarang >= $minStock && $stokSekarang <= $warningThreshold;
+            $item->is_low_stock = $minStock > 0 && $stokSekarang < $minStock;
+            $item->is_near_low_stock = $minStock > 0 && $stokSekarang >= $minStock && $stokSekarang <= $warningThreshold;
 
             $item->predicted_usage = 0;
             $item->recommended_restock = 0;
 
-            if ($item->is_low_stock || $item->is_near_low_stock) {
+            if ($item->forecast_enabled && ($item->is_low_stock || $item->is_near_low_stock)) {
                 $alpha = 0.3;
                 $monthsBack = 6;
                 $start = Carbon::now()->startOfMonth()->subMonths($monthsBack - 1);
@@ -83,7 +93,6 @@ class BranchItemController extends Controller
                 }
 
                 $item->predicted_usage = $ses->forecastNext($actuals, $alpha) ?? 0;
-
                 $item->recommended_restock = $item->is_low_stock
                 ? max(1, ($minStock - $stokSekarang) + (int) ceil($item->predicted_usage))
                 : max(1, (int) ceil($item->predicted_usage));
@@ -169,66 +178,99 @@ class BranchItemController extends Controller
 
     }
 
-    public function store(Request $r)
+    public function store(Request $r, $branchCode)
     {
         $branchId = session('role.branch.id');
         $companyId = session('role.company.id');
+
         $r->validate([
             'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
             'satuan_id' => [
                 'required',
                 Rule::exists('satuan', 'id')->where(function ($q) use ($companyId) {
-                    $q->whereNull('company_id')
-                        ->orWhere('company_id', $companyId);
+                    $q->whereNull('company_id')->orWhere('company_id', $companyId);
                 }),
             ],
             'is_main_ingredient' => 'nullable|boolean',
 
             'min_stock' => 'required|integer|min:0',
-
             'max_stock' => 'required|integer|min:0|gte:min_stock',
 
             'forecast_enabled' => 'nullable|boolean',
         ]);
 
-        Item::create([
-            'company_id' => $companyId,
-            'name' => $r->name,
-            'category_id' => $r->category_id,
-            'satuan_id' => $r->satuan_id,
-            'is_main_ingredient' => $r->has('is_main_ingredient') ? 1 : 0,
-            'min_stock' => $r->min_stock,
-            'max_stock' => $r->max_stock,
-            'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
-        ]);
+        \DB::transaction(function () use ($r, $companyId, $branchId) {
 
-        return redirect()->route('branch.item.index', $branchId)
+            // 1) create item (company-level)
+            $item = Item::create([
+                'company_id' => $companyId,
+                'name' => $r->name,
+                'category_id' => $r->category_id,
+                'satuan_id' => $r->satuan_id,
+                'is_main_ingredient' => $r->has('is_main_ingredient') ? 1 : 0,
+
+                'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
+            ]);
+
+            // 2) simpan setting min/max khusus cabang
+            DB::table('item_branch_min_stocks')->updateOrInsert(
+                [
+                    'company_id' => $companyId,
+                    'cabang_resto_id' => $branchId,
+                    'item_id' => $item->id,
+                ],
+                [
+                    'min_stock' => (int) $r->min_stock,
+                    'max_stock' => (int) $r->max_stock,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+        });
+
+        return redirect()->route('branch.item.index', $branchCode)
             ->with('success', 'Item berhasil ditambahkan');
     }
 
     public function destroy($branchCode, $id)
     {
         $companyId = session('role.company.id');
+
         $item = Item::where('company_id', $companyId)
             ->where('id', $id)
             ->firstOrFail();
 
-        $item->delete();
+        DB::transaction(function () use ($companyId, $item) {
+            DB::table('item_branch_min_stocks')
+                ->where('company_id', $companyId)
+                ->where('item_id', $item->id)
+                ->delete();
+
+            $item->delete();
+        });
 
         return redirect()->route('branch.item.index', $branchCode)
-            ->with('success', 'Item berhasil ditambahkan');
+            ->with('success', 'Item berhasil dihapus');
     }
 
     public function edit($branchCode, $id)
     {
-        $branchCode = session('role.branch.code');
+        $branchId = session('role.branch.id');
         $companyId = session('role.company.id');
-        Log::info($id);
+
         $item = Item::where('company_id', $companyId)
             ->where('id', $id)
             ->firstOrFail();
-        Log::info($item);
+
+        $setting = DB::table('item_branch_min_stocks')
+            ->where('company_id', $companyId)
+            ->where('cabang_resto_id', $branchId)
+            ->where('item_id', $item->id)
+            ->first();
+
+        $item->min_stock = $setting->min_stock ?? 0;
+        $item->max_stock = $setting->max_stock ?? 0;
 
         return view('branch.item.edit', [
             'branchCode' => $branchCode,
@@ -242,6 +284,7 @@ class BranchItemController extends Controller
     {
         $companyId = session('role.company.id');
         $branchId = session('role.branch.id');
+
         $item = Item::where('company_id', $companyId)
             ->where('id', $id)
             ->firstOrFail();
@@ -252,28 +295,44 @@ class BranchItemController extends Controller
             'satuan_id' => [
                 'required',
                 Rule::exists('satuan', 'id')->where(function ($q) use ($companyId) {
-                    $q->whereNull('company_id')
-                        ->orWhere('company_id', $companyId);
+                    $q->whereNull('company_id')->orWhere('company_id', $companyId);
                 }),
             ],
             'is_main_ingredient' => 'nullable|boolean',
+
             'min_stock' => 'required|integer|min:0',
             'max_stock' => 'required|integer|min:0|gte:min_stock',
+
             'forecast_enabled' => 'nullable|boolean',
         ]);
 
-        $item->update([
-            'name' => $r->name,
-            'category_id' => $r->category_id,
-            'satuan_id' => $r->satuan_id,
-            'is_main_ingredient' => $r->has('is_main_ingredient') ? 1 : 0,
-            'min_stock' => $r->min_stock,
-            'max_stock' => $r->max_stock,
-            'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
-        ]);
+        DB::transaction(function () use ($r, $item, $companyId, $branchId) {
 
-        return redirect()->route('branch.item.index', $branchId)
-            ->with('success', 'Item berhasil ditambahkan');
+            $item->update([
+                'name' => $r->name,
+                'category_id' => $r->category_id,
+                'satuan_id' => $r->satuan_id,
+                'is_main_ingredient' => $r->has('is_main_ingredient') ? 1 : 0,
+                'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
+            ]);
+
+            DB::table('item_branch_min_stocks')->updateOrInsert(
+                [
+                    'company_id' => $companyId,
+                    'cabang_resto_id' => $branchId,
+                    'item_id' => $item->id,
+                ],
+                [
+                    'min_stock' => (int) $r->min_stock,
+                    'max_stock' => (int) $r->max_stock,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ]
+            );
+        });
+
+        return redirect()->route('branch.item.index', $branchCode)
+            ->with('success', 'Item berhasil diperbarui');
     }
 
     public function editStock($branchCode, Item $item, Warehouse $warehouse)

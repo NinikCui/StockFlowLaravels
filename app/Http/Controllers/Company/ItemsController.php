@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
+use App\Models\CabangResto;
 use App\Models\Category;
 use App\Models\Company;
 use App\Models\Item;
 use App\Models\Satuan;
 use App\Models\UnitConversion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ItemsController extends Controller
@@ -78,26 +80,47 @@ class ItemsController extends Controller
             'satuan_id' => [
                 'required',
                 Rule::exists('satuan', 'id')->where(function ($q) use ($company) {
-                    $q->whereNull('company_id')
-                        ->orWhere('company_id', $company->id);
+                    $q->whereNull('company_id')->orWhere('company_id', $company->id);
                 }),
             ],
             'is_main_ingredient' => 'nullable|boolean',
-            'min_stock' => 'required|integer|min:0',
-            'max_stock' => 'required|integer|min:0|gte:min_stock',
             'forecast_enabled' => 'nullable|boolean',
         ]);
 
-        Item::create([
-            'company_id' => $company->id,
-            'name' => $r->name,
-            'category_id' => $r->category_id,
-            'satuan_id' => $r->satuan_id,
-            'is_main_ingredient' => $r->has('is_main_ingredient') ? 1 : 0,
-            'min_stock' => $r->min_stock,
-            'max_stock' => $r->max_stock,
-            'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
-        ]);
+        DB::transaction(function () use ($r, $company) {
+
+            $item = Item::create([
+                'company_id' => $company->id,
+                'name' => $r->name,
+                'category_id' => $r->category_id,
+                'satuan_id' => $r->satuan_id,
+                'is_main_ingredient' => $r->has('is_main_ingredient') ? 1 : 0,
+                'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
+            ]);
+
+            $branchIds = CabangResto::where('company_id', $company->id)->pluck('id');
+
+            $now = now();
+
+            $rows = $branchIds->map(function ($branchId) use ($company, $item, $now) {
+                return [
+                    'company_id' => $company->id,
+                    'cabang_resto_id' => $branchId,
+                    'item_id' => $item->id,
+                    'min_stock' => 0,
+                    'max_stock' => 0,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            })->toArray();
+
+            // pakai upsert biar aman kalau suatu saat kepanggil lagi
+            DB::table('item_branch_min_stocks')->upsert(
+                $rows,
+                ['company_id', 'cabang_resto_id', 'item_id'],
+                ['min_stock', 'max_stock', 'updated_at']
+            );
+        });
 
         return redirect()->route('items.index', $companyCode)
             ->with('activeTab', 'item')
@@ -139,8 +162,7 @@ class ItemsController extends Controller
                 }),
             ],
             'is_main_ingredient' => 'nullable|boolean',
-            'min_stock' => 'required|integer|min:0',
-            'max_stock' => 'required|integer|min:0|gte:min_stock',
+
             'forecast_enabled' => 'nullable|boolean',
         ]);
 
@@ -149,8 +171,7 @@ class ItemsController extends Controller
             'category_id' => $r->category_id,
             'satuan_id' => $r->satuan_id,
             'is_main_ingredient' => $r->has('is_main_ingredient') ? 1 : 0,
-            'min_stock' => $r->min_stock,
-            'max_stock' => $r->max_stock,
+
             'forecast_enabled' => $r->has('forecast_enabled') ? 1 : 0,
         ]);
 
@@ -167,7 +188,15 @@ class ItemsController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        $item->delete();
+        DB::transaction(function () use ($company, $item) {
+
+            DB::table('item_branch_min_stocks')
+                ->where('company_id', $company->id)
+                ->where('item_id', $item->id)
+                ->delete();
+
+            $item->delete();
+        });
 
         return redirect()->route('items.index', $companyCode)
             ->with('activeTab', 'item')

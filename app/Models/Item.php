@@ -14,8 +14,6 @@ class Item extends Model
         'satuan_id',
         'name',
         'is_main_ingredient',
-        'min_stock',
-        'max_stock',
         'forecast_enabled',
         'suppliers_id',
     ];

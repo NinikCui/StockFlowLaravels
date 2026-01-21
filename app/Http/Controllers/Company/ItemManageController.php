@@ -174,75 +174,127 @@ class itemManageController extends Controller
     public function detail($companyCode, Item $item, SesForecastService $ses)
     {
         $companyId = session('role.company.id');
-
         abort_unless($item->company_id == $companyId, 404);
 
         $branches = CabangResto::where('company_id', $companyId)->get();
 
         $alpha = 0.3;
-        $monthsBack = 6; // contoh ambil 6 bulan histori terakhir
+        $monthsBack = 6;
         $start = Carbon::now()->startOfMonth()->subMonths($monthsBack - 1);
         $end = Carbon::now()->endOfMonth();
 
         $rows = [];
         $overallActualByMonth = [];
 
+        // ✅ ambil min+max biar tabel bisa tampil max_stock juga (optional)
+        $minMaxByBranch = DB::table('item_branch_min_stocks')
+            ->where('company_id', $companyId)
+            ->where('item_id', $item->id)
+            ->get(['cabang_resto_id', 'min_stock', 'max_stock'])
+            ->keyBy('cabang_resto_id');
+
         foreach ($branches as $branch) {
 
             $warehouseIds = Warehouse::where('cabang_resto_id', $branch->id)->pluck('id');
 
-            $totalQty = DB::table('stocks')
+            $totalQty = (float) DB::table('stocks')
                 ->where('item_id', $item->id)
                 ->whereIn('warehouse_id', $warehouseIds)
                 ->sum('qty');
 
+            $minStock = (float) ($minMaxByBranch[$branch->id]->min_stock ?? 0);
+            $maxStock = (float) ($minMaxByBranch[$branch->id]->max_stock ?? 0);
+
+            $warningThreshold = $minStock * 1.2;
+
+            // ✅ aman: minStock harus > 0
+            $isLow = $minStock > 0 && $totalQty < $minStock;
+            $isNear = $minStock > 0 && $totalQty >= $minStock && $totalQty <= $warningThreshold;
+
             $history = DB::table('stock_movements as m')
                 ->where('m.company_id', $companyId)
                 ->where('m.item_id', $item->id)
-                ->whereIn('m.warehouse_id', $warehouseIds)   // per cabang
+                ->whereIn('m.warehouse_id', $warehouseIds)
                 ->where('m.type', 'OUT')
                 ->whereBetween('m.created_at', [$start, $end])
                 ->selectRaw("DATE_FORMAT(m.created_at, '%Y-%m') as ym, SUM(ABS(m.qty)) as total_out")
                 ->groupBy('ym')
                 ->orderBy('ym')
                 ->pluck('total_out', 'ym');
+
             $actuals = [];
             $monthKeys = [];
             $cursor = $start->copy()->startOfMonth();
+
             while ($cursor <= $end) {
                 $ym = $cursor->format('Y-m');
                 $val = (float) ($history[$ym] ?? 0);
+
                 $actuals[] = $val;
                 $monthKeys[] = $ym;
 
-                // kumpulkan untuk overall
+                // ✅ akumulasi untuk overall forecast
                 $overallActualByMonth[$ym] = ($overallActualByMonth[$ym] ?? 0) + $val;
 
                 $cursor->addMonth();
             }
 
             $forecastNext = $ses->forecastNext($actuals, $alpha);
+            $forecastInt = (int) ceil($forecastNext ?? 0);
+
+            // ✅ recommended sama persis seperti branch
+            $recommendedRestock = 0;
+            if ($isLow) {
+                $recommendedRestock = max(1, ($minStock - $totalQty) + $forecastInt);
+            } elseif ($isNear) {
+                $recommendedRestock = max(0, $forecastInt);
+            }
 
             $rows[] = [
                 'branch' => $branch,
-                'total_qty' => (float) $totalQty,
+                'total_qty' => $totalQty,
+                'min_stock' => $minStock,
+                'max_stock' => $maxStock,
+                'is_low_stock' => $isLow,
+                'is_near_low_stock' => $isNear,
+                'recommended_restock' => $recommendedRestock,
                 'actuals_by_month' => array_combine($monthKeys, $actuals),
                 'forecast_next' => $forecastNext,
             ];
         }
 
-        // 3) forecast total seluruh cabang (gabungan)
+        // =========================
+        // OVERALL (ALL CABANG)
+        // =========================
         ksort($overallActualByMonth);
-        $overallActuals = array_values($overallActualByMonth);
-        $overallForecastNext = $ses->forecastNext($overallActuals, $alpha);
 
-        // total stok gabungan
+        $overallForecastNext = $ses->forecastNext(array_values($overallActualByMonth), $alpha);
+        $overallForecastInt = (int) ceil($overallForecastNext ?? 0);
+
         $overallStockQty = array_sum(array_column($rows, 'total_qty'));
+        $overallMinStock = array_sum(array_column($rows, 'min_stock'));
+        $overallMaxStock = array_sum(array_column($rows, 'max_stock'));
+
+        $overallWarningThreshold = $overallMinStock * 1.2;
+        $overallIsLow = $overallMinStock > 0 && $overallStockQty < $overallMinStock;
+        $overallIsNear = $overallMinStock > 0 && $overallStockQty >= $overallMinStock && $overallStockQty <= $overallWarningThreshold;
+
+        $overallRecommendedRestock = 0;
+        if ($overallIsLow) {
+            $overallRecommendedRestock = max(1, ($overallMinStock - $overallStockQty) + $overallForecastInt);
+        } elseif ($overallIsNear) {
+            $overallRecommendedRestock = max(0, $overallForecastInt);
+        }
 
         $rowsFormatted = array_map(function ($r) {
             return [
                 'branch' => $r['branch'],
                 'total_qty' => $this->fmt($r['total_qty']),
+                'min_stock' => $this->fmt($r['min_stock']),
+                'max_stock' => $this->fmt($r['max_stock']),
+                'is_low_stock' => $r['is_low_stock'],
+                'is_near_low_stock' => $r['is_near_low_stock'],
+                'recommended_restock' => $this->fmt($r['recommended_restock']),
                 'forecast_next' => $r['forecast_next'] === null ? '-' : $this->fmt($r['forecast_next']),
                 'actuals_by_month' => array_map(fn ($v) => $this->fmt($v), $r['actuals_by_month']),
             ];
@@ -255,7 +307,15 @@ class itemManageController extends Controller
             'monthsBack' => $monthsBack,
             'overall' => [
                 'stock_qty' => $this->fmt($overallStockQty),
+                'min_stock' => $this->fmt($overallMinStock),
+                'max_stock' => $this->fmt($overallMaxStock),
+
+                'is_low_stock' => $overallIsLow,
+                'is_near_low_stock' => $overallIsNear,
+                'recommended_restock' => $this->fmt($overallRecommendedRestock),
+
                 'actuals_by_month' => array_map(fn ($v) => $this->fmt($v), $overallActualByMonth),
+
                 'forecast_next' => $overallForecastNext === null ? '-' : $this->fmt($overallForecastNext),
             ],
             'companyCode' => $companyCode,
