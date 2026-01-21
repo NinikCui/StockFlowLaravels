@@ -12,6 +12,7 @@ use App\Models\Stock;
 use App\Models\UnitConversion;
 use App\Models\User;
 use App\Models\Warehouse;
+use App\Services\SesForecastService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,7 @@ class BranchItemController extends Controller
             ->get();
     }
 
-    public function index($branchCode)
+    public function index($branchCode, SesForecastService $ses)
     {
         $companyId = session('role.company.id');
         $branchId = session('role.branch.id');
@@ -57,21 +58,35 @@ class BranchItemController extends Controller
             $item->recommended_restock = 0;
 
             if ($item->is_low_stock || $item->is_near_low_stock) {
-                $usage = DB::table('stock_movements')
-                    ->where('item_id', $item->id)
-                    ->where('company_id', $companyId)
-                    ->where('type', 'OUT')
-                    ->orderBy('created_at')
-                    ->pluck('qty')
-                    ->map(fn ($v) => abs($v))
-                    ->toArray();
-
                 $alpha = 0.3;
-                $item->predicted_usage = $this->exponentialSmoothing($usage, $alpha);
+                $monthsBack = 6;
+                $start = Carbon::now()->startOfMonth()->subMonths($monthsBack - 1);
+                $end = Carbon::now()->endOfMonth();
+
+                $history = DB::table('stock_movements as m')
+                    ->where('m.company_id', $companyId)
+                    ->where('m.item_id', $item->id)
+                    ->whereIn('m.warehouse_id', $warehouseIds)   // ✅ penting: scope cabang
+                    ->where('m.type', 'OUT')
+                    ->whereBetween('m.created_at', [$start, $end])
+                    ->selectRaw("DATE_FORMAT(m.created_at, '%Y-%m') as ym, SUM(ABS(m.qty)) as total_out")
+                    ->groupBy('ym')
+                    ->orderBy('ym')
+                    ->pluck('total_out', 'ym');  // ['2025-08'=>10,'2025-09'=>7,...]
+
+                $actuals = [];
+                $cursor = $start->copy()->startOfMonth();
+                while ($cursor <= $end) {
+                    $ym = $cursor->format('Y-m');
+                    $actuals[] = (float) ($history[$ym] ?? 0);
+                    $cursor->addMonth();
+                }
+
+                $item->predicted_usage = $ses->forecastNext($actuals, $alpha) ?? 0;
 
                 $item->recommended_restock = $item->is_low_stock
-                    ? max(1, ($minStock - $stokSekarang) + ceil($item->predicted_usage))
-                    : max(1, ceil($item->predicted_usage));
+                ? max(1, ($minStock - $stokSekarang) + (int) ceil($item->predicted_usage))
+                : max(1, (int) ceil($item->predicted_usage));
             }
 
             $exp = DB::table('stocks')
@@ -369,20 +384,5 @@ class BranchItemController extends Controller
 
         return redirect()->route('branch.item.show', [$branchCode, $item->id])
             ->with('success', 'Stok berhasil diperbarui.');
-    }
-
-    private function exponentialSmoothing(array $data, float $alpha = 0.3)
-    {
-        if (count($data) === 0) {
-            return 0;
-        }
-
-        $forecast = $data[0];
-
-        foreach ($data as $point) {
-            $forecast = $alpha * $point + (1 - $alpha) * $forecast;
-        }
-
-        return round($forecast, 2);
     }
 }

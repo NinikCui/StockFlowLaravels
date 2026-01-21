@@ -163,12 +163,16 @@
                                                 'item' => $item->id
                                             ]) }}"
                                             class="px-4 py-2 text-xs font-bold bg-gray-100 rounded-xl hover:bg-gray-200">
-                                            Detail
+                                            Detail Stok
                                         </a>
 
                                         <a href="{{ route('itemmanage.history', [$companyCode, $item->id]) }}"
                                             class="px-4 py-2 text-xs font-bold bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200">
                                             Riwayat
+                                        </a>
+                                        <a href="{{ route('itemmanage.detail', ['companyCode' => $companyCode, 'item' => $item->id]) }}"
+                                            class="px-4 py-2 text-xs font-bold bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200">
+                                            Detail Cabang
                                         </a>
                                     </div>
                                 </td>

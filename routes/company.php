@@ -42,13 +42,14 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             Route::get('/', [itemManageController::class, 'index'])
                 ->name('itemmanage.index');
 
-            Route::get('/{item}', [itemManageController::class, 'show'])
-                ->name('itemmanage.show');
-
             Route::get('/{item}/history',
                 [itemManageController::class, 'history']
             )->name('itemmanage.history');
 
+            Route::prefix('detail-cabang')->group(function () {
+                Route::get('/{item}', [itemManageController::class, 'detail'])
+                    ->name('itemmanage.detail');
+            });
         });
 
         Route::prefix('bundles')->group(function () {

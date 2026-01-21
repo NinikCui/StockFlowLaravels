@@ -47,36 +47,7 @@
                             </a>
                         </div>
 
-                        {{-- Stats/Rating --}}
-                        <div class="flex flex-wrap items-center gap-8 pt-8 border-t border-gray-200">
-                            <div class="flex items-center gap-3">
-                                <div class="flex -space-x-2">
-                                    @for($i=0; $i<5; $i++)
-                                        <svg class="h-5 w-5 fill-amber-400 text-amber-400 drop-shadow-sm"
-                                             xmlns="http://www.w3.org/2000/svg"
-                                             viewBox="0 0 20 20">
-                                            <polygon points="10 1.5 12.85 7.26 19.14 8.27 14.57 12.97 15.71 19.23 10 16.09 4.29 19.23 5.43 12.97 0.86 8.27 7.15 7.26 10 1.5"/>
-                                        </svg>
-                                    @endfor
-                                </div>
-                                <div>
-                                    <div class="font-bold text-gray-900">4.9/5</div>
-                                    <div class="text-xs text-gray-500">1000+ Ulasan</div>
-                                </div>
-                            </div>
-
-                            <div class="h-12 w-px bg-gray-300"></div>
-
-                            <div>
-                                <div class="font-bold text-2xl text-gray-900">500+</div>
-                                <div class="text-xs text-gray-500">Restoran Terdaftar</div>
-                            </div>
-
-                            <div>
-                                <div class="font-bold text-2xl text-gray-900">50K+</div>
-                                <div class="text-xs text-gray-500">Transaksi/Bulan</div>
-                            </div>
-                        </div>
+                        
                     </div>
 
                     {{-- Hero Images --}}
@@ -91,25 +62,12 @@
 
                             {{-- Secondary Image --}}
                             <div class="absolute bottom-0 left-0 w-[240px] sm:w-[280px] lg:w-[320px] h-[300px] lg:h-[360px] overflow-hidden rounded-3xl shadow-2xl transform -rotate-3 hover:rotate-0 transition-transform duration-500">
-                                <img src="https://images.unsplash.com/photo-1556767576-5ec41e3239ff?auto=format&fit=crop&w=1200&q=80"
+                                <img src="https://awsimages.detik.net.id/community/media/visual/2022/04/27/ilustrasi-restoran-1_169.jpeg?w=1200"
                                      class="object-cover w-full h-full" alt="Restaurant Food"/>
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                             </div>
 
-                            {{-- Floating Stats Card --}}
-                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl p-6 backdrop-blur-sm bg-white/95 border border-gray-100 z-10">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <div class="font-bold text-gray-900">Real-time Sync</div>
-                                        <div class="text-sm text-gray-500">Data selalu update</div>
-                                    </div>
-                                </div>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
@@ -211,7 +169,7 @@
                 <div class="grid sm:grid-cols-2 gap-8 max-w-5xl mx-auto">
                     <div data-aos="fade-right"
                          class="relative group overflow-hidden rounded-3xl shadow-2xl aspect-[3/4] transform hover:scale-[1.02] transition-transform duration-500">
-                        <img src="https://images.unsplash.com/photo-1576618148400-f54bed99fc71?auto=format&fit=crop&w=1200&q=80"
+                        <img src="https://lightboxindonesia.co.id/wp-content/uploads/2023/03/jasa-foto-produk-makanan.jpg"
                              class="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700" 
                              alt="Restaurant Interior"/>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>

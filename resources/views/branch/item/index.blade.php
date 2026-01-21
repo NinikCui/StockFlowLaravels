@@ -255,12 +255,7 @@
                                     </div>
                                     
                                     <div class="ml-10 space-y-1.5 text-xs">
-                                        <div class="flex items-center gap-2 text-gray-700">
-                                            <svg class="w-3 h-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                                                <circle cx="10" cy="10" r="3"/>
-                                            </svg>
-                                            Prediksi pemakaian: <span class="font-semibold text-gray-900">{{ $item->predicted_usage }}</span>
-                                        </div>
+                                       
                                         <div class="flex items-center gap-2 text-blue-700">
                                             <svg class="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                                 <circle cx="10" cy="10" r="3"/>
