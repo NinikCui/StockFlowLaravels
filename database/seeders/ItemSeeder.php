@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Item;
 use App\Models\Satuan;
+use App\Models\UnitConversion;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -24,12 +25,23 @@ class ItemSeeder extends Seeder
         // SATUAN
         // ======================
         Satuan::insert([
-            ['id' => 1, 'company_id' => 1, 'name' => 'Kilogram', 'code' => 'KG'],
-            ['id' => 2, 'company_id' => 1, 'name' => 'Gram', 'code' => 'GR'],
-            ['id' => 3, 'company_id' => 1, 'name' => 'Liter', 'code' => 'LTR'],
-            ['id' => 4, 'company_id' => 1, 'name' => 'Pieces', 'code' => 'PCS'],
-            ['id' => 5, 'company_id' => 1, 'name' => 'Pack', 'code' => 'PACK'],
-            ['id' => 6, 'company_id' => 1, 'name' => 'Butir', 'code' => 'BTR'],
+            ['id' => 1, 'name' => 'Kilogram', 'code' => 'KG'],
+            ['id' => 2, 'name' => 'Gram', 'code' => 'GR'],
+            ['id' => 3, 'name' => 'Liter', 'code' => 'LTR'],
+            ['id' => 4, 'name' => 'Pieces', 'code' => 'PCS'],
+            ['id' => 5, 'name' => 'Pack', 'code' => 'PACK'],
+            ['id' => 6, 'name' => 'Butir', 'code' => 'BTR'],
+            ['id' => 7, 'name' => 'Milliliter', 'code' => 'ML'],
+        ]);
+
+        UnitConversion::insert([
+            // BERAT
+            ['from_satuan_id' => 1, 'to_satuan_id' => 2, 'factor' => 1000],   // KG → GR
+            ['from_satuan_id' => 2, 'to_satuan_id' => 1, 'factor' => 0.001], // GR → KG
+
+            // VOLUME
+            ['from_satuan_id' => 3, 'to_satuan_id' => 7, 'factor' => 1000],
+            ['from_satuan_id' => 7, 'to_satuan_id' => 3, 'factor' => 0.001],
         ]);
 
         // ======================

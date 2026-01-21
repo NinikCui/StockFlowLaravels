@@ -466,27 +466,34 @@ return new class extends Migration
         Schema::create('unit_conversions', function (Blueprint $table) {
             $table->id();
 
-            $table->unsignedBigInteger('items_id');
             $table->unsignedBigInteger('from_satuan_id');
             $table->unsignedBigInteger('to_satuan_id');
 
-            // FK
-            $table->foreign('items_id')
-                ->references('id')->on('items')
-                ->onDelete('cascade');
+            // nilai konversi
+            // contoh: 1 KG = 1000 GR
+            $table->decimal('factor', 15, 6);
 
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+
+            // FK
             $table->foreign('from_satuan_id')
                 ->references('id')->on('satuan')
-                ->onDelete('cascade');
+                ->cascadeOnDelete();
 
             $table->foreign('to_satuan_id')
                 ->references('id')->on('satuan')
-                ->onDelete('cascade');
+                ->cascadeOnDelete();
 
-            // Index
-            $table->index('items_id', 'fk_unit_conversions_items1_idx');
-            $table->index('from_satuan_id', 'fk_unit_conversions_satuan1_idx');
-            $table->index('to_satuan_id', 'fk_unit_conversions_satuan2_idx');
+            // mencegah duplikat
+            $table->unique(
+                ['from_satuan_id', 'to_satuan_id'],
+                'unit_conversion_unique'
+            );
+
+            // index
+            $table->index('from_satuan_id');
+            $table->index('to_satuan_id');
         });
     }
 

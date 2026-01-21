@@ -213,9 +213,6 @@ class PosOrderController extends Controller
         return back();
     }
 
-    // ======================================
-    // REMOVE ITEM FROM CART
-    // ======================================
     public function remove(Request $request, $branchCode)
     {
         $cart = session()->get('pos_cart', []);

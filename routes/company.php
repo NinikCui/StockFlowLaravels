@@ -17,6 +17,7 @@ use App\Http\Controllers\Company\RoleController;
 use App\Http\Controllers\Company\StockController;
 use App\Http\Controllers\Company\StockManageController;
 use App\Http\Controllers\Company\SupplierController;
+use App\Http\Controllers\Company\UnitConversionController;
 use App\Http\Controllers\Company\WarehouseController;
 use Illuminate\Support\Facades\Route;
 
@@ -69,7 +70,18 @@ Route::middleware(['auth', 'tenant.path'])->group(function () {
             Route::delete('/{bundle}', [ProductBundleController::class, 'destroy'])
                 ->name('bundles.destroy');
         });
-
+        Route::prefix('unit-conversions')->group(function () {
+            Route::get('/create', [UnitConversionController::class, 'create'])
+                ->name('unit-conversion.create');
+            Route::post('/', [UnitConversionController::class, 'store'])
+                ->name('unit-conversion.store');
+            Route::get('/edit/{unitConversion}', [UnitConversionController::class, 'edit'])
+                ->name('unit-conversion.edit');
+            Route::put('/{unitConversion}', [UnitConversionController::class, 'update'])
+                ->name('unit-conversion.update');
+            Route::delete('/{unitConversion}', [UnitConversionController::class, 'destroy'])
+                ->name('unit-conversion.destroy');
+        });
         Route::prefix('pegawai')->group(function () {
 
             Route::get('/', [PegawaiController::class, 'index'])->name('pegawai.index');

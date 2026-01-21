@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Company;
 use App\Models\Item;
 use App\Models\Satuan;
+use App\Models\UnitConversion;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -17,6 +18,15 @@ class ItemsController extends Controller
         return Company::where('code', $companyCode)->firstOrFail();
     }
 
+    private function getAvailableSatuan($companyId)
+    {
+        return Satuan::whereNull('company_id')
+            ->orWhere('company_id', $companyId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+    }
+
     public function index($companyCode)
     {
         $company = $this->getCompany($companyCode);
@@ -25,7 +35,24 @@ class ItemsController extends Controller
             'companyCode' => $companyCode,
             'items' => Item::where('company_id', $company->id)->get(),
             'kategori' => Category::where('company_id', $company->id)->get(),
-            'satuan' => Satuan::where('company_id', $company->id)->get(),
+            'satuan' => $this->getAvailableSatuan($company->id),
+            'unitConversions' => UnitConversion::with([
+                'fromSatuan',
+                'toSatuan',
+            ])
+                ->where('is_active', true)
+                ->orderBy('from_satuan_id')
+                ->orderBy('to_satuan_id')
+                ->select('*')
+                ->selectRaw("
+                        CASE
+                            WHEN factor = FLOOR(factor)
+                                THEN FORMAT(factor, 0, 'id_ID')
+                            ELSE
+                                TRIM(TRAILING ',' FROM TRIM(TRAILING '0' FROM FORMAT(factor, 6, 'id_ID')))
+                        END AS formatted_factor
+                    ")
+                ->get(),
         ]);
     }
 
@@ -37,7 +64,7 @@ class ItemsController extends Controller
         return view('company.items.item.create', [
             'companyCode' => $companyCode,
             'kategori' => Category::where('company_id', $company->id)->get(),
-            'satuan' => Satuan::where('company_id', $company->id)->get(),
+            'satuan' => $this->getAvailableSatuan($company->id),
         ]);
     }
 
@@ -48,7 +75,13 @@ class ItemsController extends Controller
         $r->validate([
             'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
-            'satuan_id' => 'required|exists:satuan,id',
+            'satuan_id' => [
+                'required',
+                Rule::exists('satuan', 'id')->where(function ($q) use ($company) {
+                    $q->whereNull('company_id')
+                        ->orWhere('company_id', $company->id);
+                }),
+            ],
             'is_main_ingredient' => 'nullable|boolean',
             'min_stock' => 'required|integer|min:0',
             'max_stock' => 'required|integer|min:0|gte:min_stock',
@@ -83,7 +116,7 @@ class ItemsController extends Controller
             'companyCode' => $companyCode,
             'item' => $item,
             'kategori' => Category::where('company_id', $company->id)->get(),
-            'satuan' => Satuan::where('company_id', $company->id)->get(),
+            'satuan' => $this->getAvailableSatuan($company->id),
         ]);
     }
 
@@ -98,7 +131,13 @@ class ItemsController extends Controller
         $r->validate([
             'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
-            'satuan_id' => 'required|exists:satuan,id',
+            'satuan_id' => [
+                'required',
+                Rule::exists('satuan', 'id')->where(function ($q) use ($company) {
+                    $q->whereNull('company_id')
+                        ->orWhere('company_id', $company->id);
+                }),
+            ],
             'is_main_ingredient' => 'nullable|boolean',
             'min_stock' => 'required|integer|min:0',
             'max_stock' => 'required|integer|min:0|gte:min_stock',

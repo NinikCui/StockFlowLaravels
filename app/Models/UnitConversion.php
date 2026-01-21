@@ -6,20 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class UnitConversion extends Model
 {
-    protected $table = 'unit_conversions';
-
     protected $fillable = [
-        'items_id',
         'from_satuan_id',
-        'to_satuan_id'
+        'to_satuan_id',
+        'factor',
+        'is_active',
     ];
-
-    public $timestamps = false;
-
-    public function item()
-    {
-        return $this->belongsTo(Item::class, 'items_id');
-    }
 
     public function fromSatuan()
     {

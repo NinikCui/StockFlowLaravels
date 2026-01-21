@@ -132,7 +132,7 @@ return new class extends Migration
         // ============================
         Schema::create('satuan', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('company_id');
+            $table->unsignedBigInteger('company_id')->nullable();
             $table->string('name');
             $table->string('code')->unique();
             $table->boolean('is_active')->default(true);

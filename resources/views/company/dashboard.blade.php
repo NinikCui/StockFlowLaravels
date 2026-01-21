@@ -225,11 +225,6 @@
                             <th class="px-4 py-3 text-left font-semibold text-gray-700 sticky left-0 bg-gray-100">
                                 From \ To
                             </th>
-                            @foreach(array_keys(reset($heatmap)) as $to)
-                                <th class="px-4 py-3 text-center font-semibold text-gray-700">
-                                    {{ $to }}
-                                </th>
-                            @endforeach
                         </tr>
                     </thead>
 

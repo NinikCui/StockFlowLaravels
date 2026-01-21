@@ -15,9 +15,19 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 
 class BranchItemController extends Controller
 {
+    private function getAvailableSatuan($companyId)
+    {
+        return Satuan::whereNull('company_id')
+            ->orWhere('company_id', $companyId)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+    }
+
     public function index($branchCode)
     {
         $companyId = session('role.company.id');
@@ -143,7 +153,8 @@ class BranchItemController extends Controller
             'branchCode' => $branchCode,
             'companyCode' => $companyCode,
             'kategori' => Category::where('company_id', $companyId)->get(),
-            'satuan' => Satuan::where('company_id', $companyId)->get(),
+            'satuan' => $this->getAvailableSatuan($companyId),
+
         ]);
 
     }
@@ -155,7 +166,13 @@ class BranchItemController extends Controller
         $r->validate([
             'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
-            'satuan_id' => 'required|exists:satuan,id',
+            'satuan_id' => [
+                'required',
+                Rule::exists('satuan', 'id')->where(function ($q) use ($companyId) {
+                    $q->whereNull('company_id')
+                        ->orWhere('company_id', $companyId);
+                }),
+            ],
             'is_main_ingredient' => 'nullable|boolean',
 
             'min_stock' => 'required|integer|min:0',
@@ -207,7 +224,7 @@ class BranchItemController extends Controller
             'branchCode' => $branchCode,
             'item' => $item,
             'kategori' => Category::where('company_id', $companyId)->get(),
-            'satuan' => Satuan::where('company_id', $companyId)->get(),
+            'satuan' => $this->getAvailableSatuan($companyId),
         ]);
     }
 
@@ -222,7 +239,13 @@ class BranchItemController extends Controller
         $r->validate([
             'name' => 'required|max:255',
             'category_id' => 'required|exists:categories,id',
-            'satuan_id' => 'required|exists:satuan,id',
+            'satuan_id' => [
+                'required',
+                Rule::exists('satuan', 'id')->where(function ($q) use ($companyId) {
+                    $q->whereNull('company_id')
+                        ->orWhere('company_id', $companyId);
+                }),
+            ],
             'is_main_ingredient' => 'nullable|boolean',
             'min_stock' => 'required|integer|min:0',
             'max_stock' => 'required|integer|min:0|gte:min_stock',
