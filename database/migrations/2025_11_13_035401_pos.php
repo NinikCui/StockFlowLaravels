@@ -175,6 +175,7 @@ return new class extends Migration
             $table->unsignedBigInteger('items_id');
             $table->unsignedBigInteger('inven_trans_id');
             $table->decimal('qty', 16, 4);
+            $table->decimal('sended', 16, 4)->nullable();
             $table->text('note')->nullable();
 
             // FK

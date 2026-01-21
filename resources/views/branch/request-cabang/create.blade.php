@@ -82,7 +82,7 @@
                     </p>
                 </div>
 
-                {{-- Cabang Tujuan (auto cabang ini) --}}
+                {{-- Cabang Tujuan --}}
                 <div class="space-y-2">
                     <label class="block text-sm font-semibold text-gray-700">
                         Cabang Tujuan
@@ -110,7 +110,7 @@
                 <div>
                     <h2 class="text-lg font-semibold text-gray-900">Daftar Item</h2>
                     <p class="text-xs text-gray-500 mt-1">
-                        Item akan muncul berdasarkan stok di gudang-gudang cabang asal.
+                        Item akan muncul berdasarkan stok cabang asal.
                     </p>
                 </div>
 
@@ -196,50 +196,32 @@
     </form>
 </div>
 <script>
-    const cabangFrom = document.getElementById('cabang_from');
-    const itemsPerBranch = @json($itemsPerBranch);
-    let rowIndex = 1;
+/* ===============================
+   INIT
+================================ */
+const cabangFrom = document.getElementById('cabang_from');
+const itemsPerBranch = @json($itemsPerBranch);
 
-    // Isi dropdown item sesuai cabang
-    function fillItemSelects() {
-        const branchId = cabangFrom.value;
+let itemsData = [];
+let rowIndex = 1;
 
-        document.querySelectorAll('.item-select').forEach(sel => {
+/* ===============================
+   HELPERS
+================================ */
+function getAllSelectedItems() {
+    return [...document.querySelectorAll('.item-select')]
+        .map(s => s.value)
+        .filter(v => v !== "");
+}
 
-            if (!branchId || !itemsPerBranch[branchId]) {
-                sel.innerHTML = `<option value="">-- Pilih Cabang Asal Dulu --</option>`;
-                return;
-            }
-
-            let opts = `<option value="">-- Pilih Item --</option>`;
-
-            itemsPerBranch[branchId].forEach(i => {
-                opts += `<option value="${i.id}">${i.name} (${i.satuan})</option>`;
-            });
-
-            sel.innerHTML = opts;
-        });
-    }
-
-    // Event ganti cabang
-    cabangFrom.addEventListener('change', () => {
-        document.querySelectorAll('.item-select').forEach(sel => sel.value = '');
-        fillItemSelects();
-    });
-
-    // Tambah Row
-    document.getElementById('addRow').addEventListener('click', () => {
-        const tbody = document.querySelector('#itemsTable tbody');
-
-        const row = document.createElement('tr');
-        row.className = 'item-row border-b border-gray-100 hover:bg-gray-50 transition';
-
-        row.innerHTML = `
+function getBaseRowHTML(index) {
+    return `
+        <tr class="item-row border-b border-gray-100 hover:bg-gray-50 transition">
             <td class="py-3 pr-2">
-                <select name="items[${rowIndex}][item_id]"
-                        class="w-full border-gray-300 rounded-lg item-select"
+                <select name="items[${index}][item_id]"
+                        class="input-select item-select w-full border-gray-300 rounded-lg"
                         required>
-                    <option value="">-- Pilih Cabang Asal Dulu --</option>
+                    <option value="">-- Pilih Item --</option>
                 </select>
             </td>
 
@@ -247,33 +229,193 @@
                 <input type="number"
                        min="0.01"
                        step="0.01"
-                       name="items[${rowIndex}][qty]"
-                       class="w-full border-gray-300 rounded-lg text-center"
+                       name="items[${index}][qty]"
+                       class="input-text qty-input w-full text-right border-gray-300 rounded-lg"
                        required>
             </td>
 
             <td class="py-3 text-center">
                 <button type="button"
-                        class="removeRow w-8 h-8 text-red-500 hover:bg-red-50 rounded-lg">✕</button>
+                        class="removeRow w-8 h-8 text-red-500 hover:bg-red-50 rounded-lg">
+                    ✕
+                </button>
             </td>
-        `;
+        </tr>
+    `;
+}
 
-        tbody.appendChild(row);
+/* ===============================
+   RESET TABLE
+================================ */
+function resetItemsTable() {
+    const tbody = document.querySelector('#itemsTable tbody');
+    tbody.innerHTML = getBaseRowHTML(0);
+    rowIndex = 1;
+    removeError('item-duplicate-error');
+}
 
-        rowIndex++;
+/* ===============================
+   LOAD ITEMS BY CABANG
+================================ */
+function loadItemsForBranch() {
+    const branchId = cabangFrom.value;
 
-        fillItemSelects();
+    if (!branchId || !itemsPerBranch[branchId]) {
+        clearItemsDropdowns();
+        return;
+    }
+
+    itemsData = itemsPerBranch[branchId];
+    updateAllDropdowns();
+}
+
+function clearItemsDropdowns() {
+    document.querySelectorAll('.item-select').forEach(sel => {
+        sel.innerHTML = `<option value="">-- Pilih Cabang Asal Dulu --</option>`;
     });
+}
 
-    // Hapus row
-    document.addEventListener('click', e => {
-        if (e.target.closest('.removeRow')) {
-            e.target.closest('tr').remove();
+/* ===============================
+   DROPDOWN ITEM (ANTI DUPLIKAT)
+================================ */
+function updateAllDropdowns() {
+    const selected = getAllSelectedItems();
+
+    document.querySelectorAll('.item-select').forEach(sel => {
+        const current = sel.value;
+
+        sel.innerHTML = `<option value="">-- Pilih Item --</option>`;
+
+        itemsData.forEach(i => {
+            if (!selected.includes(String(i.id)) || String(i.id) === current) {
+                sel.innerHTML += `
+                    <option value="${i.id}">
+                        ${i.name} (${i.satuan})
+                    </option>
+                `;
+            }
+        });
+
+        sel.value = current;
+    });
+}
+
+/* ===============================
+   CABANG CHANGE
+================================ */
+cabangFrom.addEventListener('change', () => {
+    resetItemsTable();
+    loadItemsForBranch();
+});
+
+/* ===============================
+   ADD ROW (GUARD)
+================================ */
+document.getElementById('addRow').addEventListener('click', () => {
+    if (!cabangFrom.value) {
+        alert('Pilih cabang asal terlebih dahulu.');
+        return;
+    }
+
+    const tbody = document.querySelector('#itemsTable tbody');
+    const row = document.createElement('tr');
+    row.innerHTML = getBaseRowHTML(rowIndex);
+    row.classList.add('item-row');
+
+    tbody.appendChild(row);
+    rowIndex++;
+
+    updateAllDropdowns();
+    validateDuplicate();
+});
+
+/* ===============================
+   REMOVE ROW (MIN 1)
+================================ */
+document.addEventListener('click', e => {
+    if (e.target.closest('.removeRow')) {
+        const rows = document.querySelectorAll('.item-row');
+
+        if (rows.length === 1) {
+            alert('Minimal harus ada satu item.');
+            return;
         }
-    });
 
-    // Init default
-    fillItemSelects();
+        e.target.closest('tr').remove();
+        updateAllDropdowns();
+        validateDuplicate();
+    }
+});
+
+/* ===============================
+   QTY VALIDATION
+================================ */
+document.addEventListener('input', e => {
+    if (e.target.classList.contains('qty-input')) {
+        if (e.target.value <= 0) {
+            e.target.setCustomValidity('Qty harus lebih dari 0');
+        } else {
+            e.target.setCustomValidity('');
+        }
+    }
+});
+
+/* ===============================
+   DUPLICATE VALIDATION
+================================ */
+function validateDuplicate() {
+    const selected = getAllSelectedItems();
+    const hasDuplicate = new Set(selected).size !== selected.length;
+
+    if (hasDuplicate) {
+        showError('item-duplicate-error', 'Item tidak boleh duplikat.');
+        return false;
+    }
+
+    removeError('item-duplicate-error');
+    return true;
+}
+
+/* ===============================
+   ERROR UI
+================================ */
+function showError(id, message) {
+    if (document.getElementById(id)) return;
+
+    const box = document.createElement('div');
+    box.id = id;
+    box.className = 'mb-4 rounded-lg border-l-4 border-red-500 bg-red-50 px-4 py-3';
+    box.innerHTML = `<p class="text-sm font-semibold text-red-700">${message}</p>`;
+
+    const table = document.getElementById('itemsTable');
+    table.parentNode.insertBefore(box, table);
+}
+
+function removeError(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
+
+/* ===============================
+   SUBMIT GUARD
+================================ */
+document.getElementById('mrForm').addEventListener('submit', e => {
+    const selected = getAllSelectedItems();
+
+    if (selected.length === 0) {
+        e.preventDefault();
+        alert('Minimal harus ada 1 item.');
+        return;
+    }
+
+    if (!validateDuplicate()) {
+        e.preventDefault();
+        document.getElementById('itemsTable').scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        });
+    }
+});
 </script>
 
 

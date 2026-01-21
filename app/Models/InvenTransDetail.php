@@ -10,7 +10,7 @@ class InvenTransDetail extends Model
 
     protected $fillable = [
         'items_id',
-        'inven_trans_id',
+        'inven_trans_id', 'sended',
         'qty',
         'note',
     ];

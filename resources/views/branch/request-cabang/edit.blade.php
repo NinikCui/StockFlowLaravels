@@ -149,60 +149,182 @@
     </form>
 </div>
 
-{{-- JS SAMA PERSIS DGN CREATE --}}
 <script>
-    const cabangFrom = document.getElementById('cabang_from');
-    const itemsPerBranch = @json($itemsPerBranch);
+/* ===============================
+   INIT
+================================ */
+const cabangFrom = document.getElementById('cabang_from');
+const itemsPerBranch = @json($itemsPerBranch);
 
-    let rowIndex = {{ $req->details->count() }};
+// start index dari jumlah detail existing
+let rowIndex = {{ $req->details->count() }};
 
-    function refreshItemSelect() {
-        const branch = cabangFrom.value;
+/* ===============================
+   HELPERS
+================================ */
+function getAllSelectedItems() {
+    return [...document.querySelectorAll('.item-select')]
+        .map(s => s.value)
+        .filter(v => v !== "");
+}
 
-        document.querySelectorAll('.item-select').forEach(sel => {
-            sel.innerHTML = `<option value="">-- Pilih --</option>`;
-            if (!branch || !itemsPerBranch[branch]) return;
-
-            itemsPerBranch[branch].forEach(i => {
-                sel.innerHTML += `<option value="${i.id}">${i.name} (${i.satuan})</option>`;
-            });
-        });
-    }
-
-    cabangFrom.addEventListener('change', refreshItemSelect);
-
-    document.getElementById('addRow').addEventListener('click', () => {
-        const tbody = document.querySelector('#itemsTable tbody');
-
-        const row = document.createElement('tr');
-        row.classList.add('item-row', 'border-b');
-
-        row.innerHTML = `
+function getBaseRowHTML(index) {
+    return `
+        <tr class="item-row border-b">
             <td class="py-3 pr-2">
-                <select name="items[${rowIndex}][item_id]" class="item-select w-full border-gray-300 rounded-lg" required>
+                <select name="items[${index}][item_id]"
+                        class="item-select w-full border-gray-300 rounded-lg"
+                        required>
                     <option value="">-- Pilih --</option>
                 </select>
             </td>
-            <td class="py-3 text-center">
-                <input type="number" name="items[${rowIndex}][qty]" min="0.01" step="0.01"
-                       class="w-full border-gray-300 rounded-lg text-center" required>
-            </td>
-            <td class="py-3 text-center">
-                <button type="button" class="removeRow text-red-500 w-8 h-8">✕</button>
-            </td>
-        `;
 
-        tbody.appendChild(row);
-        rowIndex++;
-        refreshItemSelect();
+            <td class="py-3 text-center">
+                <input type="number"
+                       name="items[${index}][qty]"
+                       min="0.01"
+                       step="0.01"
+                       class="w-full border-gray-300 rounded-lg text-center qty-input"
+                       required>
+            </td>
+
+            <td class="py-3 text-center">
+                <button type="button"
+                        class="removeRow text-red-500 w-8 h-8">
+                    ✕
+                </button>
+            </td>
+        </tr>
+    `;
+}
+
+/* ===============================
+   LOAD ITEMS BY CABANG
+================================ */
+function updateAllDropdowns() {
+    const branch = cabangFrom.value;
+    const selected = getAllSelectedItems();
+
+    document.querySelectorAll('.item-select').forEach(sel => {
+        const current = sel.value;
+        sel.innerHTML = `<option value="">-- Pilih --</option>`;
+
+        if (!branch || !itemsPerBranch[branch]) return;
+
+        itemsPerBranch[branch].forEach(i => {
+            if (!selected.includes(String(i.id)) || String(i.id) === current) {
+                sel.innerHTML += `
+                    <option value="${i.id}">
+                        ${i.name} (${i.satuan})
+                    </option>
+                `;
+            }
+        });
+
+        sel.value = current;
     });
+}
 
-    document.addEventListener('click', e => {
-        if (e.target.closest('.removeRow')) {
-            e.target.closest('tr').remove();
+/* ===============================
+   CABANG CHANGE
+================================ */
+cabangFrom.addEventListener('change', () => {
+    updateAllDropdowns();
+    validateDuplicate();
+});
+
+/* ===============================
+   ADD ROW (GUARD)
+================================ */
+document.getElementById('addRow').addEventListener('click', () => {
+    if (!cabangFrom.value) {
+        alert('Pilih cabang asal terlebih dahulu.');
+        return;
+    }
+
+    const tbody = document.querySelector('#itemsTable tbody');
+    const row = document.createElement('tr');
+    row.innerHTML = getBaseRowHTML(rowIndex);
+    row.classList.add('item-row');
+
+    tbody.appendChild(row);
+    rowIndex++;
+
+    updateAllDropdowns();
+    validateDuplicate();
+});
+
+/* ===============================
+   REMOVE ROW (MIN 1)
+================================ */
+document.addEventListener('click', e => {
+    if (e.target.closest('.removeRow')) {
+        const rows = document.querySelectorAll('.item-row');
+        if (rows.length === 1) {
+            alert('Minimal harus ada satu item.');
+            return;
         }
-    });
 
+        e.target.closest('tr').remove();
+        updateAllDropdowns();
+        validateDuplicate();
+    }
+});
+
+/* ===============================
+   QTY VALIDATION
+================================ */
+document.addEventListener('input', e => {
+    if (e.target.classList.contains('qty-input')) {
+        if (e.target.value <= 0) {
+            e.target.setCustomValidity('Qty harus lebih dari 0');
+        } else {
+            e.target.setCustomValidity('');
+        }
+    }
+});
+
+/* ===============================
+   DUPLICATE VALIDATION
+================================ */
+function validateDuplicate() {
+    const selected = getAllSelectedItems();
+    const hasDuplicate = new Set(selected).size !== selected.length;
+
+    if (hasDuplicate) {
+        showError('item-duplicate-error', 'Item tidak boleh duplikat.');
+        return false;
+    }
+
+    removeError('item-duplicate-error');
+    return true;
+}
+
+/* ===============================
+   ERROR UI
+================================ */
+function showError(id, message) {
+    if (document.getElementById(id)) return;
+
+    const box = document.createElement('div');
+    box.id = id;
+    box.className = 'mb-4 rounded-lg border-l-4 border-red-500 bg-red-50 px-4 py-3';
+    box.innerHTML = `<p class="text-sm font-semibold text-red-700">${message}</p>`;
+
+    const table = document.getElementById('itemsTable');
+    table.parentNode.insertBefore(box, table);
+}
+
+function removeError(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
+
+/* ===============================
+   INIT LOAD (PENTING)
+================================ */
+updateAllDropdowns();
 </script>
+
 
 </x-app-layout>

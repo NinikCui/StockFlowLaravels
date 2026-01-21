@@ -262,8 +262,9 @@ class BranchMaterialRequestController extends Controller
 
                     return back()->withErrors("Total alokasi item {$detail->item->name} harus tepat {$needed}.");
                 }
-
-                // kurangi stok per warehouse
+                $detail->update([
+                    'sended' => $totalAlloc,
+                ]);
                 foreach ($alloc as $stockId => $qty) {
 
                     Log::info('CEK STOCK RECORD', [
@@ -532,7 +533,15 @@ class BranchMaterialRequestController extends Controller
                 $warehouseId = $data[$itemId]['warehouse_id'] ?? null;
                 $qtyReceived = $data[$itemId]['qty'] ?? 0;
                 $expiredAt = $data[$itemId]['expired_at'] ?? null;
+                if ($detail->sended === null) {
+                    return back()->withErrors("Item {$detail->item->name} belum dikirim.");
+                }
 
+                if ($qtyReceived > $detail->sended) {
+                    return back()->withErrors(
+                        "Qty diterima item {$detail->item->name} tidak boleh melebihi qty dikirim ({$detail->sended})."
+                    );
+                }
                 // LOGGING
                 Log::info('RECEIVE ITEM', [
                     'item_id' => $itemId,

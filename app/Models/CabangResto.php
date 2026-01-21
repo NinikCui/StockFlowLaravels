@@ -10,7 +10,7 @@ class CabangResto extends Model
 
     protected $fillable = [
         'company_id', 'name', 'code', 'address', 'city', 'phone', 'utama',
-        'is_active', 'latitude', 'longitude', 'manager_user_id',
+        'is_active',  'manager_user_id',
         'created_at', 'updated_at',
     ];
 

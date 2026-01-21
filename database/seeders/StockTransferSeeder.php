@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\CabangResto;
 use App\Models\InventoryTrans;
 use App\Models\InvenTransDetail;
 use App\Models\Stock;
@@ -19,275 +18,311 @@ class StockTransferSeeder extends Seeder
     {
         DB::transaction(function () {
 
-            $cabang = CabangResto::first();
             $user = User::first();
 
-            $warehouses = Warehouse::where('cabang_resto_id', $cabang->id)->get();
+            $fromBranch = 1;
+            $toBranch = 2;
 
-            if ($warehouses->count() < 2) {
+            $fromWarehouses = Warehouse::where('cabang_resto_id', $fromBranch)->get();
+            $toWarehouses = Warehouse::where('cabang_resto_id', $toBranch)->get();
+
+            if ($fromWarehouses->isEmpty() || $toWarehouses->isEmpty()) {
                 return;
             }
 
-            $fromWarehouse = $warehouses[0];
-            $toWarehouse = $warehouses[1];
+            $fromWarehouse = $fromWarehouses->first();
 
-            $stock = Stock::where('warehouse_id', $fromWarehouse->id)
-                ->where('qty', '>', 0)
-                ->first();
+            // ======================================================
+            // AMBIL STOCK DENGAN ITEM BERBEDA
+            // ======================================================
+            $uniqueStocks = Stock::where('warehouse_id', $fromWarehouse->id)
+                ->where('qty', '>', 10)
+                ->get()
+                ->unique('item_id')
+                ->values();
 
-            if (! $stock) {
+            if ($uniqueStocks->count() < 3) {
                 return;
             }
 
             /*
-            |--------------------------------------------------------------------------
-            | KASUS 1: TRANSFER POSTED (BERHASIL)
-            |--------------------------------------------------------------------------
+            |======================================================
+            | 1. REQUESTED (BELUM DIKIRIM)
+            |======================================================
             */
-            $posted = InventoryTrans::create([
-                'cabang_id_from' => 1,
-                'cabang_id_to' => 2,
-                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
-                'trans_date' => Carbon::now(),
-                'status' => 'IN_TRANSIT',
-                'note' => 'Transfer antar gudang (POSTED)',
-                'reason' => 'Penataan ulang stok',
-                'created_by' => $user->id,
-                'posted_at' => Carbon::now(),
-            ]);
-
-            InvenTransDetail::create([
-                'inven_trans_id' => $posted->id,
-                'items_id' => $stock->item_id,
-                'qty' => 10,
-                'note' => 'Transfer normal',
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | KASUS 2: TRANSFER DRAFT
-            |--------------------------------------------------------------------------
-            */
-            $draft = InventoryTrans::create([
-                'cabang_id_from' => 1,
-                'cabang_id_to' => 2,
-                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
-                'trans_date' => Carbon::now(),
-                'status' => 'IN_TRANSIT',
-                'note' => 'Transfer antar gudang (DRAFT)',
-                'reason' => null,
-                'created_by' => $user->id,
-                'posted_at' => null,
-            ]);
-
-            InvenTransDetail::create([
-                'inven_trans_id' => $draft->id,
-                'items_id' => $stock->item_id,
-                'qty' => 5,
-                'note' => 'Menunggu konfirmasi',
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | KASUS 3: TRANSFER CANCELLED
-            |--------------------------------------------------------------------------
-            */
-            $cancel = InventoryTrans::create([
-                'cabang_id_from' => 1,
-                'cabang_id_to' => 2,
-                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
-                'trans_date' => Carbon::now(),
-                'status' => 'CANCELLED',
-                'note' => 'Transfer antar gudang (CANCELLED)',
-                'reason' => 'Kesalahan input',
-                'created_by' => $user->id,
-                'posted_at' => null,
-            ]);
-
-            InvenTransDetail::create([
-                'inven_trans_id' => $cancel->id,
-                'items_id' => $stock->item_id,
-                'qty' => 8,
-                'note' => 'Dibatalkan',
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | KASUS 4: MULTI-ITEM TRANSFER
-            |--------------------------------------------------------------------------
-            */
-            $multi = InventoryTrans::create([
-                'cabang_id_from' => 1,
-                'cabang_id_to' => 2,
+            $requested = InventoryTrans::create([
+                'cabang_id_from' => $fromBranch,
+                'cabang_id_to' => $toBranch,
                 'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
                 'trans_date' => Carbon::now(),
                 'status' => 'REQUESTED',
-                'note' => 'Transfer multi item',
-                'reason' => 'Penyesuaian gudang',
+                'note' => 'Request awal multi item',
+                'reason' => 'Kebutuhan operasional',
                 'created_by' => $user->id,
-                'posted_at' => Carbon::now(),
             ]);
 
-            $stocks = Stock::where('warehouse_id', $fromWarehouse->id)
-                ->where('qty', '>', 5)
-                ->take(2)
-                ->get();
-
-            foreach ($stocks as $s) {
+            foreach ($uniqueStocks->take(3) as $s) {
                 InvenTransDetail::create([
-                    'inven_trans_id' => $multi->id,
+                    'inven_trans_id' => $requested->id,
                     'items_id' => $s->item_id,
-                    'qty' => 5,
-                    'note' => 'Multi item transfer',
+                    'qty' => rand(5, 10),
+                    'sended' => null,
+                    'note' => 'Belum diproses',
                 ]);
             }
 
             /*
-            |--------------------------------------------------------------------------
-            | KASUS 5: TRANSFER GAGAL (QTY > STOK)
-            |--------------------------------------------------------------------------
+            |======================================================
+            | 2. APPROVED + PARTIAL SEND
+            |======================================================
             */
-            $failed = InventoryTrans::create([
-                'cabang_id_from' => 1,
-                'cabang_id_to' => 2,
+            $approved = InventoryTrans::create([
+                'cabang_id_from' => $fromBranch,
+                'cabang_id_to' => $toBranch,
+                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
+                'trans_date' => Carbon::now(),
+                'status' => 'APPROVED',
+                'note' => 'Approve dengan partial send',
+                'reason' => 'Stok terbatas',
+                'created_by' => $user->id,
+            ]);
+
+            foreach ($uniqueStocks->slice(1, 3) as $s) {
+                $qty = rand(6, 10);
+                $sent = rand(3, $qty - 1);
+
+                InvenTransDetail::create([
+                    'inven_trans_id' => $approved->id,
+                    'items_id' => $s->item_id,
+                    'qty' => $qty,
+                    'sended' => $sent,
+                    'note' => 'Partial send',
+                ]);
+            }
+
+            /*
+            |======================================================
+            | 3. IN TRANSIT (FULL SEND)
+            |======================================================
+            */
+            $inTransit = InventoryTrans::create([
+                'cabang_id_from' => $fromBranch,
+                'cabang_id_to' => $toBranch,
+                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
+                'trans_date' => Carbon::now(),
+                'status' => 'IN_TRANSIT',
+                'note' => 'Barang sedang dikirim',
+                'reason' => 'Pengiriman normal',
+                'created_by' => $user->id,
+                'posted_at' => Carbon::now(),
+            ]);
+
+            foreach ($uniqueStocks->slice(2, 3) as $s) {
+                $qty = rand(4, 8);
+
+                InvenTransDetail::create([
+                    'inven_trans_id' => $inTransit->id,
+                    'items_id' => $s->item_id,
+                    'qty' => $qty,
+                    'sended' => $qty,
+                    'note' => 'Full send',
+                ]);
+            }
+
+            /*
+            |======================================================
+            | 4. RECEIVED
+            |======================================================
+            */
+            $received = InventoryTrans::create([
+                'cabang_id_from' => $fromBranch,
+                'cabang_id_to' => $toBranch,
+                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
+                'trans_date' => Carbon::now(),
+                'status' => 'RECEIVED',
+                'note' => 'Barang sudah diterima',
+                'reason' => 'Selesai',
+                'created_by' => $user->id,
+                'posted_at' => Carbon::now(),
+            ]);
+
+            foreach ($uniqueStocks->slice(3, 2) as $s) {
+                $qty = rand(3, 6);
+
+                InvenTransDetail::create([
+                    'inven_trans_id' => $received->id,
+                    'items_id' => $s->item_id,
+                    'qty' => $qty,
+                    'sended' => $qty,
+                    'note' => 'Sudah diterima',
+                ]);
+            }
+
+            /*
+            |======================================================
+            | 5. REJECTED
+            |======================================================
+            */
+            $rejected = InventoryTrans::create([
+                'cabang_id_from' => $fromBranch,
+                'cabang_id_to' => $toBranch,
                 'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
                 'trans_date' => Carbon::now(),
                 'status' => 'REJECTED',
-                'note' => 'Transfer gagal',
-                'reason' => 'Jumlah melebihi stok',
+                'note' => 'Request ditolak',
+                'reason' => 'Qty melebihi stok',
                 'created_by' => $user->id,
-                'posted_at' => null,
             ]);
 
+            $s = $uniqueStocks->random();
+
             InvenTransDetail::create([
-                'inven_trans_id' => $failed->id,
-                'items_id' => $stock->item_id,
-                'qty' => $stock->qty + 100,
+                'inven_trans_id' => $rejected->id,
+                'items_id' => $s->item_id,
+                'qty' => $s->qty + 50,
+                'sended' => null,
                 'note' => 'Simulasi gagal',
             ]);
 
-            // dibalek
-            $posted = InventoryTrans::create([
-                'cabang_id_from' => 2,
-                'cabang_id_to' => 1,
-                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
-                'trans_date' => Carbon::now(),
-                'status' => 'IN_TRANSIT',
-                'note' => 'Transfer antar gudang (POSTED)',
-                'reason' => 'Penataan ulang stok',
-                'created_by' => $user->id,
-                'posted_at' => Carbon::now(),
-            ]);
-
-            InvenTransDetail::create([
-                'inven_trans_id' => $posted->id,
-                'items_id' => $stock->item_id,
-                'qty' => 10,
-                'note' => 'Transfer normal',
-            ]);
-
             /*
-            |--------------------------------------------------------------------------
-            | KASUS 2: TRANSFER DRAFT
-            |--------------------------------------------------------------------------
+            |======================================================
+            | 1. REQUESTED (BELUM DIKIRIM)
+            |======================================================
             */
-            $draft = InventoryTrans::create([
-                'cabang_id_from' => 2,
-                'cabang_id_to' => 1,
-                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
-                'trans_date' => Carbon::now(),
-                'status' => 'IN_TRANSIT',
-                'note' => 'Transfer antar gudang (DRAFT)',
-                'reason' => null,
-                'created_by' => $user->id,
-                'posted_at' => null,
-            ]);
-
-            InvenTransDetail::create([
-                'inven_trans_id' => $draft->id,
-                'items_id' => $stock->item_id,
-                'qty' => 5,
-                'note' => 'Menunggu konfirmasi',
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | KASUS 3: TRANSFER CANCELLED
-            |--------------------------------------------------------------------------
-            */
-            $cancel = InventoryTrans::create([
-                'cabang_id_from' => 2,
-                'cabang_id_to' => 1,
-                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
-                'trans_date' => Carbon::now(),
-                'status' => 'CANCELLED',
-                'note' => 'Transfer antar gudang (CANCELLED)',
-                'reason' => 'Kesalahan input',
-                'created_by' => $user->id,
-                'posted_at' => null,
-            ]);
-
-            InvenTransDetail::create([
-                'inven_trans_id' => $cancel->id,
-                'items_id' => $stock->item_id,
-                'qty' => 8,
-                'note' => 'Dibatalkan',
-            ]);
-
-            /*
-            |--------------------------------------------------------------------------
-            | KASUS 4: MULTI-ITEM TRANSFER
-            |--------------------------------------------------------------------------
-            */
-            $multi = InventoryTrans::create([
+            $requested = InventoryTrans::create([
                 'cabang_id_from' => 2,
                 'cabang_id_to' => 1,
                 'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
                 'trans_date' => Carbon::now(),
                 'status' => 'REQUESTED',
-                'note' => 'Transfer multi item',
-                'reason' => 'Penyesuaian gudang',
+                'note' => 'Request awal multi item',
+                'reason' => 'Kebutuhan operasional',
                 'created_by' => $user->id,
-                'posted_at' => Carbon::now(),
             ]);
 
-            $stocks = Stock::where('warehouse_id', $fromWarehouse->id)
-                ->where('qty', '>', 5)
-                ->take(2)
-                ->get();
-
-            foreach ($stocks as $s) {
+            foreach ($uniqueStocks->take(3) as $s) {
                 InvenTransDetail::create([
-                    'inven_trans_id' => $multi->id,
+                    'inven_trans_id' => $requested->id,
                     'items_id' => $s->item_id,
-                    'qty' => 5,
-                    'note' => 'Multi item transfer',
+                    'qty' => rand(5, 10),
+                    'sended' => null,
+                    'note' => 'Belum diproses',
                 ]);
             }
 
             /*
-            |--------------------------------------------------------------------------
-            | KASUS 5: TRANSFER GAGAL (QTY > STOK)
-            |--------------------------------------------------------------------------
+            |======================================================
+            | 2. APPROVED + PARTIAL SEND
+            |======================================================
             */
-            $failed = InventoryTrans::create([
+            $approved = InventoryTrans::create([
+                'cabang_id_from' => 2,
+                'cabang_id_to' => 1,
+                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
+                'trans_date' => Carbon::now(),
+                'status' => 'APPROVED',
+                'note' => 'Approve dengan partial send',
+                'reason' => 'Stok terbatas',
+                'created_by' => $user->id,
+            ]);
+
+            foreach ($uniqueStocks->slice(1, 3) as $s) {
+                $qty = rand(6, 10);
+                $sent = rand(3, $qty - 1);
+
+                InvenTransDetail::create([
+                    'inven_trans_id' => $approved->id,
+                    'items_id' => $s->item_id,
+                    'qty' => $qty,
+                    'sended' => $sent,
+                    'note' => 'Partial send',
+                ]);
+            }
+
+            /*
+            |======================================================
+            | 3. IN TRANSIT (FULL SEND)
+            |======================================================
+            */
+            $inTransit = InventoryTrans::create([
+                'cabang_id_from' => 2,
+                'cabang_id_to' => 1,
+                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
+                'trans_date' => Carbon::now(),
+                'status' => 'IN_TRANSIT',
+                'note' => 'Barang sedang dikirim',
+                'reason' => 'Pengiriman normal',
+                'created_by' => $user->id,
+                'posted_at' => Carbon::now(),
+            ]);
+
+            foreach ($uniqueStocks->slice(2, 3) as $s) {
+                $qty = rand(4, 8);
+
+                InvenTransDetail::create([
+                    'inven_trans_id' => $inTransit->id,
+                    'items_id' => $s->item_id,
+                    'qty' => $qty,
+                    'sended' => $qty,
+                    'note' => 'Full send',
+                ]);
+            }
+
+            /*
+            |======================================================
+            | 4. RECEIVED
+            |======================================================
+            */
+            $received = InventoryTrans::create([
+                'cabang_id_from' => 2,
+                'cabang_id_to' => 1,
+                'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
+                'trans_date' => Carbon::now(),
+                'status' => 'RECEIVED',
+                'note' => 'Barang sudah diterima',
+                'reason' => 'Selesai',
+                'created_by' => $user->id,
+                'posted_at' => Carbon::now(),
+            ]);
+
+            foreach ($uniqueStocks->slice(3, 2) as $s) {
+                $qty = rand(3, 6);
+
+                InvenTransDetail::create([
+                    'inven_trans_id' => $received->id,
+                    'items_id' => $s->item_id,
+                    'qty' => $qty,
+                    'sended' => $qty,
+                    'note' => 'Sudah diterima',
+                ]);
+            }
+
+            /*
+            |======================================================
+            | 5. REJECTED
+            |======================================================
+            */
+            $rejected = InventoryTrans::create([
                 'cabang_id_from' => 2,
                 'cabang_id_to' => 1,
                 'trans_number' => 'TRG-'.strtoupper(Str::random(6)),
                 'trans_date' => Carbon::now(),
                 'status' => 'REJECTED',
-                'note' => 'Transfer gagal',
-                'reason' => 'Jumlah melebihi stok',
+                'note' => 'Request ditolak',
+                'reason' => 'Qty melebihi stok',
                 'created_by' => $user->id,
-                'posted_at' => null,
             ]);
 
+            $s = $uniqueStocks->random();
+
             InvenTransDetail::create([
-                'inven_trans_id' => $failed->id,
-                'items_id' => $stock->item_id,
-                'qty' => $stock->qty + 100,
+                'inven_trans_id' => $rejected->id,
+                'items_id' => $s->item_id,
+                'qty' => $s->qty + 50,
+                'sended' => null,
                 'note' => 'Simulasi gagal',
             ]);
         });
+
     }
 }

@@ -16,7 +16,7 @@ class InventoryTrans extends Model
         'status',
         'note',
         'reason',
-        'created_by',
+        'created_by', 
         'posted_at',
         'updated_at',
     ];

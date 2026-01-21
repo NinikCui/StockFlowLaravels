@@ -77,9 +77,6 @@ return new class extends Migration
             $table->boolean(column: 'utama')->default(false);
             $table->boolean('is_active')->default(true);
 
-            $table->decimal('latitude', 10, 7)->nullable();
-            $table->decimal('longitude', 10, 7)->nullable();
-
             $table->unsignedBigInteger('manager_user_id')->nullable();
 
             $table->timestamps();
