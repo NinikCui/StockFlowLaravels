@@ -201,9 +201,8 @@ class BranchMaterialRequestController extends Controller
 
     public function approve(Request $request, $branchCode, $id)
     {
-
         $companyId = session('role.company.id');
-        $req = InventoryTrans::with(['details.item'])->findOrFail($id);
+        $req = InventoryTrans::with(['details.item', 'cabangTo'])->findOrFail($id);
 
         // hanya cabang pengirim yang boleh approve
         if ($req->cabang_id_from != session('role.branch.id')) {
@@ -211,60 +210,71 @@ class BranchMaterialRequestController extends Controller
         }
 
         $request->validate([
-            'alloc' => 'required|array',
-            'alloc.*' => 'required|array',
+            'send_item' => 'nullable|array',
+            'alloc' => 'nullable|array',
         ]);
 
         DB::beginTransaction();
 
         try {
-
             Log::info("=== APPROVE REQUEST {$req->id} DIMULAI ===");
 
             foreach ($req->details as $detail) {
+                $itemId = $detail->item->id;
+                $itemName = $detail->item->name;
+                $needed = (float) $detail->qty;
 
-                // FIX PALING PENTING:
-                $itemId = $detail->item->id;   // gunakan relasi, bukan item_id
-
-                $needed = $detail->qty;
+                $isSend = ((int) data_get($request->send_item, $itemId, 1)) === 1;
 
                 Log::info('ITEM PROCESS START', [
                     'item_id' => $itemId,
-                    'item_name' => $detail->item->name,
+                    'item_name' => $itemName,
                     'needed' => $needed,
+                    'is_send' => $isSend,
                 ]);
 
-                // ambil alokasi untuk item ini
-                $alloc = $request->alloc[$itemId] ?? null;
+                if (! $isSend) {
+                    $detail->update(['sended' => 0]);
+                    Log::info('ITEM SKIPPED (NOT SENT)', ['item_id' => $itemId]);
 
-                Log::info('ALLOC RECEIVED', [
-                    'item_id' => $itemId,
-                    'alloc' => $alloc,
-                ]);
+                    continue;
+                }
 
-                if (! $alloc) {
+                $allocRaw = data_get($request->alloc, $itemId, []);
+                if (! is_array($allocRaw)) {
+                    $allocRaw = [];
+                }
+
+                $alloc = [];
+                foreach ($allocRaw as $stockId => $qty) {
+                    $qty = (float) $qty;
+                    if ($qty > 0) {
+                        $alloc[(int) $stockId] = $qty;
+                    }
+                }
+
+                if (count($alloc) === 0) {
                     DB::rollBack();
-                    Log::error('ALLOC TIDAK DITEMUKAN', ['item_id' => $itemId]);
 
-                    return back()->withErrors("Alokasi stok untuk item {$detail->item->name} tidak ditemukan.");
+                    return back()->withErrors("Item {$itemName} dipilih 'Kirim' tapi alokasi masih 0.");
                 }
 
                 $totalAlloc = array_sum($alloc);
 
-                if ($totalAlloc < $needed) {
+                if ($totalAlloc <= 0) {
                     DB::rollBack();
 
-                    Log::error('ALLOC != NEEDED', [
-                        'item_id' => $itemId,
-                        'needed' => $needed,
-                        'total_alloc' => $totalAlloc,
-                    ]);
-
-                    return back()->withErrors("Total alokasi item {$detail->item->name} harus tepat {$needed}.");
+                    return back()->withErrors("Item {$itemName} dipilih 'Kirim' tapi total alokasi masih 0.");
                 }
-                $detail->update([
-                    'sended' => $totalAlloc,
-                ]);
+
+                if ($totalAlloc > $needed) {
+                    DB::rollBack();
+
+                    return back()->withErrors("Total alokasi item {$itemName} ({$totalAlloc}) tidak boleh melebihi kebutuhan ({$needed}).");
+                }
+
+                $detail->update(['sended' => $totalAlloc]);
+
                 foreach ($alloc as $stockId => $qty) {
 
                     Log::info('CEK STOCK RECORD', [
@@ -280,22 +290,28 @@ class BranchMaterialRequestController extends Controller
                     if (! $stock) {
                         DB::rollBack();
 
-                        return back()->withErrors("Stock ID {$stockId} tidak ditemukan untuk item {$detail->item->name}.");
+                        return back()->withErrors("Stock ID {$stockId} tidak ditemukan untuk item {$itemName}.");
                     }
 
-                    if ($stock->qty < $qty) {
+                    $available = (float) $stock->qty;
+
+                    // ✅ anti minus
+                    if ($qty > $available) {
                         DB::rollBack();
 
-                        return back()->withErrors("Stok (code: {$stock->code}) tidak cukup. Punya {$stock->qty}, butuh {$qty}.");
+                        return back()->withErrors("Stok (code: {$stock->code}) tidak cukup. Punya {$available}, butuh {$qty}.");
                     }
 
-                    $stock->qty -= $qty;
+                    $before = $available;
+                    $stock->qty = $available - $qty;
                     $stock->save();
+
                     Log::info('STOK UPDATE', [
-                        'stock_id' => $stockId,
-                        'before' => $stock->qty + $qty,
+                        'stock_id' => $stock->id,
+                        'before' => $before,
                         'after' => $stock->qty,
                     ]);
+
                     StockMovement::create([
                         'company_id' => $companyId,
                         'warehouse_id' => $stock->warehouse_id,
@@ -308,26 +324,19 @@ class BranchMaterialRequestController extends Controller
                         'reference' => "Transfer Send #{$req->trans_number}",
                         'notes' => "Send to branch {$req->cabangTo->name}",
                     ]);
-                    Log::info('MOVEMENT');
                 }
-
             }
 
-            // update status
+            // update status (tetap APPROVED walau parsial / ada yang tidak dikirim)
             $req->update(['status' => 'APPROVED']);
-
-            Log::info('STATUS UPDATED', ['request_id' => $req->id]);
 
             DB::commit();
 
-            Log::info('=== APPROVE FINISH ===');
-
             return redirect()
                 ->route('branch.request.show', [$branchCode, $req->id])
-                ->with('success', 'Permintaan berhasil di-approve.');
+                ->with('success', 'Permintaan berhasil di-approve (parsial).');
 
         } catch (\Throwable $e) {
-
             DB::rollBack();
 
             Log::error('EXCEPTION', [

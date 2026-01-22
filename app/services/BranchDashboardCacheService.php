@@ -153,17 +153,13 @@ class BranchDashboardCacheService
     protected function getIncomingRequestsCount()
     {
         return InventoryTrans::where('cabang_id_to', $this->branchId)
-            ->whereMonth('trans_date', now()->month)
-            ->whereYear('trans_date', now()->year)
-            ->whereIn('status', ['REQUESTED', 'IN_TRANSIT'])
+            ->whereIn('status', ['REQUESTED', 'IN_TRANSIT', 'APPROVED'])
             ->count();
     }
 
     protected function getOutgoingRequestsCount()
     {
         return InventoryTrans::where('cabang_id_from', $this->branchId)
-            ->whereMonth('trans_date', now()->month)
-            ->whereYear('trans_date', now()->year)
             ->whereIn('status', ['REQUESTED', 'IN_TRANSIT'])
             ->count();
     }
@@ -171,9 +167,7 @@ class BranchDashboardCacheService
     protected function getPurchaseOrdersCount()
     {
         return PurchaseOrder::where('cabang_resto_id', $this->branchId)
-            ->whereMonth('po_date', now()->month)
-            ->whereYear('po_date', now()->year)
-            ->whereIn('status', ['DRAFT', 'APPROVED'])
+            ->whereIn('status', ['APPROVED'])
             ->count();
     }
 
@@ -182,8 +176,6 @@ class BranchDashboardCacheService
         return POReceive::whereHas('purchaseOrder', function ($q) {
             $q->where('cabang_resto_id', $this->branchId);
         })
-            ->whereMonth('received_at', now()->month)
-            ->whereYear('received_at', now()->year)
             ->count();
     }
 

@@ -24,17 +24,15 @@ class DatabaseSeeder extends Seeder
 
             SupplierSeeder::class,
             SupplierItemSeeder::class,
-            PurchaseSeeder::class,
-            PoDetailSeeder::class,
-            // ReceivingSeeder::class,
             StockSeeder::class,
-            StockTransferSeeder::class,
+            // StockTransferSeeder::class,
             ProductSeeder::class,
             BomSeeder::class,
             ProductBundleSeeder::class,
             ProductBundleItemSeeder::class,
             CategoryIssueSeeder::class,
-
+            PurchaseOrderLast2MonthsSeeder::class,
+            StockTransferLast2MonthsSeeder::class, PosLast2MonthsSeeder::class,
         ]);
     }
 }

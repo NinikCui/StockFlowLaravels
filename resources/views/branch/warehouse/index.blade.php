@@ -85,56 +85,7 @@
         </div>
     </form>
 
-    {{-- STATS CARDS --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {{-- Total Gudang --}}
-        <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-5 border border-emerald-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-emerald-600 mb-1">Total Gudang</p>
-                    <p class="text-3xl font-bold text-emerald-900">{{ $warehouses->count() }}</p>
-                </div>
-                <div class="w-12 h-12 bg-emerald-500 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border border-blue-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-blue-600 mb-1">Total Item</p>
-                    <p class="text-3xl font-bold text-blue-900">
-                        {{ number_format($warehouses->sum('stocks_count'), 0, ',', '.') }}
-                    </p>
-                </div>
-                <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        {{-- Total Stok --}}
-        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-medium text-purple-600 mb-1">Total Stok</p>
-                    <p class="text-3xl font-bold text-purple-900">
-                        {{ number_format($warehouses->sum('stocks_sum_qty'), 0, ',', '.') }}
-                    </p>
-                </div>
-                <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                    </svg>
-                </div>
-            </div>
-        </div>
-    </div>
+   
 
     {{-- TABLE --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

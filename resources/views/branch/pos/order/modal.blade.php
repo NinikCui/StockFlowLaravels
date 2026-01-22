@@ -26,14 +26,7 @@
                 <span>Cash / Tunai</span>
             </button>
 
-            {{-- MIDTRANS QRIS --}}
-            <button onclick="payMidtrans()"
-                class="group w-full bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white py-4 rounded-xl font-bold transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl hover:scale-105">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                </svg>
-                <span>QRIS / E-Wallet</span>
-            </button>
+            
 
             <button onclick="closePaymentModal()"
                 class="w-full text-red-500 hover:text-red-700 py-3 font-bold transition-colors duration-200 hover:bg-red-50 rounded-xl">

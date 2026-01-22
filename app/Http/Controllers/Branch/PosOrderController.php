@@ -368,40 +368,19 @@ class PosOrderController extends Controller
                 }
             }
 
-            // ===============================
-            // 4️⃣ SIMPAN PEMBAYARAN
-            // ===============================
-            if ($request->payment_method === 'MIDTRANS') {
+            $paid = $request->paid_amount;
+            $change = $paid - $total;
 
-                $mid = $request->midtrans_result ?? [];
-
-                DB::table('pos_payments')->insert([
-                    'pos_order_id' => $order->id,
-                    'method' => 'QRIS',
-                    'amount' => $total,
-                    'status' => 'PENDING',
-                    'ref_number' => $mid['transaction_id'] ?? null,
-                    'note' => 'QRIS pending approval',
-                    'paid_at' => now(),
-                ]);
-
-            } else {
-
-                $paid = $request->paid_amount;
-                $change = $paid - $total;
-
-                DB::table('pos_payments')->insert([
-                    'pos_order_id' => $order->id,
-                    'method' => 'CASH',
-                    'amount' => $total,
-                    'paid_amount' => $paid,
-                    'change_amount' => $change,
-                    'status' => 'SUCCESS',
-                    'note' => 'Cash payment',
-                    'paid_at' => now(),
-                ]);
-
-            }
+            DB::table('pos_payments')->insert([
+                'pos_order_id' => $order->id,
+                'method' => 'CASH',
+                'amount' => $total,
+                'paid_amount' => $paid,
+                'change_amount' => $change,
+                'status' => 'SUCCESS',
+                'note' => 'Cash payment',
+                'paid_at' => now(),
+            ]);
 
             // ===============================
             // 5️⃣ KURANGI STOK VIA BOM

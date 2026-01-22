@@ -18,8 +18,9 @@ return new class extends Migration
             $table->unsignedBigInteger('cabang_resto_id');
             $table->unsignedBigInteger('opened_by');
             $table->unsignedBigInteger('closed_by')->nullable();
-            $table->timestamp('opened_at');
+
             $table->decimal('opening_cash', 16, 2);
+            $table->timestamp('opened_at');
             $table->timestamp('closed_at')->nullable();
             $table->decimal('closing_cash', 16, 2)->nullable();
 

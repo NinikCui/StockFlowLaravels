@@ -228,7 +228,8 @@
                         <tr class="text-gray-700">
                             <th class="px-6 py-3">No</th>
                             <th class="px-6 py-3">Item</th>
-                            <th class="px-6 py-3 text-center">Qty</th>
+                            <th class="px-6 py-3 text-center">Qty Request</th>
+                            <th class="px-6 py-3 text-center">Dikirim</th>
                             <th class="px-6 py-3">Satuan</th>
                         </tr>
                     </thead>
@@ -243,6 +244,9 @@
                                 </td>
                                 <td class="px-6 py-3 text-center font-semibold">
                                     {{ number_format($d->qty, 2) }}
+                                </td>
+                                <td class="px-6 py-3 text-center font-semibold">
+                                    {{ number_format($d->sended, 2) }}
                                 </td>
                                 <td class="px-6 py-3">
                                     {{ $d->item->satuan->name }}
@@ -271,24 +275,20 @@
     </div>
 
     {{-- =====================================================
-        MODAL APPROVE (ALLOCATE STOK)
+        MODAL APPROVE (ALLOCATE STOK) - SUPPORT PARSIAL
     ===================================================== --}}
-    <div id="approveModal"
-         class="fixed inset-0 z-50 hidden">
-        {{-- overlay --}}
+    <div id="approveModal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeApproveModal()"></div>
 
-        {{-- wrapper (biar modal ga nempel pinggir di mobile) --}}
         <div class="relative w-full h-full flex items-center justify-center p-4">
             <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl
                         max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
 
-                {{-- header --}}
                 <div class="px-6 py-4 border-b bg-gray-50">
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-bold text-gray-900">Alokasikan Stok</h2>
-                            <p class="text-sm text-gray-500">Tentukan gudang asal untuk memenuhi permintaan.</p>
+                            <p class="text-sm text-gray-500">Bisa kirim sebagian item (item yang tidak dikirim → sended = 0).</p>
                         </div>
                         <button type="button" onclick="closeApproveModal()"
                                 class="inline-flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-500 transition">
@@ -305,7 +305,6 @@
                       action="{{ route('branch.request.approve', [$branchCode, $req->id]) }}">
                     @csrf
 
-                    {{-- content (scroll) --}}
                     <div class="px-6 py-4 space-y-6 overflow-y-auto flex-1 min-h-0">
 
                         @foreach ($req->details as $detail)
@@ -321,8 +320,12 @@
                                     ->get();
                             @endphp
 
-                            <div class="border border-gray-200 rounded-xl p-5 bg-gray-50">
-                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                            {{-- CARD ITEM --}}
+                            <div class="border border-gray-200 rounded-xl p-5 bg-gray-50"
+                                 data-item-card="{{ $item->id }}">
+
+                                {{-- header card --}}
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                                     <div class="min-w-0">
                                         <h3 class="font-semibold text-gray-900 text-base truncate">
                                             {{ $item->name }}
@@ -332,12 +335,37 @@
                                         </p>
                                     </div>
 
-                                    <div class="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-gray-200">
-                                        <span class="text-xs text-gray-500">Kebutuhan</span>
-                                        <span class="text-sm font-bold text-gray-900">{{ number_format($detail->qty, 2) }}</span>
+                                    <div class="flex items-center gap-3 flex-wrap justify-end">
+                                        <div class="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-gray-200">
+                                            <span class="text-xs text-gray-500">Kebutuhan</span>
+                                            <span class="text-sm font-bold text-gray-900">{{ number_format($detail->qty, 2) }}</span>
+                                        </div>
+
+                                        {{-- TOGGLE KIRIM / TIDAK --}}
+                                        <div class="inline-flex items-center gap-4 px-3 py-1.5 rounded-lg bg-white border border-gray-200">
+                                            <label class="inline-flex items-center gap-2">
+                                                <input type="radio"
+                                                    name="send_item[{{ $item->id }}]"
+                                                    value="1"
+                                                    class="send-toggle"
+                                                    data-item="{{ $item->id }}"
+                                                    checked>
+                                                <span class="text-sm font-semibold text-gray-800">Kirim</span>
+                                            </label>
+
+                                            <label class="inline-flex items-center gap-2">
+                                                <input type="radio"
+                                                    name="send_item[{{ $item->id }}]"
+                                                    value="0"
+                                                    class="send-toggle"
+                                                    data-item="{{ $item->id }}">
+                                                <span class="text-sm font-semibold text-gray-800">Tidak</span>
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
 
+                                {{-- table stock --}}
                                 <div class="overflow-x-auto">
                                     <table class="w-full text-sm border-separate border-spacing-y-2">
                                         <thead>
@@ -389,7 +417,7 @@
 
                                 <p id="alloc-warning-{{ $item->id }}"
                                    class="text-red-600 text-xs mt-2 font-medium hidden">
-                                    Total alokasi belum memenuhi kebutuhan
+                                    Warning
                                 </p>
                             </div>
                         @endforeach
@@ -397,10 +425,15 @@
                     </div>
 
                     {{-- footer --}}
-                     <div class="px-6 py-4 border-t flex justify-end gap-3 shrink-0">
-                        <p class="text-xs text-gray-500">
-                            Tips: Isi qty “Ambil” sampai minimal sama dengan kebutuhan item.
-                        </p>
+                    <div class="px-6 py-4 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
+                        <div class="space-y-1">
+                            <p class="text-xs text-gray-500">
+                                Tips: Kalau item tidak dikirim, pilih “Tidak”. Kalau dikirim parsial, total alokasi cukup > 0 dan ≤ kebutuhan.
+                            </p>
+                            <p id="approve-global-warning" class="text-xs text-red-600 font-semibold hidden">
+                                Minimal harus ada 1 item yang dikirim dan punya alokasi.
+                            </p>
+                        </div>
 
                         <div class="flex justify-end gap-3">
                             <button type="button"
@@ -428,8 +461,7 @@
     {{-- =====================================================
         MODAL REJECT (ALASAN WAJIB)
     ===================================================== --}}
-    <div id="rejectModal"
-         class="fixed inset-0 z-50 hidden">
+    <div id="rejectModal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeRejectModal()"></div>
 
         <div class="relative w-full h-full flex items-center justify-center p-4">
@@ -494,8 +526,7 @@
     {{-- =====================================================
         MODAL RECEIVE (TERIMA BARANG)
     ===================================================== --}}
-    <div id="receiveModal"
-         class="fixed inset-0 z-50 hidden">
+    <div id="receiveModal" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeReceiveModal()"></div>
 
         <div class="relative w-full h-full flex items-center justify-center p-4">
@@ -607,7 +638,6 @@
 
     {{-- MODAL SCRIPTS --}}
     <script>
-        // ========= modal helpers (lock scroll + esc close) =========
         const MODALS = {
             approve: 'approveModal',
             reject: 'rejectModal',
@@ -631,6 +661,11 @@
         function openModal(id) {
             document.getElementById(id).classList.remove('hidden');
             lockBodyScroll();
+
+            // saat modal approve dibuka, langsung validate biar tombol ke-set benar
+            if (id === MODALS.approve) {
+                requestAnimationFrame(() => validateAllocations());
+            }
         }
 
         function closeModal(id) {
@@ -647,19 +682,43 @@
         function openReceiveModal(){ openModal(MODALS.receive); }
         function closeReceiveModal(){ closeModal(MODALS.receive); }
 
-        // ESC to close top-most open modal
         document.addEventListener('keydown', (e) => {
             if (e.key !== 'Escape') return;
-
-            // priority close (approve -> receive -> reject) terserah, yang penting nutup yang kebuka
             if (!document.getElementById(MODALS.approve).classList.contains('hidden')) return closeApproveModal();
             if (!document.getElementById(MODALS.receive).classList.contains('hidden')) return closeReceiveModal();
             if (!document.getElementById(MODALS.reject).classList.contains('hidden')) return closeRejectModal();
         });
     </script>
 
-    {{-- VALIDASI ALOKASI STOK --}}
+    {{-- VALIDASI ALOKASI STOK (PARSIAL + SEND TOGGLE) --}}
     <script>
+        // toggle kirim/tidak per item
+        document.addEventListener('change', function(e){
+            if(!e.target.classList.contains('send-toggle')) return;
+
+            const itemId = e.target.dataset.item;
+            const isSend = e.target.value === '1';
+
+            const inputs = document.querySelectorAll(`.alloc-input[data-item="${itemId}"]`);
+            const warn = document.getElementById(`alloc-warning-${itemId}`);
+
+            inputs.forEach(inp => {
+                if (!isSend) {
+                    inp.value = '';
+                    inp.disabled = true;
+                    inp.classList.add('bg-gray-100','cursor-not-allowed');
+                } else {
+                    inp.disabled = false;
+                    inp.classList.remove('bg-gray-100','cursor-not-allowed');
+                }
+            });
+
+            if (!isSend && warn) warn.classList.add('hidden');
+
+            validateAllocations();
+        });
+
+        // input allocation
         document.addEventListener('input', function (e) {
             if (e.target.classList.contains('alloc-input')) {
                 validateAllocations();
@@ -668,6 +727,9 @@
 
         function validateAllocations() {
             let allValid = true;
+            let anySent = false;
+
+            const globalWarn = document.getElementById('approve-global-warning');
 
             const itemIds = [...new Set(
                 Array.from(document.querySelectorAll('.alloc-input'))
@@ -675,29 +737,47 @@
             )];
 
             itemIds.forEach(itemId => {
+                const decision = document.querySelector(`input.send-toggle[data-item="${itemId}"]:checked`)?.value ?? '1';
+                const isSend = decision === '1';
+
                 const inputs = document.querySelectorAll(`.alloc-input[data-item="${itemId}"]`);
                 const needed = parseFloat(inputs[0]?.dataset.needed ?? 0);
-                let sum = 0;
-                let hasInput = false;
 
+                let sum = 0;
                 inputs.forEach(i => {
                     const val = parseFloat(i.value);
-                    if (!isNaN(val) && val > 0) {
-                        sum += val;
-                        hasInput = true;
-                    }
+                    if (!isNaN(val) && val > 0) sum += val;
                 });
 
                 const warn = document.getElementById(`alloc-warning-${itemId}`);
 
-                if (!hasInput || sum < needed) {
-                    warn.textContent = `Total alokasi minimal ${needed}`;
-                    warn.classList.remove('hidden');
+                // kalau tidak dikirim → auto valid (sended=0 di backend)
+                if (!isSend) {
+                    if (warn) warn.classList.add('hidden');
+                    return;
+                }
+
+                // dipilih kirim, minimal sum > 0 (biar gak kirim kosong)
+                if (sum > 0) anySent = true;
+
+                if (sum <= 0) {
+                    if (warn) {
+                        warn.textContent = `Pilih "Kirim" berarti alokasi minimal > 0 `;
+                        warn.classList.remove('hidden');
+                    }
                     allValid = false;
                 } else {
-                    warn.classList.add('hidden');
+                    if (warn) warn.classList.add('hidden');
                 }
             });
+
+            // minimal ada 1 item yang benar-benar dikirim
+            if (!anySent) {
+                allValid = false;
+                if (globalWarn) globalWarn.classList.remove('hidden');
+            } else {
+                if (globalWarn) globalWarn.classList.add('hidden');
+            }
 
             const btn = document.getElementById('approveSubmit');
 
