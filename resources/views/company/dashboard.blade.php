@@ -1,305 +1,467 @@
 <x-app-layout :companyCode="$companyCode">
-
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-teal-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        {{-- =============================== --}}
-        {{-- HEADER SECTION --}}
-        {{-- =============================== --}}
-        <div class="relative overflow-hidden bg-gradient-to-r from-green-600 to-lime-600 rounded-2xl shadow-xl p-8 text-white">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-white opacity-10"></div>
-            <div class="absolute bottom-0 left-0 -mb-8 -ml-8 h-40 w-40 rounded-full bg-white opacity-10"></div>
-            <div class="relative">
-                <h1 class="text-4xl font-bold">Dashboard Perusahaan</h1>
-                <p class="text-blue-100 mt-2 text-lg">Ringkasan aktivitas operasional seluruh cabang</p>
+        {{-- ================= HEADER ================= --}}
+        <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-lime-600 p-8 text-white shadow-xl">
+            <div class="absolute -top-10 -right-10 h-44 w-44 rounded-full bg-white/10 blur-2xl"></div>
+            <div class="absolute -bottom-12 -left-12 h-56 w-56 rounded-full bg-white/10 blur-2xl"></div>
+
+            <div class="relative flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 text-white/80 text-sm mb-1">
+                        <span class="inline-flex items-center rounded-full bg-white/15 px-3 py-1 font-semibold">
+                            Company
+                        </span>
+                        <span class="opacity-90">Dashboard</span>
+                    </div>
+                    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight">Dashboard Perusahaan</h1>
+                    <p class="text-white/80 mt-2">Ringkasan aktivitas operasional seluruh cabang</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    
+
+                    <button onclick="location.reload()"
+                        class="inline-flex items-center gap-2 rounded-xl bg-black/20 px-4 py-2 text-sm font-semibold text-white hover:bg-black/30 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M4 4v6h6M20 20v-6h-6M20 10a8 8 0 00-14.9-3M4 14a8 8 0 0014.9 3"/>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
             </div>
         </div>
 
-        {{-- =============================== --}}
-        {{-- KPI TOP CARDS --}}
-        {{-- =============================== --}}
+        {{-- ================= KPI CARDS ================= --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            {{-- Total Cabang --}}
-            <div class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div class="relative p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="p-3 bg-blue-100 rounded-xl group-hover:bg-white/20 transition-colors duration-300">
-                            <svg class="w-6 h-6 text-blue-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-600 group-hover:text-white/80 transition-colors duration-300 font-medium">Total Cabang</p>
-                    <h2 class="text-4xl font-bold mt-2 text-gray-900 group-hover:text-white transition-colors duration-300">{{ $totalBranches }}</h2>
-                </div>
-            </div>
+            @php
+                $cards = [
+                    [
+                        'label' => 'Critical Items',
+                        'value' => $dashboard['criticalItemsCompany'] ?? 0,
+                        'desc'  => 'Item di bawah minimum',
+                        'ring'  => 'ring-red-200',
+                        'bg'    => 'bg-red-50',
+                        'text'  => 'text-red-600',
+                        'icon'  => 'M12 9v2m0 4h.01M12 3a9 9 0 100 18 9 9 0 000-18z',
+                    ],
+                    [
+                        'label' => 'Expiring Soon',
+                        'value' => $dashboard['expiringItemsCompany'] ?? 0,
+                        'desc'  => 'Kadaluarsa ≤ 7 hari',
+                        'ring'  => 'ring-amber-200',
+                        'bg'    => 'bg-amber-50',
+                        'text'  => 'text-amber-600',
+                        'icon'  => 'M12 8v4l3 3M12 3a9 9 0 100 18 9 9 0 000-18z',
+                    ],
+                    [
+                        'label' => 'Low Stock Branches',
+                        'value' => $dashboard['lowStockBranches'] ?? 0,
+                        'desc'  => 'Cabang stok rendah',
+                        'ring'  => 'ring-sky-200',
+                        'bg'    => 'bg-sky-50',
+                        'text'  => 'text-sky-600',
+                        'icon'  => 'M3 10h18M5 6h14M7 14h10M9 18h6',
+                    ],
+                    [
+                        'label' => 'Pending Transfers',
+                        'value' => $dashboard['pendingTransfers'] ?? 0,
+                        'desc'  => 'Transfer dalam proses',
+                        'ring'  => 'ring-indigo-200',
+                        'bg'    => 'bg-indigo-50',
+                        'text'  => 'text-indigo-600',
+                        'icon'  => 'M7 7h10M7 17h10M10 7l-3 3m0 0l3 3M14 17l3-3m0 0l-3-3',
+                    ],
+                ];
+            @endphp
 
-            {{-- Supplier --}}
-            <div class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-br from-emerald-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div class="relative p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="p-3 bg-emerald-100 rounded-xl group-hover:bg-white/20 transition-colors duration-300">
-                            <svg class="w-6 h-6 text-emerald-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-600 group-hover:text-white/80 transition-colors duration-300 font-medium">Supplier Terdaftar</p>
-                    <h2 class="text-4xl font-bold mt-2 text-gray-900 group-hover:text-white transition-colors duration-300">{{ $totalSuppliers }}</h2>
-                </div>
-            </div>
-
-            {{-- Items --}}
-            <div class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div class="relative p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="p-3 bg-purple-100 rounded-xl group-hover:bg-white/20 transition-colors duration-300">
-                            <svg class="w-6 h-6 text-purple-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-600 group-hover:text-white/80 transition-colors duration-300 font-medium">Item</p>
-                    <h2 class="text-4xl font-bold mt-2 text-gray-900 group-hover:text-white transition-colors duration-300">{{ $totalItems }}</h2>
-                </div>
-            </div>
-
-            {{-- Karyawan --}}
-            <div class="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-br from-orange-500 to-orange-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <div class="relative p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="p-3 bg-orange-100 rounded-xl group-hover:bg-white/20 transition-colors duration-300">
-                            <svg class="w-6 h-6 text-orange-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    <p class="text-sm text-gray-600 group-hover:text-white/80 transition-colors duration-300 font-medium">Karyawan</p>
-                    <h2 class="text-4xl font-bold mt-2 text-gray-900 group-hover:text-white transition-colors duration-300">{{ $totalEmployees }}</h2>
-                </div>
-            </div>
-
-        </div>
-
-        {{-- =============================== --}}
-        {{-- MONTHLY ACTIVITIES --}}
-        {{-- =============================== --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-            <div class="relative bg-white rounded-2xl shadow-lg p-6 overflow-hidden border-l-4 border-blue-500 hover:shadow-xl transition-shadow duration-300">
-                <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-blue-50"></div>
-                <div class="relative">
-                    <p class="text-gray-600 text-sm font-medium mb-2">Request Bulan Ini</p>
-                    <h2 class="text-5xl font-bold text-blue-600">{{ $requestMonth }}</h2>
-                    <div class="mt-4 flex items-center text-sm text-gray-500">
-                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span>Periode: Bulan Ini</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="relative bg-white rounded-2xl shadow-lg p-6 overflow-hidden border-l-4 border-emerald-500 hover:shadow-xl transition-shadow duration-300">
-                <div class="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-emerald-50"></div>
-                <div class="relative">
-                    <p class="text-gray-600 text-sm font-medium mb-2">Purchase Order Bulan Ini</p>
-                    <h2 class="text-5xl font-bold text-emerald-600">{{ $poMonth }}</h2>
-                    <div class="mt-4 flex items-center text-sm text-gray-500">
-                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span>Periode: Bulan Ini</span>
-                    </div>
-                </div>
-            </div>
-
-           
-
-        </div>
-
-
-        {{-- =============================== --}}
-        {{-- LATEST REQUEST / PO / RECEIVE --}}
-        {{-- =============================== --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            {{-- REQUEST --}}
-            <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                <div class="flex items-center justify-between mb-5">
-                    <h2 class="text-lg font-bold text-gray-900">Latest Request</h2>
-                    <div class="p-2 bg-blue-100 rounded-lg">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    @forelse ($latestRequest as $req)
-                        <div class="p-4 rounded-xl bg-gray-50 hover:bg-blue-50 transition-colors duration-200 border border-gray-100 hover:border-blue-200">
-                            <div class="flex items-center text-sm mb-2">
-                                <span class="font-semibold text-gray-900">
-                                    {{ $req->cabangFrom?->name ?? 'Supplier / Gudang' }}
-                                </span>
-                                <svg class="w-4 h-4 mx-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+            @foreach($cards as $c)
+                <div class="group rounded-2xl bg-white shadow-sm ring-1 {{ $c['ring'] }} hover:shadow-xl transition overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-600">{{ $c['label'] }}</p>
+                                <div class="mt-2 text-4xl font-extrabold {{ $c['text'] }}">{{ $c['value'] }}</div>
+                                <p class="mt-1 text-xs text-slate-500">{{ $c['desc'] }}</p>
+                            </div>
+                            <div class="h-12 w-12 rounded-2xl {{ $c['bg'] }} flex items-center justify-center ring-1 {{ $c['ring'] }} group-hover:scale-110 transition">
+                                <svg class="w-6 h-6 {{ $c['text'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $c['icon'] }}"/>
                                 </svg>
-                                <span class="font-semibold text-gray-900">{{ $req->cabangTo->name }}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs text-gray-500">
-                                <span class="font-mono bg-white px-2 py-1 rounded">#{{ $req->id }}</span>
-                                <span>{{ \Carbon\Carbon::parse($req->trans_date)->format('d M Y') }}</span>
                             </div>
                         </div>
-                        @empty
-                            <div class="text-center py-6 text-gray-500 text-sm">
-                                Belum ada data
-                            </div>
-                        @endforelse
-                </div>
-            </div>
 
-            {{-- PO --}}
-            <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                <div class="flex items-center justify-between mb-5">
-                    <h2 class="text-lg font-bold text-gray-900">Latest PO</h2>
-                    <div class="p-2 bg-emerald-100 rounded-lg">
-                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
+                        {{-- tiny progress aesthetic --}}
+                        <div class="mt-4 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                            @php $w = min(100, ($c['value'] ?? 0) * 12); @endphp
+                            <div class="h-full {{ $c['text'] }} bg-current/90" style="width: {{ $w }}%"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="space-y-3">
-                    @foreach ($latestPO as $po)
-                        <div class="p-4 rounded-xl bg-gray-50 hover:bg-emerald-50 transition-colors duration-200 border border-gray-100 hover:border-emerald-200">
-                            <p class="font-semibold text-gray-900 mb-2">{{ $po->cabangResto->name }}</p>
-                            <div class="flex items-center text-xs text-gray-500">
-                                <span class="font-mono bg-white px-2 py-1 rounded">PO #{{ $po->po_number }}</span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- RECEIVE --}}
-            <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
-                <div class="flex items-center justify-between mb-5">
-                    <h2 class="text-lg font-bold text-gray-900">Latest Receive</h2>
-                    <div class="p-2 bg-indigo-100 rounded-lg">
-                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="space-y-3">
-                    @foreach ($latestReceive as $rc)
-                        <div class="p-4 rounded-xl bg-gray-50 hover:bg-indigo-50 transition-colors duration-200 border border-gray-100 hover:border-indigo-200">
-                            <p class="font-semibold text-gray-900 mb-2">{{ $rc->purchaseOrder->cabangResto->name }}</p>
-                            <div class="flex items-center text-xs text-gray-500">
-                                <span class="font-mono bg-white px-2 py-1 rounded">Receive #{{ $rc->id }}</span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
+            @endforeach
         </div>
-        {{-- =============================== --}}
-        {{-- HEATMAP TRANSFER ANTAR CABANG --}}
-        {{-- =============================== --}}
-        <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
-            <div class="mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">Heatmap Transfer Antar Cabang</h2>
-                <p class="text-gray-500 text-sm mt-1">Visualisasi perpindahan barang antar cabang</p>
+
+        {{-- ================= SALES CARDS ================= --}}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="rounded-2xl bg-white shadow-sm ring-1 ring-emerald-200 hover:shadow-xl transition p-6">
+                <p class="text-sm font-semibold text-slate-600">Sales Hari Ini</p>
+                <div class="mt-2 text-3xl font-extrabold text-emerald-600">
+                    Rp {{ number_format($dashboard['totalSalesToday'] ?? 0, 0, ',', '.') }}
+                </div>
+                <p class="mt-1 text-xs text-slate-500">Total penjualan hari ini</p>
             </div>
 
-            <div class="overflow-x-auto rounded-xl border border-gray-200">
+            <div class="rounded-2xl bg-white shadow-sm ring-1 ring-emerald-200 hover:shadow-xl transition p-6">
+                <p class="text-sm font-semibold text-slate-600">Sales Bulan Ini</p>
+                <div class="mt-2 text-3xl font-extrabold text-emerald-600">
+                    Rp {{ number_format($dashboard['totalSalesMonth'] ?? 0, 0, ',', '.') }}
+                </div>
+                <p class="mt-1 text-xs text-slate-500">Total penjualan bulan ini</p>
+            </div>
+
+            <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 hover:shadow-xl transition p-6">
+                <p class="text-sm font-semibold text-slate-600">Top Performing Branch</p>
+                <div class="mt-2 text-xl font-extrabold text-slate-900">
+                    {{ $dashboard['topPerformingBranch']['name'] ?? 'N/A' }}
+                </div>
+                <div class="mt-1 flex items-center justify-between">
+                    <p class="text-sm font-semibold text-emerald-600">
+                        Rp {{ number_format($dashboard['topPerformingBranch']['sales'] ?? 0, 0, ',', '.') }}
+                    </p>
+                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 6l2 4 4 .5-3 3 .8 4.5L12 16l-3.8 2 .8-4.5-3-3 4-.5 2-4z"/>
+                        </svg>
+                        TOP
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        {{-- ================= CHARTS ROW 1 ================= --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 hover:shadow-xl transition">
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-900">Sales Trend (7 Hari)</h3>
+                    <span class="text-xs text-slate-500">Realtime</span>
+                </div>
+                <div class="p-6">
+                    <canvas id="salesTrendChart" height="90"></canvas>
+                </div>
+            </div>
+
+            <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 hover:shadow-xl transition">
+                <div class="p-6 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-900">Branch Sales Comparison</h3>
+                </div>
+                <div class="p-6">
+                    <canvas id="branchSalesChart" height="90"></canvas>
+                </div>
+            </div>
+        </div>
+
+        {{-- ================= CHARTS ROW 2 ================= --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 hover:shadow-xl transition">
+                <div class="p-6 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-900">Branch Stock Items</h3>
+                </div>
+                <div class="p-6">
+                    <canvas id="branchStockChart" height="140"></canvas>
+                </div>
+            </div>
+
+            <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 hover:shadow-xl transition">
+                <div class="p-6 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-900">Purchase Trend (6 Bulan)</h3>
+                </div>
+                <div class="p-6">
+                    <canvas id="purchaseTrendChart" height="140"></canvas>
+                </div>
+            </div>
+
+            
+        </div>
+
+        {{-- ================= TRANSFER + HEATMAP ================= --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+
+            <div class="lg:col-span-2 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 hover:shadow-xl transition">
+                <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-900">Transfer Heatmap (Top 10)</h3>
+                        <p class="text-xs text-slate-500 mt-1">Periode: bulan ini</p>
+                    </div>
+                </div>
+
+                @php
+                    $heat = $dashboard['transferHeatmap'] ?? collect();
+                    if (is_array($heat)) $heat = collect($heat);
+                    $maxHeat = max(1, (int)($heat->max('count') ?? 1));
+                @endphp
+
+                <div class="p-6 overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-left text-slate-500">
+                                <th class="py-2">From</th>
+                                <th class="py-2">To</th>
+                                <th class="py-2 text-right">Transfers</th>
+                                <th class="py-2 w-56">Activity</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse($heat as $t)
+                                @php
+                                    $count = (int)($t['count'] ?? 0);
+                                    $pct = min(100, ($count / $maxHeat) * 100);
+                                @endphp
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="py-3 font-semibold text-slate-900">{{ $t['from'] ?? '-' }}</td>
+                                    <td class="py-3 text-slate-700">{{ $t['to'] ?? '-' }}</td>
+                                    <td class="py-3 text-right">
+                                        <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                                            {{ $count }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3">
+                                        <div class="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                                            <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-600" style="width: {{ $pct }}%"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="py-6 text-center text-slate-500">Tidak ada data transfer</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 hover:shadow-xl transition">
+                <div class="p-6 border-b border-slate-100">
+                    <h3 class="font-bold text-slate-900">Fast Moving Items</h3>
+                    <p class="text-xs text-slate-500 mt-1">Item paling aktif bulan ini</p>
+                </div>
+                <div class="p-6 space-y-3">
+                    @forelse(($dashboard['fastMovingItems'] ?? []) as $item)
+                        <div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 hover:bg-blue-50 transition">
+                            <div class="font-semibold text-slate-900 truncate pr-3">
+                                {{ $item['name'] ?? '-' }}
+                            </div>
+                            <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">
+                                {{ $item['qty'] ?? 0 }}
+                            </span>
+                        </div>
+                    @empty
+                        <div class="text-center text-slate-500 text-sm py-6">Tidak ada data</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
+
+
+        {{-- ================= BRANCH PERFORMANCE ================= --}}
+        <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 hover:shadow-xl transition">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-900">Branch Performance</h3>
+                    <p class="text-xs text-slate-500 mt-1">Periode: bulan ini</p>
+                </div>
+            </div>
+
+            <div class="p-6 overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
-                        <tr class="bg-gradient-to-r from-gray-50 to-gray-100">
-                            <th class="px-4 py-3 text-left font-semibold text-gray-700 sticky left-0 bg-gray-100">
-                                From \ To
-                            </th>
+                        <tr class="text-left text-slate-500">
+                            <th class="py-2">Branch</th>
+                            <th class="py-2 text-right">Sales</th>
+                            <th class="py-2 text-center">Orders</th>
+                            <th class="py-2 text-center">Critical Items</th>
+                            <th class="py-2 text-center">Status</th>
                         </tr>
                     </thead>
-
-                    <tbody>
-                        @foreach($heatmap as $from => $row)
-                            <tr class="hover:bg-gray-50 transition-colors duration-200">
-                                <td class="px-4 py-3 font-semibold text-gray-700 sticky left-0 bg-white border-r border-gray-200">{{ $from }}</td>
-
-                                @foreach($row as $to => $value)
-                                    <td class="px-4 py-3 text-center font-medium transition-all duration-200
-                                        {{ $value > 10 ? 'bg-red-100 text-red-700 hover:bg-red-200' : 
-                                           ($value > 3 ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 
-                                           'bg-green-50 text-green-700 hover:bg-green-100') }}">
-                                        {{ $value }}
-                                    </td>
-                                @endforeach
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse(($dashboard['branchPerformance'] ?? []) as $b)
+                            @php $warn = ($b['status'] ?? '') !== 'good'; @endphp
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-3 font-semibold text-slate-900">{{ $b['name'] ?? '-' }}</td>
+                                <td class="py-3 text-right font-semibold text-slate-900">
+                                    Rp {{ number_format($b['sales'] ?? 0, 0, ',', '.') }}
+                                </td>
+                                <td class="py-3 text-center">{{ $b['orders'] ?? 0 }}</td>
+                                <td class="py-3 text-center">
+                                    <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold
+                                        {{ ($b['critical_items'] ?? 0) > 5 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-800' }}">
+                                        {{ $b['critical_items'] ?? 0 }}
+                                    </span>
+                                </td>
+                                <td class="py-3 text-center">
+                                    <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold
+                                        {{ $warn ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800' }}">
+                                        <span class="h-2 w-2 rounded-full {{ $warn ? 'bg-amber-600' : 'bg-emerald-600' }}"></span>
+                                        {{ $warn ? 'Warning' : 'Good' }}
+                                    </span>
+                                </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="5" class="py-6 text-center text-slate-500">Tidak ada data cabang</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
-
-            <div class="mt-4 flex items-center justify-end space-x-4 text-xs">
-                <div class="flex items-center">
-                    <span class="w-4 h-4 bg-green-50 border border-green-200 rounded mr-2"></span>
-                    <span class="text-gray-600">Low (≤3)</span>
-                </div>
-                <div class="flex items-center">
-                    <span class="w-4 h-4 bg-yellow-100 border border-yellow-200 rounded mr-2"></span>
-                    <span class="text-gray-600">Medium (4-10)</span>
-                </div>
-                <div class="flex items-center">
-                    <span class="w-4 h-4 bg-red-100 border border-red-200 rounded mr-2"></span>
-                    <span class="text-gray-600">High (>10)</span>
-                </div>
-            </div>
         </div>
 
-        {{-- =============================== --}}
-        {{-- FAST MOVING ITEMS --}}
-        {{-- =============================== --}}
-        <div class="bg-white rounded-2xl shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
-            <div class="mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">Fast Moving Items</h2>
-                <p class="text-gray-500 text-sm mt-1">10 barang paling aktif</p>
+        {{-- ================= RECENT ACTIVITIES ================= --}}
+        <div class="rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 hover:shadow-xl transition">
+            <div class="p-6 border-b border-slate-100">
+                <h3 class="font-bold text-slate-900">Recent Activities</h3>
+                <p class="text-xs text-slate-500 mt-1">Aktivitas terbaru (transfer & PO)</p>
             </div>
 
-            <div class="space-y-3">
-                @forelse ($fastItems as $index => $fi)
-                    <div class="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:from-blue-50 hover:to-white transition-all duration-200 border border-gray-100 hover:border-blue-200 hover:shadow-md group">
-                        <div class="flex items-center space-x-4">
-                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-110 transition-transform duration-200">
-                                {{ $index + 1 }}
+            <div class="p-6 space-y-3">
+                @forelse(($dashboard['recentActivities'] ?? []) as $a)
+                    @php
+                        $isTransfer = ($a['type'] ?? '') === 'transfer';
+                        $st = $a['status'] ?? '';
+                        $badge = 'bg-slate-100 text-slate-700';
+                        if (in_array($st, ['COMPLETED','DONE','PAID','RECEIVED'])) $badge='bg-emerald-100 text-emerald-800';
+                        elseif (in_array($st, ['PENDING','REQUESTED','IN_TRANSIT'])) $badge='bg-amber-100 text-amber-800';
+                    @endphp
+
+                    <div class="flex items-start justify-between gap-4 rounded-2xl bg-slate-50 p-4 hover:bg-slate-100 transition">
+                        <div class="flex items-start gap-3">
+                            <div class="h-10 w-10 rounded-2xl flex items-center justify-center
+                                {{ $isTransfer ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700' }}">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    @if($isTransfer)
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h10M7 17h10M10 7l-3 3m0 0l3 3M14 17l3-3m0 0l-3-3"/>
+                                    @else
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18v4H3V3zm0 6h18v12H3V9zm4 3h10"/>
+                                    @endif
+                                </svg>
                             </div>
-                            <span class="font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-200">{{ $fi->item?->name ?? '-' }}</span>
+
+                            <div class="min-w-0">
+                                <div class="font-bold text-slate-900">{{ $a['note'] ?? '-' }}</div>
+                                <div class="text-xs text-slate-500 mt-1">
+                                    @if($isTransfer)
+                                        {{ $a['from'] ?? '-' }} → {{ $a['to'] ?? '-' }}
+                                    @else
+                                        {{ $a['branch'] ?? '-' }} - {{ $a['supplier'] ?? '-' }}
+                                    @endif
+                                </div>
+                                <div class="text-xs text-slate-500 mt-1 font-mono">
+                                    {{ $a['reference'] ?? '-' }}
+                                </div>
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-3">
-                            <span class="text-2xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200">{{ number_format($fi->total, 2) }}</span>
-                            <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                            </svg>
+
+                        <div class="text-right shrink-0">
+                            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-bold {{ $badge }}">
+                                {{ $st ?: '-' }}
+                            </span>
+                            <div class="text-xs text-slate-500 mt-2">{{ $a['time'] ?? '' }}</div>
                         </div>
                     </div>
                 @empty
-                    <div class="text-center py-10 text-gray-500 text-sm">
-                        Belum ada aktivitas item pada bulan ini
-                    </div>
+                    <div class="text-center text-slate-500 text-sm py-6">Tidak ada aktivitas terbaru</div>
                 @endforelse
             </div>
         </div>
 
-
-
     </div>
 </div>
 
+{{-- Print: hide actions --}}
+<style>
+@media print {
+    button { display: none !important; }
+}
+</style>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    new Chart(document.getElementById('salesTrendChart'), {
+        type: 'line',
+        data: {
+            labels: {!! json_encode($dashboard['chartSalesTrend']['labels'] ?? []) !!},
+            datasets: [{
+                label: 'Sales',
+                data: {!! json_encode($dashboard['chartSalesTrend']['data'] ?? []) !!},
+                tension: 0.4,
+                fill: true,
+                borderColor: '#10B981',
+                backgroundColor: 'rgba(16, 185, 129, 0.12)',
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    new Chart(document.getElementById('branchSalesChart'), {
+        type: 'bar',
+        data: {
+            labels: {!! json_encode(collect($dashboard['branchSalesComparison'] ?? [])->pluck('branch')->toArray()) !!},
+            datasets: [{
+                label: 'Sales',
+                data: {!! json_encode(collect($dashboard['branchSalesComparison'] ?? [])->pluck('sales')->toArray()) !!},
+                backgroundColor: '#3B82F6'
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    new Chart(document.getElementById('branchStockChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {!! json_encode($dashboard['chartBranchStock']['labels'] ?? []) !!},
+            datasets: [{
+                data: {!! json_encode($dashboard['chartBranchStock']['data'] ?? []) !!},
+                backgroundColor: {!! json_encode($dashboard['chartBranchStock']['colors'] ?? []) !!}
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } }, cutout: '65%' }
+    });
+
+    new Chart(document.getElementById('purchaseTrendChart'), {
+        type: 'line',
+        data: {
+            labels: {!! json_encode($dashboard['chartPurchaseTrend']['labels'] ?? []) !!},
+            datasets: [{
+                label: 'PO',
+                data: {!! json_encode($dashboard['chartPurchaseTrend']['data'] ?? []) !!},
+                tension: 0.4,
+                fill: true,
+                borderColor: '#F59E0B',
+                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    new Chart(document.getElementById('transferChart'), {
+        type: 'bar',
+        data: {
+            labels: {!! json_encode($dashboard['chartInterBranchTransfer']['labels'] ?? []) !!},
+            datasets: [{
+                label: 'Transfers',
+                data: {!! json_encode($dashboard['chartInterBranchTransfer']['data'] ?? []) !!},
+                backgroundColor: {!! json_encode($dashboard['chartInterBranchTransfer']['colors'] ?? []) !!}
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+});
+</script>
 </x-app-layout>
