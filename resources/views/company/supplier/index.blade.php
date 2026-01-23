@@ -59,7 +59,6 @@
                         <option value="name_desc" {{ request('sort')=='name_desc' ? 'selected' : '' }}>Nama Z-A</option>
                         <option value="on_time" {{ request('sort')=='on_time' ? 'selected' : '' }}>On-Time Terbaik</option>
                         <option value="reject_low" {{ request('sort')=='reject_low' ? 'selected' : '' }}>Reject Terendah</option>
-                        <option value="variance_low" {{ request('sort')=='variance_low' ? 'selected' : '' }}>Variance Terendah</option>
                     </select>
                 </div>
 

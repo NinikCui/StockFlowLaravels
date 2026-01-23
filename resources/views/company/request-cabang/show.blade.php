@@ -219,6 +219,7 @@
                             <th class="px-6 py-4 font-semibold">No</th>
                             <th class="px-6 py-4 font-semibold">Item</th>
                             <th class="px-6 py-4 text-center font-semibold w-32">Quantity</th>
+                            <th class="px-6 py-4 text-center font-semibold w-32">Dikirim</th>
                             <th class="px-6 py-4 font-semibold w-40">Satuan</th>
                         </tr>
                     </thead>
@@ -251,6 +252,9 @@
                                     </span>
                                 </div>
                             </td>
+                            <td class="px-6 py-3 text-center font-semibold">
+                                    {{ number_format($d->sended, 2) }}
+                                </td>
                             <td class="px-6 py-4">
                                 <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-medium">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

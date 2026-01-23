@@ -102,7 +102,6 @@
                 <option value="">Urutkan</option>
                 <option value="on_time" {{ request('sort') === 'on_time' ? 'selected' : '' }}>On-time Tinggi</option>
                 <option value="reject_low" {{ request('sort') === 'reject_low' ? 'selected' : '' }}>Reject Terendah</option>
-                <option value="variance_low" {{ request('sort') === 'variance_low' ? 'selected' : '' }}>Variance Terendah</option>
                 <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>A-Z</option>
                 <option value="name_desc" {{ request('sort') === 'name_desc' ? 'selected' : '' }}>Z-A</option>
             </select>
@@ -164,13 +163,7 @@
                         Reject: {{ $s->kpi_reject }}%
                     </span>
 
-                    {{-- VARIANCE --}}
-                    <span class="px-2 py-1 rounded
-                        {{ $s->kpi_var <= 5 ? 'bg-green-100 text-green-700'
-                        : ($s->kpi_var <= 15 ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-red-100 text-red-700') }}">
-                        Var: {{ $s->kpi_var }}%
-                    </span>
+
 
                 </div>
 

@@ -65,23 +65,26 @@ class BranchSupplierController extends Controller
             ->get();
 
         // ======================================================
-        // HITUNG KPI LIVE (OMFG LEVEL)
+        // HITUNG KPI LIVE
         // ======================================================
         foreach ($suppliers as $s) {
 
             $poQuery = PurchaseOrder::where('suppliers_id', $s->id);
-            $totalOrders = $poQuery->count();
 
-            // ON TIME
-            $onTime = (clone $poQuery)
+            // ✅ ON TIME: HANYA RECEIVED
+            $receivedQuery = (clone $poQuery)->where('status', 'RECEIVED');
+            $totalReceivedOrders = (clone $receivedQuery)->count();
+
+            $onTime = (clone $receivedQuery)
+                ->whereNotNull('delivered_date')
                 ->whereColumn('delivered_date', '<=', 'expected_delivery_date')
                 ->count();
 
-            $s->kpi_on_time = $totalOrders > 0
-                ? round(($onTime / $totalOrders) * 100, 2)
+            $s->kpi_on_time = $totalReceivedOrders > 0
+                ? round(($onTime / $totalReceivedOrders) * 100, 2)
                 : 0;
 
-            // REJECT RATE
+            // REJECT RATE (hanya dari data receive)
             $ret = DB::table('po_receive_detail as rd')
                 ->join('po_receive as r', 'r.id', '=', 'rd.po_receive_id')
                 ->join('purchase_order as po', 'po.id', '=', 'r.purchase_order_id')
@@ -96,7 +99,7 @@ class BranchSupplierController extends Controller
                 ? round(($returned / $received) * 100, 2)
                 : 0;
 
-            // PRICE VARIANCE
+            // PRICE VARIANCE (ambil harga dari PO Detail)
             $poIds = $poQuery->pluck('id');
             $prices = PoDetail::whereIn('purchase_order_id', $poIds)
                 ->pluck('unit_price')
@@ -109,21 +112,11 @@ class BranchSupplierController extends Controller
         // FILTER PERFORMA
         // ======================================================
         if ($performance) {
-
             $suppliers = $suppliers->filter(function ($s) use ($performance) {
-
                 return match ($performance) {
-
-                    'good' => $s->kpi_on_time >= 90 &&
-                        $s->kpi_reject <= 10 &&
-                        $s->kpi_var <= 5,
-
-                    'average' => $s->kpi_on_time >= 70 &&
-                        $s->kpi_reject <= 20,
-
-                    'poor' => $s->kpi_on_time < 70 ||
-                        $s->kpi_reject > 20,
-
+                    'good' => $s->kpi_on_time >= 90 && $s->kpi_reject <= 10 && $s->kpi_var <= 5,
+                    'average' => $s->kpi_on_time >= 70 && $s->kpi_reject <= 20,
+                    'poor' => $s->kpi_on_time < 70 || $s->kpi_reject > 20,
                     default => true,
                 };
             });
@@ -160,6 +153,9 @@ class BranchSupplierController extends Controller
         ));
     }
 
+    // ======================================================
+    // DETAIL
+    // ======================================================
     public function show($branchCode, $id)
     {
         $companyId = session('role.company.id');
@@ -181,30 +177,43 @@ class BranchSupplierController extends Controller
             $poQuery = PurchaseOrder::where('suppliers_id', $supplier->id)
                 ->whereBetween('po_date', [$start, $end]);
         } else {
+            $start = null;
+            $end = null;
             $poQuery = PurchaseOrder::where('suppliers_id', $supplier->id);
         }
 
-        $totalOrders = $poQuery->count();
+        // total semua PO (kalau mau tampil)
+        $totalOrders = (clone $poQuery)->count();
 
-        $onTime = (clone $poQuery)
+        // ✅ ON TIME: HANYA RECEIVED
+        $receivedPoQuery = (clone $poQuery)->where('status', 'RECEIVED');
+        $totalReceivedOrders = (clone $receivedPoQuery)->count();
+
+        $onTime = (clone $receivedPoQuery)
+            ->whereNotNull('delivered_date')
             ->whereColumn('delivered_date', '<=', 'expected_delivery_date')
             ->count();
 
-        $onTimeRate = $totalOrders > 0 ? round($onTime / $totalOrders * 100, 2) : 0;
+        $onTimeRate = $totalReceivedOrders > 0
+            ? round(($onTime / $totalReceivedOrders) * 100, 2)
+            : 0;
 
-        $late = $totalOrders - $onTime;
+        // ✅ late hanya dari RECEIVED
+        $late = $totalReceivedOrders - $onTime;
 
-        $avgLead = (clone $poQuery)
+        // ✅ lead time lebih fair dari RECEIVED
+        $avgLead = (clone $receivedPoQuery)
             ->whereNotNull('delivered_date')
             ->avg(DB::raw('DATEDIFF(delivered_date, po_date)'));
-        $avgLead = $avgLead ?: 0;
+        $avgLead = $avgLead ? round($avgLead, 2) : 0;
 
+        // RECEIVE
         $ret = DB::table('po_receive_detail as rd')
             ->join('po_receive as r', 'r.id', '=', 'rd.po_receive_id')
             ->join('purchase_order as po', 'po.id', '=', 'r.purchase_order_id')
             ->where('po.suppliers_id', $supplier->id);
 
-        if ($mode === 'period') {
+        if ($mode === 'period' && $start && $end) {
             $ret->whereBetween('r.received_at', [$start, $end]);
         }
 
@@ -214,12 +223,13 @@ class BranchSupplierController extends Controller
         $received = $ret->total_received ?? 0;
         $returned = $ret->total_returned ?? 0;
 
-        $rejectRate = $received > 0 ? round($returned / $received * 100, 2) : 0;
+        $rejectRate = $received > 0 ? round(($returned / $received) * 100, 2) : 0;
 
         $qtyAccuracy = ($received + $returned) > 0
-            ? round($received / ($received + $returned) * 100, 2)
+            ? round(($received / ($received + $returned)) * 100, 2)
             : 0;
 
+        // Price variance (pakai semua PO sesuai filter period/all)
         $poIds = $poQuery->pluck('id');
         $prices = PoDetail::whereIn('purchase_order_id', $poIds)
             ->pluck('unit_price')
@@ -242,7 +252,7 @@ class BranchSupplierController extends Controller
             ->pluck('year')
             ->toArray();
 
-        if (! $availableYears) {
+        if (empty($availableYears)) {
             $availableYears = [now()->year];
         }
 
@@ -257,7 +267,8 @@ class BranchSupplierController extends Controller
             'mode',
             'month',
             'year',
-            'totalOrders',
+            'totalOrders',           // semua status
+            'totalReceivedOrders',
             'onTimeRate',
             'late',
             'avgLead',
@@ -268,6 +279,9 @@ class BranchSupplierController extends Controller
         ));
     }
 
+    // ======================================================
+    // ITEM CRUD
+    // ======================================================
     public function itemStore(Request $request, $branchCode, Supplier $supplier)
     {
         $request->validate([
@@ -312,19 +326,31 @@ class BranchSupplierController extends Controller
         return back()->with('success', 'Item berhasil dihapus.');
     }
 
+    // ======================================================
+    // GENERATE SCORE (ALL TIME)
+    // ======================================================
     public function generateScore(Request $request, $branchCode, $id)
     {
         $companyId = session('role.company.id');
 
         $supplier = Supplier::where('company_id', $companyId)->findOrFail($id);
 
-        $poQuery = PurchaseOrder::where('suppliers_id', $supplier->id);
+        // ✅ ON TIME: RECEIVED ONLY
+        $receivedQuery = PurchaseOrder::where('suppliers_id', $supplier->id)
+            ->where('status', 'RECEIVED');
 
-        $totalOrders = $poQuery->count();
-        $onTime = (clone $poQuery)->whereColumn('delivered_date', '<=', 'expected_delivery_date')->count();
+        $totalReceivedOrders = (clone $receivedQuery)->count();
 
-        $onTimeRate = $totalOrders > 0 ? round($onTime / $totalOrders * 100, 2) : 0;
+        $onTime = (clone $receivedQuery)
+            ->whereNotNull('delivered_date')
+            ->whereColumn('delivered_date', '<=', 'expected_delivery_date')
+            ->count();
 
+        $onTimeRate = $totalReceivedOrders > 0
+            ? round(($onTime / $totalReceivedOrders) * 100, 2)
+            : 0;
+
+        // REJECT RATE
         $ret = DB::table('po_receive_detail as rd')
             ->join('po_receive as r', 'r.id', '=', 'rd.po_receive_id')
             ->join('purchase_order as po', 'po.id', '=', 'r.purchase_order_id')
@@ -335,7 +361,7 @@ class BranchSupplierController extends Controller
         $received = $ret->total_received ?? 0;
         $returned = $ret->total_returned ?? 0;
 
-        $rejectRate = $received > 0 ? round($returned / $received * 100, 2) : 0;
+        $rejectRate = $received > 0 ? round(($returned / $received) * 100, 2) : 0;
 
         $prices = SuppliersItem::where('suppliers_id', $supplier->id)->pluck('price')->toArray();
         $priceVariance = $this->varianceFromArray($prices);
@@ -353,6 +379,9 @@ class BranchSupplierController extends Controller
         return back()->with('success', 'Performance berhasil dihitung dan disimpan.');
     }
 
+    // ======================================================
+    // GENERATE SCORE (PERIOD)
+    // ======================================================
     public function generateScoreWithPeriod(Request $request, $branchCode, $id)
     {
         $request->validate([
@@ -361,7 +390,6 @@ class BranchSupplierController extends Controller
         ]);
 
         $companyId = session('role.company.id');
-
         $supplier = Supplier::where('company_id', $companyId)->findOrFail($id);
 
         $month = $request->period_month;
@@ -370,14 +398,23 @@ class BranchSupplierController extends Controller
         $start = Carbon::create($year, $month, 1)->startOfMonth();
         $end = Carbon::create($year, $month, 1)->endOfMonth();
 
-        $poQuery = PurchaseOrder::where('suppliers_id', $supplier->id)
+        // ✅ RECEIVED ONLY periode ini
+        $receivedQuery = PurchaseOrder::where('suppliers_id', $supplier->id)
+            ->where('status', 'RECEIVED')
             ->whereBetween('po_date', [$start, $end]);
 
-        $totalOrders = $poQuery->count();
-        $onTime = (clone $poQuery)->whereColumn('delivered_date', '<=', 'expected_delivery_date')->count();
+        $totalReceivedOrders = (clone $receivedQuery)->count();
 
-        $onTimeRate = $totalOrders > 0 ? round($onTime / $totalOrders * 100, 2) : 0;
+        $onTime = (clone $receivedQuery)
+            ->whereNotNull('delivered_date')
+            ->whereColumn('delivered_date', '<=', 'expected_delivery_date')
+            ->count();
 
+        $onTimeRate = $totalReceivedOrders > 0
+            ? round(($onTime / $totalReceivedOrders) * 100, 2)
+            : 0;
+
+        // REJECT RATE periode ini
         $ret = DB::table('po_receive_detail as rd')
             ->join('po_receive as r', 'r.id', '=', 'rd.po_receive_id')
             ->join('purchase_order as po', 'po.id', '=', 'r.purchase_order_id')
@@ -389,9 +426,10 @@ class BranchSupplierController extends Controller
         $received = $ret->total_received ?? 0;
         $returned = $ret->total_returned ?? 0;
 
-        $rejectRate = $received > 0 ? round($returned / $received * 100, 2) : 0;
+        $rejectRate = $received > 0 ? round(($returned / $received) * 100, 2) : 0;
 
-        $poIds = $poQuery->pluck('id');
+        // PRICE VARIANCE periode ini (dari PO Detail RECEIVED periode ini)
+        $poIds = $receivedQuery->pluck('id');
         $prices = PoDetail::whereIn('purchase_order_id', $poIds)->pluck('unit_price')->toArray();
         $priceVariance = $this->varianceFromArray($prices);
 
@@ -410,6 +448,9 @@ class BranchSupplierController extends Controller
         return back()->with('success', "Performance periode {$month}/{$year} berhasil dihitung & disimpan!");
     }
 
+    // ======================================================
+    // EDIT / UPDATE / DELETE / CREATE / STORE
+    // ======================================================
     public function edit($branchCode, $id)
     {
         $companyId = session('role.company.id');
@@ -454,7 +495,6 @@ class BranchSupplierController extends Controller
             ->with('success', 'Supplier berhasil diperbarui.');
     }
 
-    /* helper */
     private function getBranchId($branchCode)
     {
         return CabangResto::where('company_id', session('role.company.id'))

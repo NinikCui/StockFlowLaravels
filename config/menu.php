@@ -61,6 +61,44 @@ return [
                 ['label' => 'Request Cabang', 'href' => 'request-cabang',                  'permission' => 'transfer.view'],
             ],
         ],
+        /* [
+            'label' => 'Laporan',
+            'icon' => 'bar-chart',
+            'permission' => 'report.view',
+            'children' => [
+
+                [
+                    'label' => 'Stok Global',
+                    'href' => 'reports/stock-global', // GET /reports/stock-global
+                    'permission' => 'report.view',
+                ],
+                [
+                    'label' => 'Mutasi Stok',
+                    'href' => 'reports/mutasi-stok', // GET /reports/mutasi-stok
+                    'permission' => 'report.view',
+                ],
+                [
+                    'label' => 'Penggunaan Bahan (BOM)',
+                    'href' => 'reports/bom', // GET /reports/bom
+                    'permission' => 'report.view',
+                ],
+                [
+                    'label' => 'Purchase Order',
+                    'href' => 'reports/purchase-order', // GET /reports/purchase-order
+                    'permission' => 'report.view',
+                ],
+                [
+                    'label' => 'Hampir Expired',
+                    'href' => 'reports/expired', // GET /reports/expired
+                    'permission' => 'report.view',
+                ],
+                [
+                    'label' => 'Performa Cabang',
+                    'href' => 'reports/performance', // GET /reports/performance
+                    'permission' => 'report.view',
+                ],
+            ],
+        ],*/
         [
             'label' => 'Pengaturan',
             'icon' => 'settings',

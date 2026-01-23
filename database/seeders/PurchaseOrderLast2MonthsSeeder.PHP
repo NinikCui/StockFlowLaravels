@@ -22,13 +22,11 @@ class PurchaseOrderLast2MonthsSeeder extends Seeder
             return;
         }
 
-        // ambil semua cabang (kalau kamu multi-company, filter sendiri by company_id)
         $branches = CabangResto::all();
         if ($branches->isEmpty()) {
             return;
         }
 
-        // company_id untuk items/suppliers (ambil dari cabang pertama)
         $companyId = $branches->first()->company_id ?? null;
 
         $items = $companyId
@@ -50,7 +48,7 @@ class PurchaseOrderLast2MonthsSeeder extends Seeder
         $start = Carbon::now()->subMonths(2)->startOfDay();
         $end = Carbon::now()->endOfDay();
 
-        $hasCompanyIdOnPO = Schema::hasColumn('purchase_order', 'company_id'); // biar seeder gak error kalau kolomnya belum ada
+        $hasCompanyIdOnPO = Schema::hasColumn('purchase_order', 'company_id');
 
         DB::transaction(function () use (
             $branches, $items, $suppliers, $user, $companyId,
@@ -60,13 +58,14 @@ class PurchaseOrderLast2MonthsSeeder extends Seeder
 
                 foreach ($branches as $branch) {
 
-                    // ambil warehouse cabang
-                    $warehouse = Warehouse::where('cabang_resto_id', $branch->id)->inRandomOrder()->first();
+                    $warehouse = Warehouse::where('cabang_resto_id', $branch->id)
+                        ->inRandomOrder()
+                        ->first();
+
                     if (! $warehouse) {
                         continue;
                     }
 
-                    // supplier yg global (null cabang) atau spesifik cabang ini
                     $supplierCandidates = $suppliers->filter(function ($s) use ($branch) {
                         return is_null($s->cabang_resto_id) || $s->cabang_resto_id == $branch->id;
                     })->values();
@@ -81,31 +80,39 @@ class PurchaseOrderLast2MonthsSeeder extends Seeder
                     for ($i = 0; $i < $poCount; $i++) {
 
                         $poDate = $date->copy()->setTime(rand(8, 16), rand(0, 59));
-                        $expected = $poDate->copy()->addDays(rand(1, 5));
-
                         $daysAgo = Carbon::now()->diffInDays($poDate);
 
-                        // status: yg lebih lama lebih sering RECEIVED
+                        // kamu boleh tambah PARTIAL biar datanya lebih kaya
                         $statusPool = $daysAgo >= 14
-                            ? ['RECEIVED', 'RECEIVED', 'APPROVED', 'CANCELLED', 'DRAFT']
+                            ? ['RECEIVED', 'RECEIVED', 'APPROVED', 'PARTIAL', 'CANCELLED', 'DRAFT']
                             : ($daysAgo >= 5
-                                ? ['APPROVED', 'APPROVED', 'CANCELLED', 'DRAFT']
+                                ? ['APPROVED', 'APPROVED', 'PARTIAL', 'CANCELLED', 'DRAFT']
                                 : ['DRAFT', 'DRAFT', 'APPROVED', 'CANCELLED']);
 
                         $status = $statusPool[array_rand($statusPool)];
+
+                        // =========================
+                        // ✅ RULE YANG KAMU MINTA
+                        // =========================
+                        // "request & lain-lain sebelum diterima" = sebelum di-acc -> DRAFT (dan opsional CANCELLED)
+                        if (in_array($status, ['DRAFT', 'CANCELLED', 'APPROVED'])) {
+                            $expected = Carbon::today()->setTime(0, 0, 0);
+                        } else {
+                            $expected = $poDate->copy()->addDays(rand(1, 5))->setTime(0, 0, 0);
+                        }
 
                         $poNumber = 'PO-'.strtoupper($branch->code).'-'.$poDate->format('YmdHis').'-'.strtoupper(Str::random(3));
 
                         $deliveredAt = null;
                         $ontime = 0;
 
-                        if ($status === 'RECEIVED') {
+                        if (in_array($status, ['RECEIVED'])) {
                             $deliveredAt = $expected->copy()
                                 ->addDays(rand(-1, 2))
                                 ->setTime(rand(9, 17), rand(0, 59));
 
                             if ($deliveredAt->lt($poDate)) {
-                                $deliveredAt = $poDate->copy()->addDays(1);
+                                $deliveredAt = $poDate->copy()->addDays(1)->setTime(rand(9, 17), rand(0, 59));
                             }
 
                             $ontime = $deliveredAt->lte($expected) ? 1 : 0;
@@ -169,8 +176,8 @@ class PurchaseOrderLast2MonthsSeeder extends Seeder
                         }
 
                         // =======================================================
-                        // RECEIVED ONLY:
-                        // Kalau status RECEIVED baru buat: po_receive + movement
+                        // RECEIVED / PARTIAL:
+                        // buat po_receive + movement
                         // =======================================================
                         if ($status !== 'RECEIVED') {
                             continue;
@@ -187,12 +194,12 @@ class PurchaseOrderLast2MonthsSeeder extends Seeder
 
                         foreach ($detailRows as $d) {
 
-                            // RECEIVED: terima semua, kadang return 10%
                             $qtyOrdered = $d['qty_ordered'];
+
+                            // RECEIVED: terima semua, kadang return 10%
                             $qtyReturned = (rand(0, 100) < 10) ? round($qtyOrdered * 0.1, 2) : 0;
                             $qtyReceived = max(0, $qtyOrdered - $qtyReturned);
 
-                            // expired date wajib
                             $expiredAt = $deliveredAt->copy()->addDays(rand(7, 90))->toDateString();
 
                             DB::table('po_receive_detail')->insert([
@@ -209,7 +216,6 @@ class PurchaseOrderLast2MonthsSeeder extends Seeder
                                 continue;
                             }
 
-                            // Buat STOCK baru (sesuai controller kamu: selalu create stok baru)
                             $stockCode = $this->nextStockCode($warehouse->id, $warehouse->code);
 
                             $stockId = DB::table('stocks')->insertGetId([
@@ -224,8 +230,6 @@ class PurchaseOrderLast2MonthsSeeder extends Seeder
                                 'updated_at' => $deliveredAt,
                             ]);
 
-                            // STOCK MOVEMENT
-                            // ⚠️ kalau nama tabelmu bukan 'stock_movements', ganti di sini
                             DB::table('stock_movements')->insert([
                                 'company_id' => $branch->company_id ?? $companyId,
                                 'warehouse_id' => $warehouse->id,
@@ -251,7 +255,6 @@ class PurchaseOrderLast2MonthsSeeder extends Seeder
     {
         $prefix = 'STK-'.strtoupper($warehouseCode).'-';
 
-        // include stok soft-deleted juga (record masih ada di table)
         $lastCode = DB::table('stocks')
             ->where('warehouse_id', $warehouseId)
             ->where('code', 'like', $prefix.'%')

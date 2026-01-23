@@ -19,7 +19,6 @@
                     <th class="px-6 py-3 text-center">On-Time</th>
                     <th class="px-6 py-3 text-center">Reject</th>
                     <th class="px-6 py-3 text-center">Quality</th>
-                    <th class="px-6 py-3 text-center">Variance</th>
                     <th class="px-6 py-3">Catatan</th>
                     <th class="px-6 py-3">Tanggal</th>
                 </tr>
@@ -57,12 +56,6 @@
                             </span>
                         </td>
 
-                        {{-- VARIANCE --}}
-                        <td class="px-6 py-4 text-center">
-                            <span class="text-orange-600 font-semibold">
-                                {{ $sc->price_variance }}%
-                            </span>
-                        </td>
 
                         {{-- NOTES --}}
                         <td class="px-6 py-4 max-w-xs">

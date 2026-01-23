@@ -34,21 +34,6 @@
         </span>
     </div>
 
-    {{-- VARIANCE --}}
-    <div class="flex items-center justify-between gap-3">
-        <span class="text-xs text-gray-600 font-medium min-w-[60px]">Variance</span>
 
-        <div class="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-            <div class="h-full rounded-full
-                {{ $s->kpi_var <= 5 ? 'bg-emerald-500' : ($s->kpi_var <= 15 ? 'bg-orange-500' : 'bg-red-500') }}"
-                style="width: {{ min($s->kpi_var, 100) }}%">
-            </div>
-        </div>
-
-        <span class="text-xs font-bold min-w-[45px] text-right
-            {{ $s->kpi_var <= 5 ? 'text-emerald-600' : ($s->kpi_var <= 15 ? 'text-orange-600' : 'text-red-600') }}">
-            {{ number_format($s->kpi_var, 1) }}%
-        </span>
-    </div>
 
 </div>

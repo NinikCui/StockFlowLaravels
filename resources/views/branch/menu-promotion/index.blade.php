@@ -113,9 +113,7 @@
                         <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                             Potensi Pemakaian
                         </th>
-                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Risk Score
-                        </th>
+                        
                         <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
                             Status
                         </th>
@@ -175,16 +173,7 @@
                             </div>
                         </td>
 
-                        <td class="px-6 py-4 text-center">
-                            <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg
-                                {{ $rec->risk_score >= 80 
-                                    ? 'bg-red-100 text-red-700 border border-red-200' 
-                                    : ($rec->risk_score >= 50 
-                                        ? 'bg-orange-100 text-orange-700 border border-orange-200' 
-                                        : 'bg-yellow-100 text-yellow-700 border border-yellow-200') }}">
-                                {{ $rec->risk_score }}
-                            </div>
-                        </td>
+
 
                         <td class="px-6 py-4 text-center">
                             @if($rec->status === 'NEW')

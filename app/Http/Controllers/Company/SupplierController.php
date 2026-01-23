@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\DB;
 
 class SupplierController extends Controller
 {
-    // LIST
+    // =========================
+    // Helpers
+    // =========================
     private function varianceFromArray($array)
     {
         $count = count($array);
@@ -36,6 +38,9 @@ class SupplierController extends Controller
         return $mean > 0 ? round(($std / $mean) * 100, 2) : 0;
     }
 
+    // =========================
+    // INDEX (LIST SUPPLIER)
+    // =========================
     public function index($companyCode)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
@@ -56,20 +61,24 @@ class SupplierController extends Controller
         // 🔥 HITUNG KPI LIVE UNTUK SETIAP SUPPLIER
         foreach ($suppliers as $s) {
 
-            // Ambil PO
+            // Semua PO supplier ini
             $poQuery = PurchaseOrder::where('suppliers_id', $s->id);
-            $totalOrders = $poQuery->count();
 
-            // ON TIME
-            $onTime = (clone $poQuery)
+            // ✅ On-time hanya untuk RECEIVED
+            $receivedQuery = (clone $poQuery)->where('status', 'RECEIVED');
+
+            $totalReceivedOrders = (clone $receivedQuery)->count();
+
+            $onTime = (clone $receivedQuery)
+                ->whereNotNull('delivered_date')
                 ->whereColumn('delivered_date', '<=', 'expected_delivery_date')
                 ->count();
 
-            $s->kpi_on_time = $totalOrders > 0
-                ? round(($onTime / $totalOrders) * 100, 2)
+            $s->kpi_on_time = $totalReceivedOrders > 0
+                ? round(($onTime / $totalReceivedOrders) * 100, 2)
                 : 0;
 
-            // REJECT RATE
+            // REJECT RATE (hanya berdasarkan data receive, otomatis hanya RECEIVED yang punya receive)
             $returns = DB::table('po_receive_detail as rd')
                 ->join('po_receive as r', 'r.id', '=', 'rd.po_receive_id')
                 ->join('purchase_order as po', 'po.id', '=', 'r.purchase_order_id')
@@ -85,7 +94,9 @@ class SupplierController extends Controller
                 : 0;
 
             // PRICE VARIANCE (ambil harga dari PO Detail)
+            // Boleh tetap all-time; kalau mau khusus RECEIVED aja, ganti $poIds ambil dari $receivedQuery
             $poIds = $poQuery->pluck('id');
+
             $prices = PoDetail::whereIn('purchase_order_id', $poIds)
                 ->pluck('unit_price')
                 ->toArray();
@@ -120,7 +131,6 @@ class SupplierController extends Controller
         // 🔥 SORTING KPI LIVE
         if ($sort) {
             $suppliers = $suppliers->sortBy(function ($s) use ($sort) {
-
                 return match ($sort) {
                     'on_time' => -$s->kpi_on_time,
                     'reject_low' => $s->kpi_reject,
@@ -135,7 +145,6 @@ class SupplierController extends Controller
             }
         }
 
-        // Semua item
         $allItems = Item::orderBy('name')->get();
 
         return view('company.supplier.index', compact(
@@ -145,13 +154,14 @@ class SupplierController extends Controller
         ));
     }
 
-    // FORM TAMBAH
+    // =========================
+    // CREATE SUPPLIER
+    // =========================
     public function create($companyCode)
     {
         return view('company.supplier.create', compact('companyCode'));
     }
 
-    // SIMPAN
     public function store(Request $request, $companyCode)
     {
         $request->validate([
@@ -178,7 +188,9 @@ class SupplierController extends Controller
             ->with('success', 'Supplier berhasil ditambahkan.');
     }
 
-    // FORM EDIT
+    // =========================
+    // EDIT / UPDATE / DELETE
+    // =========================
     public function edit($companyCode, $id)
     {
         $supplier = Supplier::findOrFail($id);
@@ -186,7 +198,6 @@ class SupplierController extends Controller
         return view('company.supplier.edit', compact('supplier', 'companyCode'));
     }
 
-    // UPDATE
     public function update(Request $request, $companyCode, $id)
     {
         $supplier = Supplier::findOrFail($id);
@@ -212,7 +223,6 @@ class SupplierController extends Controller
             ->with('success', 'Data supplier berhasil diperbarui.');
     }
 
-    // DELETE
     public function destroy($companyCode, $id)
     {
         $supplier = Supplier::findOrFail($id);
@@ -222,7 +232,9 @@ class SupplierController extends Controller
             ->with('success', 'Supplier berhasil dihapus.');
     }
 
-    // DETAIL
+    // =========================
+    // SHOW (DETAIL SUPPLIER)
+    // =========================
     public function show($companyCode, $id)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
@@ -248,7 +260,7 @@ class SupplierController extends Controller
         $year = request('period_year');
 
         if ($mode === 'period' && $month && $year) {
-            // Periode
+
             $startDate = Carbon::create($year, $month, 1)->startOfMonth();
             $endDate = Carbon::create($year, $month, 1)->endOfMonth();
 
@@ -262,7 +274,7 @@ class SupplierController extends Controller
                 ->whereBetween('r.received_at', [$startDate, $endDate]);
 
         } else {
-            // ALL TIME
+
             $poQuery = PurchaseOrder::where('suppliers_id', $supplier->id);
 
             $receiveQuery = DB::table('po_receive_detail as rd')
@@ -271,22 +283,28 @@ class SupplierController extends Controller
                 ->where('po.suppliers_id', $supplier->id);
         }
 
-        $totalOrders = $poQuery->count();
+        // Total PO all status (kalau mau ditampilkan)
+        $totalOrders = (clone $poQuery)->count();
 
-        // ON TIME
-        $onTime = (clone $poQuery)
+        // ✅ ON TIME hanya untuk RECEIVED
+        $receivedPoQuery = (clone $poQuery)->where('status', 'RECEIVED');
+
+        $totalReceivedOrders = (clone $receivedPoQuery)->count();
+
+        $onTime = (clone $receivedPoQuery)
+            ->whereNotNull('delivered_date')
             ->whereColumn('delivered_date', '<=', 'expected_delivery_date')
             ->count();
 
-        $onTimeRate = $totalOrders > 0
-            ? round(($onTime / $totalOrders) * 100, 2)
+        $onTimeRate = $totalReceivedOrders > 0
+            ? round(($onTime / $totalReceivedOrders) * 100, 2)
             : 0;
 
-        // LATE
-        $late = $totalOrders - $onTime;
+        // ✅ LATE hanya untuk RECEIVED
+        $late = $totalReceivedOrders - $onTime;
 
-        // LEAD TIME
-        $avgLead = (clone $poQuery)
+        // ✅ LEAD TIME (lebih fair kalau hanya RECEIVED juga)
+        $avgLead = (clone $receivedPoQuery)
             ->whereNotNull('delivered_date')
             ->avg(DB::raw('DATEDIFF(delivered_date, po_date)'));
         $avgLead = $avgLead ? round($avgLead, 2) : 0;
@@ -309,7 +327,7 @@ class SupplierController extends Controller
             ? round(($totalReceived / ($totalReceived + $totalReturned)) * 100, 2)
             : 0;
 
-        // PRICE VARIANCE
+        // PRICE VARIANCE (dari PO detail; kalau mau spesifik RECEIVED, ambil $poIds dari $receivedPoQuery)
         $poIds = $poQuery->pluck('id');
 
         $prices = PoDetail::whereIn('purchase_order_id', $poIds)
@@ -317,25 +335,23 @@ class SupplierController extends Controller
             ->toArray();
 
         $priceVariance = 0;
-
         if (count($prices) > 1) {
             $avg = array_sum($prices) / count($prices);
-
             $variance = 0;
             foreach ($prices as $p) {
                 $variance += pow($p - $avg, 2);
             }
-
             $std = sqrt($variance / (count($prices) - 1));
-
-            $priceVariance = round(($std / $avg) * 100, 2);
+            $priceVariance = $avg > 0 ? round(($std / $avg) * 100, 2) : 0;
         }
+
         $availableYears = PurchaseOrder::where('suppliers_id', $supplier->id)
             ->selectRaw('YEAR(po_date) as year')
             ->distinct()
             ->orderBy('year', 'desc')
             ->pluck('year')
             ->toArray();
+
         if (empty($availableYears)) {
             $availableYears = [now()->year];
         }
@@ -346,11 +362,13 @@ class SupplierController extends Controller
             'items',
             'allItems',
 
-            // KPI
             'mode',
             'month',
             'year',
-            'totalOrders',
+
+            // KPI
+            'totalOrders',           // semua status
+            'totalReceivedOrders',   // ✅ hanya RECEIVED (opsional kalau mau ditampilkan)
             'onTimeRate',
             'late',
             'avgLead',
@@ -362,7 +380,9 @@ class SupplierController extends Controller
         ));
     }
 
-    // CREATE ITEM SUPPLIER
+    // =========================
+    // ITEM SUPPLIER CRUD
+    // =========================
     public function itemStore(Request $request, $companyCode, Supplier $supplier)
     {
         $validator = \Validator::make($request->all(), [
@@ -378,17 +398,13 @@ class SupplierController extends Controller
                 ->withInput();
         }
 
-        // 🔥 CEK DUPLIKAT
         if ($supplier->suppliedItems()->where('items_id', $request->items_id)->exists()) {
-
-            // Tambahkan error manual
             return back()
                 ->with('modal', 'add')
                 ->withErrors(['items_id' => 'Item ini sudah pernah ditambahkan untuk supplier ini.'])
                 ->withInput();
         }
 
-        // SIMPAN
         $supplier->suppliedItems()->attach($request->items_id, [
             'price' => $request->price,
             'min_order_qty' => $request->min_order_qty,
@@ -398,7 +414,6 @@ class SupplierController extends Controller
         return back()->with('success', 'Item berhasil ditambahkan.');
     }
 
-    // UPDATE ITEM SUPPLIER
     public function itemUpdate(Request $request, $companyCode, Supplier $supplier, $itemId)
     {
         $request->validate([
@@ -415,7 +430,6 @@ class SupplierController extends Controller
         return back()->with('success', 'Item supplier berhasil diperbarui.');
     }
 
-    // DELETE ITEM SUPPLIER
     public function itemDestroy($companyCode, Supplier $supplier, $itemId)
     {
         $supplier->suppliedItems()->detach($itemId);
@@ -423,45 +437,36 @@ class SupplierController extends Controller
         return back()->with('success', 'Item supplier berhasil dihapus.');
     }
 
-    private function stdDeviation($array)
-    {
-        $count = count($array);
-        if ($count < 2) {
-            return 0;
-        }
-
-        $mean = array_sum($array) / $count;
-        $variance = 0;
-
-        foreach ($array as $value) {
-            $variance += pow(($value - $mean), 2);
-        }
-
-        return sqrt($variance / ($count - 1));
-    }
-
+    // =========================
+    // GENERATE SCORE (ALL TIME)
+    // =========================
     public function generateScore(Request $request, $companyCode, $id)
     {
         $company = Company::where('code', $companyCode)->firstOrFail();
         $supplier = Supplier::where('company_id', $company->id)->findOrFail($id);
 
-        $purchaseOrders = PurchaseOrder::where('suppliers_id', $supplier->id)->get();
-        $totalOrders = $purchaseOrders->count();
+        // ✅ ON TIME hanya RECEIVED
+        $receivedQuery = PurchaseOrder::where('suppliers_id', $supplier->id)
+            ->where('status', 'RECEIVED');
 
-        $onTime = PurchaseOrder::where('suppliers_id', $supplier->id)
+        $totalReceivedOrders = (clone $receivedQuery)->count();
+
+        $onTime = (clone $receivedQuery)
+            ->whereNotNull('delivered_date')
             ->whereColumn('delivered_date', '<=', 'expected_delivery_date')
             ->count();
 
-        $onTimeRate = $totalOrders > 0
-            ? round(($onTime / $totalOrders) * 100, 2)
+        $onTimeRate = $totalReceivedOrders > 0
+            ? round(($onTime / $totalReceivedOrders) * 100, 2)
             : 0;
 
-        $avgLead = PurchaseOrder::where('suppliers_id', $supplier->id)
+        // LEAD TIME (RECEIVED)
+        $avgLead = (clone $receivedQuery)
             ->whereNotNull('delivered_date')
             ->avg(DB::raw('DATEDIFF(delivered_date, po_date)'));
-
         $avgLead = $avgLead ? round($avgLead, 2) : 0;
 
+        // RECEIVE DATA
         $returns = DB::table('po_receive_detail as rd')
             ->join('po_receive as r', 'r.id', '=', 'rd.po_receive_id')
             ->join('purchase_order as po', 'po.id', '=', 'r.purchase_order_id')
@@ -480,24 +485,20 @@ class SupplierController extends Controller
             ? round(($totalReceived / ($totalReceived + $totalReturned)) * 100, 2)
             : 0;
 
+        // PRICE VARIANCE (dari master harga supplier items)
         $prices = SuppliersItem::where('suppliers_id', $supplier->id)
             ->pluck('price')
             ->toArray();
 
         $priceVariance = 0;
-
         if (count($prices) > 1) {
             $avg = array_sum($prices) / count($prices);
-
             $variance = 0;
             foreach ($prices as $p) {
                 $variance += pow($p - $avg, 2);
             }
-
             $std = sqrt($variance / (count($prices) - 1));
-            $priceVariance = $avg > 0
-                ? round(($std / $avg) * 100, 2)
-                : 0;
+            $priceVariance = $avg > 0 ? round(($std / $avg) * 100, 2) : 0;
         }
 
         SupplierScore::create([
@@ -513,6 +514,9 @@ class SupplierController extends Controller
         return back()->with('success', 'Performance supplier berhasil dihitung & disimpan!');
     }
 
+    // =========================
+    // GENERATE SCORE (PERIOD)
+    // =========================
     public function generateScoreWithPeriod(Request $request, $companyCode, $id)
     {
         $request->validate([
@@ -529,33 +533,34 @@ class SupplierController extends Controller
         $startDate = Carbon::create($year, $month, 1)->startOfMonth();
         $endDate = Carbon::create($year, $month, 1)->endOfMonth();
 
-        $poQuery = PurchaseOrder::where('suppliers_id', $supplier->id)
+        // ✅ PO RECEIVED periode ini
+        $receivedQuery = PurchaseOrder::where('suppliers_id', $supplier->id)
+            ->where('status', 'RECEIVED')
             ->whereBetween('po_date', [$startDate, $endDate]);
 
+        $totalReceivedOrders = (clone $receivedQuery)->count();
+
+        $onTime = (clone $receivedQuery)
+            ->whereNotNull('delivered_date')
+            ->whereColumn('delivered_date', '<=', 'expected_delivery_date')
+            ->count();
+
+        $onTimeRate = $totalReceivedOrders > 0
+            ? round(($onTime / $totalReceivedOrders) * 100, 2)
+            : 0;
+
+        $avgLead = (clone $receivedQuery)
+            ->whereNotNull('delivered_date')
+            ->avg(DB::raw('DATEDIFF(delivered_date, po_date)'));
+        $avgLead = $avgLead ? round($avgLead, 2) : 0;
+
+        // RECEIVE DATA periode ini
         $receiveQuery = DB::table('po_receive_detail as rd')
             ->join('po_receive as r', 'r.id', '=', 'rd.po_receive_id')
             ->join('purchase_order as po', 'po.id', '=', 'r.purchase_order_id')
             ->where('po.suppliers_id', $supplier->id)
             ->whereBetween('r.received_at', [$startDate, $endDate]);
 
-        $totalOrders = $poQuery->count();
-
-        // ON TIME
-        $onTime = (clone $poQuery)
-            ->whereColumn('delivered_date', '<=', 'expected_delivery_date')
-            ->count();
-
-        $onTimeRate = $totalOrders > 0
-            ? round(($onTime / $totalOrders) * 100, 2)
-            : 0;
-
-        // LEAD TIME
-        $avgLead = (clone $poQuery)
-            ->whereNotNull('delivered_date')
-            ->avg(DB::raw('DATEDIFF(delivered_date, po_date)'));
-        $avgLead = $avgLead ? round($avgLead, 2) : 0;
-
-        // RECEIVE DATA
         $returns = $receiveQuery
             ->selectRaw('SUM(rd.qty_received) as total_received, SUM(rd.qty_returned) as total_returned')
             ->first();
@@ -571,24 +576,22 @@ class SupplierController extends Controller
             ? round(($totalReceived / ($totalReceived + $totalReturned)) * 100, 2)
             : 0;
 
-        // PRICE VARIANCE
-        $poIds = $poQuery->pluck('id');
+        // PRICE VARIANCE periode ini (dari PO Detail periode ini)
+        $poIds = $receivedQuery->pluck('id');
 
         $prices = PoDetail::whereIn('purchase_order_id', $poIds)
             ->pluck('unit_price')
             ->toArray();
-        $priceVariance = 0;
 
+        $priceVariance = 0;
         if (count($prices) > 1) {
             $avg = array_sum($prices) / count($prices);
-
             $variance = 0;
             foreach ($prices as $p) {
                 $variance += pow($p - $avg, 2);
             }
-
             $std = sqrt($variance / (count($prices) - 1));
-            $priceVariance = round(($std / $avg) * 100, 2);
+            $priceVariance = $avg > 0 ? round(($std / $avg) * 100, 2) : 0;
         }
 
         SupplierScore::create([

@@ -16,7 +16,7 @@
             </div>
         </div>
         <p class="text-3xl font-extrabold text-emerald-600">{{ $onTimeRate }}%</p>
-        <p class="text-xs text-gray-500 mt-2">{{ $totalOrders }} total PO</p>
+        <p class="text-xs text-gray-500 mt-2">{{ $totalReceivedOrders }} total PO</p>
     </div>
 
     {{-- LEAD TIME --}}
@@ -53,22 +53,7 @@
         <p class="text-3xl font-extrabold text-red-600">{{ $rejectRate }}%</p>
     </div>
 
-    {{-- PRICE VARIANCE --}}
-    <div class="p-6 bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-lg transition-all">
-        <div class="flex items-center gap-4 mb-3">
-            <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
-                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1" />
-                </svg>
-            </div>
-            <div>
-                <p class="font-bold text-gray-900">Price Variance</p>
-                <p class="text-xs text-gray-500">Fluktuasi perubahan harga</p>
-            </div>
-        </div>
-        <p class="text-3xl font-extrabold text-orange-600">{{ $priceVariance }}%</p>
-    </div>
+
 
     {{-- QUANTITY ACCURACY --}}
     <div class="p-6 bg-white border border-gray-200 rounded-2xl shadow-md hover:shadow-lg transition-all">
@@ -102,7 +87,7 @@
             </div>
         </div>
         <p class="text-3xl font-extrabold text-rose-600">{{ $late }}</p>
-        <p class="text-xs text-gray-500 mt-2">Dari {{ $totalOrders }} PO</p>
+        <p class="text-xs text-gray-500 mt-2">Dari {{ $totalReceivedOrders }} PO</p>
     </div>
 
 </div>
