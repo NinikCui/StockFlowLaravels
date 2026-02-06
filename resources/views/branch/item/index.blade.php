@@ -27,13 +27,54 @@
                 />
             </div>
         </div>
-
+        
         @php
             $expiredCount = $items->filter(fn($i) => !is_null($i->days_to_expire) && $i->days_to_expire <= 7)->count();
             $lowStockCount = $items->filter(fn($i) => $i->is_low_stock)->count();
             $nearStockCount = $items->filter(fn($i) => $i->is_near_low_stock)->count();
             $totalItems = $items->count();
+            $stockFilter = request('stock');   // low | near | null
+            $expireFilter = request('expire'); // soon | null
+
         @endphp
+        {{-- ===============================
+            FILTER BAR
+        =============================== --}}
+
+
+        <div class="mb-4 flex flex-wrap items-center gap-2">
+
+            {{-- Semua --}}
+            <a href="{{ route('branch.item.index', $branchCode) }}"
+            class="px-3 py-2 rounded-lg text-xs font-semibold border transition
+            {{ (!$stockFilter && !$expireFilter) ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+                Semua ({{ $totalItems }})
+            </a>
+
+            {{-- Stok Kritis --}}
+            <a href="{{ route('branch.item.index', [$branchCode, 'stock' => 'low']) }}"
+            class="px-3 py-2 rounded-lg text-xs font-semibold border transition
+            {{ ($stockFilter === 'low') ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+                Stok Kritis ({{ $lowStockCount }})
+            </a>
+
+            {{-- Mendekati Minimum --}}
+            <a href="{{ route('branch.item.index', [$branchCode, 'stock' => 'near']) }}"
+            class="px-3 py-2 rounded-lg text-xs font-semibold border transition
+            {{ ($stockFilter === 'near') ? 'bg-yellow-500 text-white border-yellow-500' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+                Mendekati Minimum ({{ $nearStockCount }})
+            </a>
+
+            {{-- Hampir Kadaluarsa --}}
+            <a href="{{ route('branch.item.index', [$branchCode, 'expire' => 'soon']) }}"
+            class="px-3 py-2 rounded-lg text-xs font-semibold border transition
+            {{ ($expireFilter === 'soon') ? 'bg-red-600 text-white border-red-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}">
+                Hampir Kadaluarsa ({{ $expiredCount }})
+            </a>
+
+
+        </div>
+
 
         {{-- ===============================
             STATISTICS CARDS
@@ -260,7 +301,7 @@
                                             <svg class="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                                 <circle cx="10" cy="10" r="3"/>
                                             </svg>
-                                            Rekomendasi restock: <span class="font-semibold text-blue-900">{{ $item->recommended_restock }}</span>
+                                            Rekomendasi restock: <span class="font-semibold text-blue-900">{{ $item->predicted_usage }}</span>
                                         </div>
                                     </div>
                                 </div>

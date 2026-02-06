@@ -14,7 +14,7 @@
                     <span class="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xl">
                         ✎
                     </span>
-                    Edit Role
+                    Edit Remy
                 </h1>
                 <p class="text-gray-600 mt-1">Ubah kode role, scope dan permissions</p>
             </div>

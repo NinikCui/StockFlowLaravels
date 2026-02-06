@@ -52,12 +52,14 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                 @if(($dashboard['criticalItems'] ?? 0) > 0)
-                    <div class="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                    <a href="{{ route('branch.item.index', [$branchCode, 'stock' => 'low']) }}"
+                    class="block rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm
+                            hover:shadow-md hover:-translate-y-0.5 transition cursor-pointer">
                         <div class="flex items-start gap-4">
                             <div class="h-11 w-11 rounded-2xl bg-red-500 flex items-center justify-center shadow">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                 </svg>
                             </div>
                             <div class="flex-1">
@@ -70,18 +72,27 @@
                                 <p class="mt-1 text-sm text-red-700">
                                     Terdapat item di bawah batas minimum. Segera lakukan pengadaan atau request dari cabang lain.
                                 </p>
+
+                                <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-red-700">
+                                    Lihat daftar item
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                    </svg>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 @endif
 
                 @if(($dashboard['expiringSoonItems'] ?? 0) > 0)
-                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+                    <a href="{{ route('branch.item.index', [$branchCode, 'expire' => 'soon']) }}"
+                    class="block rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm
+                            hover:shadow-md hover:-translate-y-0.5 transition cursor-pointer">
                         <div class="flex items-start gap-4">
                             <div class="h-11 w-11 rounded-2xl bg-amber-500 flex items-center justify-center shadow">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
                             <div class="flex-1">
@@ -94,10 +105,18 @@
                                 <p class="mt-1 text-sm text-amber-700">
                                     Item akan kadaluarsa dalam 7 hari. Pertimbangkan promosi atau prioritas penggunaan.
                                 </p>
+
+                                <div class="mt-3 inline-flex items-center gap-2 text-xs font-bold text-amber-800">
+                                    Lihat daftar item
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                    </svg>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
                 @endif
+
 
             </div>
         @endif

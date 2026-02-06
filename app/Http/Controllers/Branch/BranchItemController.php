@@ -76,13 +76,13 @@ class BranchItemController extends Controller
                 $history = DB::table('stock_movements as m')
                     ->where('m.company_id', $companyId)
                     ->where('m.item_id', $item->id)
-                    ->whereIn('m.warehouse_id', $warehouseIds)   // ✅ penting: scope cabang
+                    ->whereIn('m.warehouse_id', $warehouseIds)
                     ->where('m.type', 'OUT')
                     ->whereBetween('m.created_at', [$start, $end])
                     ->selectRaw("DATE_FORMAT(m.created_at, '%Y-%m') as ym, SUM(ABS(m.qty)) as total_out")
                     ->groupBy('ym')
                     ->orderBy('ym')
-                    ->pluck('total_out', 'ym');  // ['2025-08'=>10,'2025-09'=>7,...]
+                    ->pluck('total_out', 'ym');
 
                 $actuals = [];
                 $cursor = $start->copy()->startOfMonth();
@@ -92,10 +92,12 @@ class BranchItemController extends Controller
                     $cursor->addMonth();
                 }
 
-                $item->predicted_usage = $ses->forecastNext($actuals, $alpha) ?? 0;
-                $item->recommended_restock = $item->is_low_stock
-                ? max(1, ($minStock - $stokSekarang) + (int) ceil($item->predicted_usage))
-                : max(1, (int) ceil($item->predicted_usage));
+                while (count($actuals) > 0 && (float) $actuals[0] === 0.0) {
+                    array_shift($actuals);
+                }
+                // dd($item->name, $actuals);
+                $item->predicted_usage = round(($ses->forecastNext($actuals, $alpha) ?? 0), 1);
+
             }
 
             $exp = DB::table('stocks')
@@ -112,7 +114,31 @@ class BranchItemController extends Controller
                 $item->days_to_expire = null;
             }
         }
+        // =========================
+        // FILTER (QUERY STRING)
+        // =========================
+        $stockFilter = request('stock');   // low | near | null
+        $expireFilter = request('expire'); // soon | null
 
+        $items = $items->filter(function ($item) use ($stockFilter, $expireFilter) {
+
+            // filter stok
+            if ($stockFilter === 'low' && ! $item->is_low_stock) {
+                return false;
+            }
+            if ($stockFilter === 'near' && ! $item->is_near_low_stock) {
+                return false;
+            }
+
+            // filter kadaluarsa (≤ 7 hari)
+            if ($expireFilter === 'soon') {
+                if (is_null($item->days_to_expire) || $item->days_to_expire > 7) {
+                    return false;
+                }
+            }
+
+            return true;
+        })->values(); // reset index collection
         // 🔥 conversion universal
         $unitConversions = UnitConversion::with('toSatuan')
             ->where('is_active', true)

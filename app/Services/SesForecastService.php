@@ -4,26 +4,19 @@ namespace App\Services;
 
 class SesForecastService
 {
-    public function forecastNext(array $actuals, float $alpha = 0.3): ?float
+    public function forecastNext(array $actuals, float $alpha = 0.3)
     {
         $n = count($actuals);
         if ($n === 0) {
-            return 0;
-        }
-        if ($n === 1) {
-            return (float) $actuals[0];
+            return 0.0;
         }
 
-        $f = (float) $actuals[0];
-
+        $s = $actuals[0];
         for ($t = 1; $t < $n; $t++) {
-            $aPrev = (float) $actuals[$t - 1];
-            $f = ($alpha * $aPrev) + ((1 - $alpha) * $f);
+            $a = $actuals[$t];
+            $s = ($alpha * $a) + ((1 - $alpha) * $s);
         }
 
-        $aLast = (float) $actuals[$n - 1];
-        $next = ($alpha * $aLast) + ((1 - $alpha) * $f);
-
-        return $next;
+        return $s;
     }
 }

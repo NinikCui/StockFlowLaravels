@@ -22,7 +22,6 @@ class BranchRoleController extends Controller
                 $resource = $p->resource;
                 $action = $p->action;
 
-                // Bila belum ada di DB → fallback dari name
                 if (! $resource || ! $action) {
                     $parts = explode('.', $p->name);
 
@@ -30,7 +29,6 @@ class BranchRoleController extends Controller
                     $action = $action ?: strtolower($parts[1] ?? 'view');
                 }
 
-                // Normalisasi
                 $resource = strtolower(trim($resource));
                 $action = strtolower(trim($action));
 
